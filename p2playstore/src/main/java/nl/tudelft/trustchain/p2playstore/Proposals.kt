@@ -5,10 +5,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.findNavController
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
 
-class Home : Fragment() {
+class Proposals : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
@@ -24,9 +23,9 @@ class Home : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.joinButton.setOnClickListener {
-            findNavController().navigate(R.id.joinDaoFragment)
-        }
+//        binding.joinButton.setOnClickListener {
+//            findNavController().navigate(R.id.action_homeFragment_to_joinDaoFragment)
+//        }
     }
 
     override fun onDestroyView() {

@@ -11,13 +11,29 @@
         android:label="Welcome"
         tools:layout="@layout/fragment_home">
         <action
-            android:id="@+id/action_homeFragment_to_myDaosFragment"
-            app:destination="@+id/myDaosFragment"
+            android:id="@+id/action_homeFragment_to_joinDaoFragment"
+            app:destination="@+id/joinDaoFragment"
             app:popUpToInclusive="true"
             app:popUpTo="@+id/homeFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/joinDaoFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.JoinDao"
+        android:label="Join"
+        tools:layout="@layout/fragment_join_dao">
+        <action
+            android:id="@+id/action_joinDaoFragment_to_proposalFragment"
+            app:destination="@+id/proposalsFragment"
+            app:popUpToInclusive="true"
+            app:popUpTo="@+id/joinDaoFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/proposalsFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.Proposals"
+        android:label="Proposals"
+        tools:layout="@layout/fragment_proposals"/>
 
-<!--    <fragment-->
+    <!--    <fragment-->
 <!--        android:id="@+id/myDaosFragment"-->
 <!--        android:name="nl.tudelft.trustchain.p2playstore.ui.mydaos.MyDaosFragment"-->
 <!--        android:label="My DAOs"-->
