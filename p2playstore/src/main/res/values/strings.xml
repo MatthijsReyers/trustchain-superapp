@@ -1,4 +1,8 @@
 <resources>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <!-- Add the missing strings here -->
+    <string name="hello_welcome_to_the_p2playstore_app">Hello, welcome to the P2PlayStore App!</string>
+    <string name="join_dao">Join DAO</string>
 </resources>
