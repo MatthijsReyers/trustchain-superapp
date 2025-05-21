@@ -124,6 +124,7 @@ dependencies {
     implementation project(':common')
     implementation project(':currencyii')
     implementation project(':musicdao')
+    implementation project(':p2playstore')
 
     // AndroidX
     implementation "androidx.datastore:datastore-preferences:1.0.0"
