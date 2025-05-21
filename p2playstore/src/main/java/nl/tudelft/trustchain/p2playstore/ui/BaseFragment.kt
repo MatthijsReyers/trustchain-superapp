@@ -18,8 +18,8 @@ abstract class BaseFragment(
             ?: throw IllegalStateException("P2pStoreCommunity is not configured")
     }
 
-    protected val trustchain: TrustChainHelper by lazy {
-        TrustChainHelper(getTrustChainCommunity())
+    protected val p2pStore: P2pStoreCommunity by lazy {
+        getP2pStoreCommunity()
     }
 
     protected fun getIpv8(): IPv8 {
@@ -29,6 +29,10 @@ abstract class BaseFragment(
     protected fun getTrustChainCommunity(): TrustChainCommunity {
         return getIpv8().getOverlay()
             ?: throw IllegalStateException("TrustChainCommunity is not configured")
+    }
+
+    protected val trustchain: TrustChainHelper by lazy {
+        TrustChainHelper(getTrustChainCommunity())
     }
 
     protected fun getDemoCommunity(): DemoCommunity {

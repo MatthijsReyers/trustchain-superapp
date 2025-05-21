@@ -5,46 +5,25 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.currencyii.ui.bitcoin.SharedWalletListAdapter
-import nl.tudelft.ipv8.IPv8
-import nl.tudelft.ipv8.android.IPv8Android
-import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
-import nl.tudelft.trustchain.currencyii.TrustChainHelper
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
-import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.ui.BaseFragment
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
-    protected fun getIpv8(): IPv8 {
-        return IPv8Android.getInstance()
-    }
-
-    protected fun getP2pStoreCommunity(): P2pStoreCommunity {
-        return getIpv8().getOverlay()
-            ?: throw IllegalStateException("P2pStoreCommunity is not configured")
-    }
-
-    protected val community: P2pStoreCommunity by lazy {
-        getP2pStoreCommunity()
-    }
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
     private var allDaoAdapter: SharedWalletListAdapter? = null
     private var myDaoAdapter: SharedWalletListAdapter? = null
-
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -66,8 +45,8 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         } else {
             android.util.Log.w("P2PlayStore", "WalletManager is not initialized.")
         }
-        
-        val wallets = this.community.discoverSharedWallets();
+
+        val wallets = this.p2pStore.discoverSharedWallets();
         println("====================================")
         println("wallets: $wallets.length")
         for (wallet in wallets) {
@@ -78,17 +57,13 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         if (wallets.isEmpty()) {
             println("No wallets found creating one now..")
             try {
-                this.community.createBitcoinGenesisWallet(
+                this.p2pStore.createBitcoinGenesisWallet(
                     540, 1, this.requireContext()
                 )
             }
             catch (e: Exception) {
                 println("Failed to create wallet, do you have sufficient funds?\n $e")
             }
-        }
-
-        binding.continueButton.setOnClickListener {
-            findNavController().navigate(R.id.action_homeFragment_to_myDaosFragment)
         }
 
         binding.seeAllTopApps.setOnClickListener {
