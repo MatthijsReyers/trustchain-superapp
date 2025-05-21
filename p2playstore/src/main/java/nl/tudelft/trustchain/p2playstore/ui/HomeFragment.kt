@@ -1,5 +1,4 @@
-package nl.tudelft.trustchain.p2playstore
-
+package nl.tudelft.trustchain.p2playstore.ui
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,15 +14,15 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.currencyii.ui.bitcoin.SharedWalletListAdapter
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
-import nl.tudelft.trustchain.p2playstore.ui.BaseFragment
+import nl.tudelft.trustchain.p2playstore.R
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
-
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
     private var allDaoAdapter: SharedWalletListAdapter? = null
     private var myDaoAdapter: SharedWalletListAdapter? = null
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -46,7 +45,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             android.util.Log.w("P2PlayStore", "WalletManager is not initialized.")
         }
 
-        val wallets = this.p2pStore.discoverSharedWallets();
+        val wallets = this.p2playStore.discoverSharedWallets();
         println("====================================")
         println("wallets: $wallets.length")
         for (wallet in wallets) {
@@ -57,7 +56,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         if (wallets.isEmpty()) {
             println("No wallets found creating one now..")
             try {
-                this.p2pStore.createBitcoinGenesisWallet(
+                this.p2playStore.createBitcoinGenesisWallet(
                     540, 1, this.requireContext()
                 )
             }

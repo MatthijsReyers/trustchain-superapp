@@ -2,7 +2,6 @@ package nl.tudelft.trustchain.p2playstore
 
 import android.os.Bundle
 import android.util.Log
-import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -10,11 +9,8 @@ import nl.tudelft.trustchain.common.BaseActivity
 
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 //import nl.tudelft.trustchain.currencyii.ui.bitcoin.DAOLoginChoiceFragment
-import nl.tudelft.trustchain.currencyii.ui.bitcoin.BlockchainDownloadFragment
-import nl.tudelft.trustchain.p2playstore.ui.bitcoin.P2PLoginFragment
-import nl.tudelft.trustchain.p2playstore.ui.bitcoin.P2PBlockchainDownloadFragment
 
-class P2PMainActivity() : BaseActivity() {
+class P2PlayStoreMainActivity() : BaseActivity() {
 
     override val navigationGraph = R.navigation.nav_graph_p2pstore
 

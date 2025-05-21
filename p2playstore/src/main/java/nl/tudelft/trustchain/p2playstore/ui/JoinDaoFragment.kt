@@ -1,15 +1,14 @@
-package nl.tudelft.trustchain.p2playstore
+package nl.tudelft.trustchain.p2playstore.ui
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
+import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentJoinDaoBinding
 
-class JoinDao : Fragment() {
+class JoinDaoFragment : BaseFragment() {
 
 //    private var _binding: FragmentHomeBinding? = null
     private var _binding: FragmentJoinDaoBinding? = null

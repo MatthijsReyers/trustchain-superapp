@@ -33,7 +33,7 @@
 
     <fragment
         android:id="@+id/homeFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.HomeFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.HomeFragment"
         android:label="Welcome"
         tools:layout="@layout/fragment_home">
         <action
@@ -45,7 +45,7 @@
 
     <fragment
         android:id="@+id/joinDaoFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.JoinDao"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.JoinDaoFragment"
         android:label="Join"
         tools:layout="@layout/fragment_join_dao">
         <action

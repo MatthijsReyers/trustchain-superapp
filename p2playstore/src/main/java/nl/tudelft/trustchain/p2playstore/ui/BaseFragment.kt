@@ -18,7 +18,7 @@ abstract class BaseFragment(
             ?: throw IllegalStateException("P2pStoreCommunity is not configured")
     }
 
-    protected val p2pStore: P2pStoreCommunity by lazy {
+    protected val p2playStore: P2pStoreCommunity by lazy {
         getP2pStoreCommunity()
     }
 
