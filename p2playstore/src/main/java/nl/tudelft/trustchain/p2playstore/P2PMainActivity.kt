@@ -8,7 +8,6 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import nl.tudelft.trustchain.common.BaseActivity
 
-
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 //import nl.tudelft.trustchain.currencyii.ui.bitcoin.DAOLoginChoiceFragment
 import nl.tudelft.trustchain.currencyii.ui.bitcoin.BlockchainDownloadFragment
