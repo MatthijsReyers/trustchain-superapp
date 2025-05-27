@@ -2,6 +2,7 @@ package nl.tudelft.trustchain.p2playstore
 
 import android.os.Bundle
 import android.util.Log
+import androidx.core.app.NavUtils
 import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -28,27 +29,19 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         AppBarConfiguration(p2pTopLevelDestinationIds)
     }
 
+    /**
+     * For some asinine reason we need to overwrite this and add a custom way to return to the main
+     * activity of the super app even though our setup is the same as all the other apps with a
+     * back button and they do not have to do this..
+     */
     override fun onSupportNavigateUp(): Boolean {
-        println("I am losing my fucking mind here.....")
-        val upIntent = supportParentActivityIntent
-        println("upIntent: $upIntent")
         val navController = findNavController(R.id.navHostFragment)
-        val currentDest = navController.currentDestination?.id;
-        val navigateUpResult = navController.navigateUp(appBarConfiguration);
+        val currentDest = navController.currentDestination?.id
         if (currentDest in p2pTopLevelDestinationIds) {
-            println("I am at top level")
+            NavUtils.navigateUpFromSameTask(this)
+            return false;
         }
-        println("currentDestination: ${navController.currentDestination?.id}")
-        println("top levels: $p2pTopLevelDestinationIds")
-        println("navigateUpResult: $navigateUpResult")
-
-        return if (!navigateUpResult) {
-            // If navigation can't go up, fall back to finishing the activity
-            finish()
-            true
-        } else {
-            true
-        }
+        return navController.navigateUp(appBarConfiguration)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,9 +79,8 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         if (currentDestinationId != targetDestinationId) {
             Log.d("P2PNav", "Navigating from $currentDestinationId to $targetDestinationId")
             val navOptions = NavOptions.Builder()
-                .setPopUpTo(navController.graph.startDestinationId, true) // Clears back stack to the graph's defined start
+                .setPopUpTo(navController.graph.startDestinationId, true, true) // Clears back stack to the graph's defined start
                 .build()
-
             try {
                 navController.navigate(targetDestinationId, null, navOptions)
                 Log.i("P2PNav", "Successfully navigated to $targetDestinationId")
