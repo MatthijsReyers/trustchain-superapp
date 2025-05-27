@@ -8,8 +8,6 @@ import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.currencyii.util.taproot.TaprootUtil
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWUtil
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import org.bitcoinj.core.Coin
 import org.bitcoinj.core.ECKey
 
@@ -32,6 +30,10 @@ class DAOCreateHelper {
     fun createBitcoinGenesisWallet(
         myPeer: Peer,
         entranceFee: Long,
+        filehash: String,
+        name: String,
+        description: String,
+        category: String,
         threshold: Int,
         context: Context
     ): SWJoinBlockTransactionData {
@@ -46,6 +48,10 @@ class DAOCreateHelper {
             myPeer,
             serializedTransaction,
             entranceFee,
+            filehash,
+            name,
+            description,
+            category,
             threshold,
             context
         )
@@ -59,6 +65,10 @@ class DAOCreateHelper {
         myPeer: Peer,
         transactionSerialized: String,
         entranceFee: Long,
+        filehash: String,
+        name: String,
+        description: String,
+        category: String,
         votingThreshold: Int,
         context: Context
     ): SWJoinBlockTransactionData {
@@ -70,6 +80,10 @@ class DAOCreateHelper {
 
         val blockData =
             SWJoinBlockTransactionData(
+                filehash,
+                name,
+                description,
+                category,
                 entranceFee,
                 transactionSerialized,
                 votingThreshold,
