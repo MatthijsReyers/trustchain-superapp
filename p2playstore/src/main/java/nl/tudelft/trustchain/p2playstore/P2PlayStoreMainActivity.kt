@@ -55,10 +55,6 @@ class P2PlayStoreMainActivity() : BaseActivity() {
     private fun performInitialNavigation() {
         val navController = findNavController(nl.tudelft.trustchain.common.R.id.navHostFragment)
         val currentDestinationId = navController.currentDestination?.id
-
-        Log.d("P2PNav", "Current Destination ID before initial nav: ${currentDestinationId}")
-        Log.d("P2PNav", "WalletManager Initialized: ${WalletManagerAndroid.isInitialized()}")
-
         val targetDestinationId = when {
             !WalletManagerAndroid.isInitialized() -> {
                 Log.d("P2PNav", "Condition: Wallet not initialized. Target: p2pLoginFragment")

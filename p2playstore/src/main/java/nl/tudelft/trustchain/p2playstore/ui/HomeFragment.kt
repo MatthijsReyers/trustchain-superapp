@@ -30,9 +30,6 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
     ): View {
         super.onCreateView(inflater, container, savedInstanceState);
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
-
-        requireActivity().findViewById<View>(R.id.bottomNavigation).visibility = View.VISIBLE
-
         return binding.root
     }
 
