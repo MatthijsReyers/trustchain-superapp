@@ -5,9 +5,10 @@ import android.util.Log
 import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.navigateUp
 import nl.tudelft.trustchain.common.BaseActivity
-
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
+
 //import nl.tudelft.trustchain.currencyii.ui.bitcoin.DAOLoginChoiceFragment
 
 class P2PlayStoreMainActivity() : BaseActivity() {
@@ -19,6 +20,7 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         R.id.p2pblockchainDownloadFragment,
         R.id.homeFragment
     )
+
     /**
      * Configuration for the ActionBar, primarily defining top-level destinations.
      */
@@ -26,25 +28,49 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         AppBarConfiguration(p2pTopLevelDestinationIds)
     }
 
+    override fun onSupportNavigateUp(): Boolean {
+        println("I am losing my fucking mind here.....")
+        val upIntent = supportParentActivityIntent
+        println("upIntent: $upIntent")
+        val navController = findNavController(R.id.navHostFragment)
+        val currentDest = navController.currentDestination?.id;
+        val navigateUpResult = navController.navigateUp(appBarConfiguration);
+        if (currentDest in p2pTopLevelDestinationIds) {
+            println("I am at top level")
+        }
+        println("currentDestination: ${navController.currentDestination?.id}")
+        println("top levels: $p2pTopLevelDestinationIds")
+        println("navigateUpResult: $navigateUpResult")
+
+        return if (!navigateUpResult) {
+            // If navigation can't go up, fall back to finishing the activity
+            finish()
+            true
+        } else {
+            true
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         performInitialNavigation()
-    }
 
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeButtonEnabled(true)
+    }
 
     private fun performInitialNavigation() {
         val navController = findNavController(nl.tudelft.trustchain.common.R.id.navHostFragment)
-        Log.d("P2PNav", "Current Destination ID before initial nav: ${navController.currentDestination?.id}")
-        Log.d("P2PNav", "WalletManager Initialized: ${WalletManagerAndroid.isInitialized()}")
-
         val currentDestinationId = navController.currentDestination?.id
+
+        Log.d("P2PNav", "Current Destination ID before initial nav: ${currentDestinationId}")
+        Log.d("P2PNav", "WalletManager Initialized: ${WalletManagerAndroid.isInitialized()}")
 
         val targetDestinationId = when {
             !WalletManagerAndroid.isInitialized() -> {
                 Log.d("P2PNav", "Condition: Wallet not initialized. Target: p2pLoginFragment")
                 R.id.p2pLoginFragment
             }
-
             WalletManagerAndroid.getInstance().progress < 100 -> {
                 Log.d("P2PNav", "Condition: Wallet progress < 100 (${WalletManagerAndroid.getInstance().progress}%). Target: p2pblockchainDownloadFragment")
                 R.id.p2pblockchainDownloadFragment
@@ -75,9 +101,6 @@ class P2PlayStoreMainActivity() : BaseActivity() {
             Log.d("P2PNav", "Already at the target destination ($currentDestinationId). No navigation needed.")
         }
     }
-
-
-
 
     override fun onBackPressed() {
         val navController = findNavController(nl.tudelft.trustchain.common.R.id.navHostFragment)
