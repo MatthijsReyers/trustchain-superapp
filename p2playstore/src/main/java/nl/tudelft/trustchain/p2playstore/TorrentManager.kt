@@ -83,16 +83,43 @@ class TorrentManager(activity: P2PlayStoreMainActivity) {
         Log.d("TorrentManager", "${torrentInfos.size} torrents known")
     }
 
+    /**
+     * This method checks if the given magnet link has already been registered by the torrent
+     * manager.
+     */
     public fun magnetLinkIsKnown(magnetLink: String): Boolean {
         if (!magnetLink.startsWith(MAGNET_HEADER_STRING)) {
             Log.e("TorrentManager", "Magnet link does not start with correct header")
             return false;
         }
-
-//        return true;
+        val magnetHash: String = this.getHashOfMagnetLink(magnetLink)
+        for (info in this.torrentInfos) {
+            val knownHash: String = this.getHashOfMagnetLink(info.makeMagnetUri())
+            if (knownHash == magnetHash) {
+                return true;
+            }
+        }
         return false;
     }
 
+    fun getHashOfMagnetLink(link: String): String {
+        // Find the query part after '?'
+        val queryStart = link.indexOf('?')
+        if (queryStart == -1 || queryStart == link.length - 1) return ""
+
+        val query = link.substring(queryStart + 1)
+        val params = query.split('&')
+
+        for (param in params) {
+            if (param.startsWith("xt=")) {
+                val value = param.substringAfter("xt=")
+                if (value.startsWith("urn:btih:")) {
+                    return value.substringAfter("urn:btih:")
+                }
+            }
+        }
+        return ""
+    }
 
     fun getMagnetLink(
         magnetLink: String,
@@ -151,8 +178,9 @@ class TorrentManager(activity: P2PlayStoreMainActivity) {
 
         if (data != null) {
             val torrentInfo = TorrentInfo.bdecode(data)
+            this.torrentInfos.add(torrentInfo)
             sessionManager.download(torrentInfo, appDirectory)
-            Log.e("TorrentManager", "Fetched info for torrent $torrentName, trying to download")
+            Log.d("TorrentManager", "Fetched info for torrent $torrentName, trying to download")
             signal.await(1, TimeUnit.MINUTES)
 
             if (signal.count.toInt() == 1) {

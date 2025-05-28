@@ -129,28 +129,26 @@ class P2PlayStoreMainActivity() : BaseActivity() {
     }
 
     private fun initalizeTorrents() {
-        val wallets = this.p2playStore.discoverSharedWallets()
-
+        val wallets = this.p2playStore.fetchLatestJoinedSharedWalletBlocks()
         println("apps: ${wallets.size}")
         println("====================================")
         for (wallet in wallets) {
+            val name = wallet.transaction["name"]
             val magnetLink: String? = wallet.transaction["magnetLink"] as? String;
+
             println("block: $wallet ${wallet.blockId}")
-            println(" - name: ${wallet.transaction["name"]}")
+            println(" - name: $name")
             println(" - description: ${wallet.transaction["description"]}")
             println(" - magnetLink: $magnetLink")
 
             if (magnetLink != null && this.torrentManager.magnetLinkIsKnown(magnetLink)) {
                 println(" - magnetLink is known")
-            } else {
+            }
+            else if (magnetLink != null) {
                 println(" - magnetLink is not known")
+                this.torrentManager.getMagnetLink(magnetLink, "app-$name")
             }
         }
-
-//        this.torrentManager.getMagnetLink(
-//            "magnet:?xt=urn:btih:1fecb556cfdd403728f841a67e8541cc1329b615&dn=5z4oVp1.jpeg&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=http%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fopen.demonii.com%3A1337%2Fannounce&tr=udp%3A%2F%2Ftracker.torrent.eu.org%3A451%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Fexodus.desync.com%3A6969%2Fannounce&tr=http%3A%2F%2Ftracker.skyts.net%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.ololosh.space%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.bittor.pw%3A1337%2Fannounce&tr=udp%3A%2F%2Fopen.free-tracker.ga%3A6969%2Fannounce&tr=udp%3A%2F%2Fns-1.x-fins.com%3A6969%2Fannounce&tr=udp%3A%2F%2Fleet-tracker.moe%3A1337%2Fannounce&tr=udp%3A%2F%2Fisk.richardsw.club%3A6969%2Fannounce&tr=udp%3A%2F%2Fexplodie.org%3A6969%2Fannounce&tr=http%3A%2F%2Fwww.torrentsnipe.info%3A2701%2Fannounce&tr=http%3A%2F%2Fwww.genesis-sp.org%3A2710%2Fannounce&tr=http%3A%2F%2Ftracker810.xyz%3A11450%2Fannounce&tr=http%3A%2F%2Ftracker.xiaoduola.xyz%3A6969%2Fannounce&tr=http%3A%2F%2Ftracker.vanitycore.co%3A6969%2Fannounce&tr=http%3A%2F%2Ftracker.sbsub.com%3A2710%2Fannounce&tr=http%3A%2F%2Ftracker.ipv6tracker.org%3A80%2Fannounce&tr=http%3A%2F%2Ftracker.dmcomic.org%3A2710%2Fannounce&tr=http%3A%2F%2Ftracker.corpscorp.online%3A80%2Fannounce&tr=http%3A%2F%2Ftracker.bz%3A80%2Fannounce",
-//            "testDownload"
-//        );
     }
 
 //    fun addTopLevelDestinationId(id: Int) {
