@@ -36,8 +36,17 @@ android {
 dependencies {
     implementation project(':common')
     implementation project(':currencyii')
+    implementation project(':freedomOfComputing')
 
-    //implementation project(':freedomofcomputing')
+    // TODO fix direct import, this should rely on common.
+    // BitTorrent
+    implementation files('../common/libs/jlibtorrent-' + jlibtorrent_version + '.jar')
+    implementation files('../common/libs/jlibtorrent-android-arm64-' + jlibtorrent_version + '.jar')
+    implementation files('../common/libs/jlibtorrent-android-arm-' + jlibtorrent_version + '.jar')
+    implementation files('../common/libs/jlibtorrent-android-x86-' + jlibtorrent_version + '.jar')
+    implementation files('../common/libs/jlibtorrent-android-x86_64-' + jlibtorrent_version + '.jar')
+
+    implementation 'io.github.microutils:kotlin-logging:1.7.7'
 
     implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.appcompat:appcompat:1.7.0'

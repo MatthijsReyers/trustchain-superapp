@@ -7,12 +7,19 @@ import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
+import com.frostwire.jlibtorrent.SessionManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import nl.tudelft.ipv8.IPv8
+import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.trustchain.common.BaseActivity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 
 //import nl.tudelft.trustchain.currencyii.ui.bitcoin.DAOLoginChoiceFragment
 
 class P2PlayStoreMainActivity() : BaseActivity() {
+
+    public lateinit var torrentManager: TorrentManager;
 
     override val navigationGraph = R.navigation.nav_graph_p2pstore
 
@@ -48,8 +55,15 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         super.onCreate(savedInstanceState)
         performInitialNavigation()
 
+        this.torrentManager = TorrentManager(this)
+
+        // Always show the arrow button in the action bar so you can navigate back to the super app
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
+
+        this.torrentManager.start();
+
+        this.initalizeTorrents();
     }
 
     private fun performInitialNavigation() {
@@ -95,9 +109,45 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         val currentDestinationId = navController.currentDestination?.id
 
         if (currentDestinationId != null && p2pTopLevelDestinationIds.contains(currentDestinationId)) {
-            Log.i("P2PStore", "Back press on a top-level P2P destination. Consumed.")
+            NavUtils.navigateUpFromSameTask(this)
         } else {
             super.onBackPressed()
+        }
+    }
+
+    protected fun getIpv8(): IPv8 {
+        return IPv8Android.getInstance()
+    }
+
+    protected fun getP2pStoreCommunity(): P2pStoreCommunity {
+        return getIpv8().getOverlay()
+            ?: throw IllegalStateException("P2pStoreCommunity is not configured")
+    }
+
+    protected val p2playStore: P2pStoreCommunity by lazy {
+        getP2pStoreCommunity()
+    }
+
+    private fun initalizeTorrents() {
+        val wallets = this.p2playStore.fetchLatestJoinedSharedWalletBlocks()
+        println("apps: ${wallets.size}")
+        println("====================================")
+        for (wallet in wallets) {
+            val name = wallet.transaction["name"]
+            val magnetLink: String? = wallet.transaction["magnetLink"] as? String;
+
+            println("block: $wallet ${wallet.blockId}")
+            println(" - name: $name")
+            println(" - description: ${wallet.transaction["description"]}")
+            println(" - magnetLink: $magnetLink")
+
+            if (magnetLink != null && this.torrentManager.magnetLinkIsKnown(magnetLink)) {
+                println(" - magnetLink is known")
+            }
+            else if (magnetLink != null) {
+                println(" - magnetLink is not known")
+                this.torrentManager.getMagnetLink(magnetLink, "app-$name")
+            }
         }
     }
 
