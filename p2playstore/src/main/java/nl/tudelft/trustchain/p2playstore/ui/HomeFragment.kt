@@ -6,29 +6,27 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
-import nl.tudelft.trustchain.currencyii.ui.bitcoin.SharedWalletListAdapter
-import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.R
+import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    private var allDaoAdapter: SharedWalletListAdapter? = null
-    private var myDaoAdapter: SharedWalletListAdapter? = null
-
+    private var allDaoAdapter: DaoAdapter? = null
+    private var myDaoAdapter: DaoAdapter? = null
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        super.onCreateView(inflater, container, savedInstanceState)
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -36,8 +34,8 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.rvTopApps.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
-        binding.rvRecommended.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+        setupRecyclerViews()
+        setupClickListeners()
 
         if (WalletManagerAndroid.isInitialized()) {
             loadDaoData()
@@ -45,29 +43,15 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             android.util.Log.w("P2PlayStore", "WalletManager is not initialized.")
         }
 
-        val wallets = this.p2playStore.discoverSharedWallets()
-        println("apps: ${wallets.size}")
-        println("====================================")
-        for (wallet in wallets) {
-            println("block: $wallet ${wallet.blockId}")
-            println(" - transaction: ${wallet.transaction["message"]}")
-            println(" - name: ${wallet.transaction["name"]}")
-            println(" - description: ${wallet.transaction["description"]}")
-        }
-        println("====================================")
+        createWalletIfNeeded()
+    }
 
-        if (wallets.isEmpty()) {
-            println("No wallets found creating one now..")
-            try {
-                this.p2playStore.createBitcoinGenesisWallet(
-                    540, "Test app","Simple UI", "magnetlinkhere","Bitcoin", 1, this.requireContext()
-                )
-            }
-            catch (e: Exception) {
-                println("Failed to create wallet, do you have sufficient funds?\n $e")
-            }
-        }
+    private fun setupRecyclerViews() {
+        binding.rvTopApps.layoutManager = GridLayoutManager(context, 2, GridLayoutManager.HORIZONTAL, false)
+        binding.rvRecommended.layoutManager = GridLayoutManager(context, 2, GridLayoutManager.HORIZONTAL, false)
+    }
 
+    private fun setupClickListeners() {
         binding.seeAllTopApps.setOnClickListener {
             findNavController().navigate(R.id.joinDaoFragment)
         }
@@ -77,38 +61,95 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         }
     }
 
+    private fun createWalletIfNeeded() {
+        val wallets = this.p2playStore.discoverSharedWallets()
+        android.util.Log.d("P2PlayStore", "Found ${wallets.size} wallets")
+
+        if (wallets.isEmpty()) {
+            android.util.Log.d("P2PlayStore", "No wallets found, creating one...")
+            try {
+                this.p2playStore.createBitcoinGenesisWallet(540, 1, this.requireContext())
+            } catch (e: Exception) {
+                android.util.Log.e("P2PlayStore", "Failed to create wallet: ${e.message}")
+            }
+        }
+    }
+
     private fun loadDaoData() {
+        if (!isAdded) return
+
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                val allDaos = try {
+            try {
+                val allDaos = withContext(Dispatchers.IO) {
                     getP2pStoreCommunity().discoverSharedWallets()
-                } catch (e: Exception) {
-                    android.util.Log.e("P2PlayStore", "Error fetching all DAOs: ${e.message}")
-                    emptyList()
                 }
 
-                val myDaos = try {
+                val myDaos = withContext(Dispatchers.IO) {
                     getP2pStoreCommunity().fetchLatestJoinedSharedWalletBlocks()
-                } catch (e: Exception) {
-                    android.util.Log.e("P2PlayStore", "Error fetching my DAOs: ${e.message}")
-                    emptyList()
                 }
 
-                withContext(Dispatchers.Main) {
-                    // Update UI with fetched data
+                if (isAdded) {
                     updateAllDaoList(allDaos)
                     updateMyDaoList(myDaos)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("P2PlayStore", "Error loading DAO data: ${e.message}")
+
+                if (isAdded) {
+                    createDummyData()
                 }
             }
         }
     }
 
+    private fun createDummyData() {
+        val dummyDaos = createDummyDaoBlocks()
+        updateAllDaoList(dummyDaos)
+        updateMyDaoList(dummyDaos.take(2))
+    }
+
+    private fun createDummyDaoBlocks(): List<TrustChainBlock> {
+        return emptyList()
+    }
+
     private fun updateAllDaoList(daoList: List<TrustChainBlock>) {
+        if (!isAdded) return
+
         android.util.Log.d("P2PlayStore", "Updating All DAOs list with ${daoList.size} items.")
+        allDaoAdapter = DaoAdapter(
+            daoList,
+            object : DaoAdapter.OnItemClickListener {
+                override fun onItemClick(daoBlock: TrustChainBlock) {
+                    android.util.Log.d("P2PlayStore", "Navigating to joinDaoFragment from All DAOs")
+                    try {
+                        findNavController().navigate(R.id.joinDaoFragment)
+                    } catch (e: Exception) {
+                        android.util.Log.e("P2PlayStore", "Navigation error: ${e.message}")
+                    }
+                }
+            }
+        )
+        binding.rvTopApps.adapter = allDaoAdapter
     }
 
     private fun updateMyDaoList(daoList: List<TrustChainBlock>) {
+        if (!isAdded) return
+
         android.util.Log.d("P2PlayStore", "Updating My DAOs list with ${daoList.size} items.")
+        myDaoAdapter = DaoAdapter(
+            daoList,
+            object : DaoAdapter.OnItemClickListener {
+                override fun onItemClick(daoBlock: TrustChainBlock) {
+                    android.util.Log.d("P2PlayStore", "Navigating to joinDaoFragment from My DAOs")
+                    try {
+                        findNavController().navigate(R.id.joinDaoFragment)
+                    } catch (e: Exception) {
+                        android.util.Log.e("P2PlayStore", "Navigation error: ${e.message}")
+                    }
+                }
+            }
+        )
+        binding.rvRecommended.adapter = myDaoAdapter
     }
 
     override fun onDestroyView() {
