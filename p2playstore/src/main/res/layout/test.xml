@@ -67,7 +67,7 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/dao_name"
+                    android:id="@+id/app_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="DAO Name"
@@ -137,7 +137,7 @@
                     android:textSize="12sp" />
 
                 <TextView
-                    android:id="@+id/dao_category"
+                    android:id="@+id/app_category"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Democracy"
@@ -321,7 +321,7 @@
         </RelativeLayout>
 
         <TextView
-            android:id="@+id/dao_description"
+            android:id="@+id/app_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"

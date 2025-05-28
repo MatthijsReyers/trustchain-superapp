@@ -10,43 +10,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp">
-
-            <ImageButton
-                android:id="@+id/btn_back"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_centerVertical="true"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Back"
-                android:src="@drawable/ic_arrow_drop_up_black_16dp"
-                android:rotation="270" />
-
-            <ImageButton
-                android:id="@+id/btn_search"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_centerVertical="true"
-                android:layout_toStartOf="@+id/btn_more"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Search"
-                android:src="@drawable/ic_search_black_24dp" />
-
-            <ImageButton
-                android:id="@+id/btn_more"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="More options"
-                android:src="@drawable/ic_grid_on_black_24dp" />
-        </RelativeLayout>
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -67,7 +30,7 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/dao_name"
+                    android:id="@+id/app_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="DAO Name"
@@ -137,7 +100,7 @@
                     android:textSize="12sp" />
 
                 <TextView
-                    android:id="@+id/dao_category"
+                    android:id="@+id/app_category"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Democracy"
@@ -306,7 +269,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
-                android:text="About this DAO"
+                android:text="About this application"
                 android:textColor="@android:color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -321,7 +284,7 @@
         </RelativeLayout>
 
         <TextView
-            android:id="@+id/dao_description"
+            android:id="@+id/app_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"

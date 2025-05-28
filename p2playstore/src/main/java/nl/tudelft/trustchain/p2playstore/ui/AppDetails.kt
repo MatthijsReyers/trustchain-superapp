@@ -6,17 +6,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
-import nl.tudelft.trustchain.p2playstore.R
-
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
+import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 
 /**
- * A simple [Fragment] subclass.
- * Use the [AppDetails.newInstance] factory method to
- * create an instance of this fragment.
+ * This is the app details fragment that displays information about an app after a user has clicked
+ * on it, here the user can actually open the app or join the app's DAO.
  */
 class AppDetails : BaseFragment() {
+    private var _binding: FragmentAppDetailsBinding? = null
+    private val binding get() = _binding!!
 
     private lateinit var block: TrustChainBlock
 
@@ -30,14 +28,31 @@ class AppDetails : BaseFragment() {
         val community = this.getTrustChainCommunity()
         this.block = community.database.get(publicKey, sequenceNumber)!!
 
-        println("Get block: $block")
+        println("Get block: ${block.transaction}")
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_app_details, container, false)
+    ): View {
+        _binding = FragmentAppDetailsBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onStart() {
+        super.onStart()
+        this.updateView()
+    }
+
+    private fun updateView() {
+        val name = this.block.transaction["name"] as String
+        binding.appName.text = name
+
+        var category = this.block.transaction["category"] as? String
+        if (category.isNullOrEmpty()) { category = "[none]" }
+        binding.appCategory.text = category
+
+        val description = this.block.transaction["description"] as? String
+        binding.appDescription.text = description
     }
 }
