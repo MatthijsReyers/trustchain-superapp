@@ -31,9 +31,9 @@ import kotlin.Pair
 class TorrentManager(activity: P2PlayStoreMainActivity) {
 
     /**
-     * Location in file system where the torrent files are stored, note that this folder is shared
-     * among all apps in the super app and thus contains files and torrents that do not belong to
-     * the P2PlayStore
+     * Location in file system where the torrent files are stored, note that this folder seems to
+     * be shared among all apps in the super app and thus contains files and torrents that do not
+     * belong to the P2PlayStore
      */
     private val appDirectory = activity.applicationContext.cacheDir
 
@@ -81,6 +81,16 @@ class TorrentManager(activity: P2PlayStoreMainActivity) {
             }
         }
         Log.d("TorrentManager", "${torrentInfos.size} torrents known")
+    }
+
+    public fun magnetLinkIsKnown(magnetLink: String): Boolean {
+        if (!magnetLink.startsWith(MAGNET_HEADER_STRING)) {
+            Log.e("TorrentManager", "Magnet link does not start with correct header")
+            return false;
+        }
+
+//        return true;
+        return false;
     }
 
 
