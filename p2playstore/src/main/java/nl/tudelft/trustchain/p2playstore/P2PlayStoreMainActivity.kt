@@ -26,7 +26,7 @@ class P2PlayStoreMainActivity() : BaseActivity() {
      * Configuration for the ActionBar, primarily defining top-level destinations.
      */
     override val appBarConfiguration: AppBarConfiguration by lazy {
-        AppBarConfiguration(p2pTopLevelDestinationIds)
+        AppBarConfiguration(emptySet())
     }
 
     /**
