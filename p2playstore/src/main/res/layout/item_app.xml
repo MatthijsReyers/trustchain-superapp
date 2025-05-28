@@ -38,12 +38,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:maxLines="2"
+            android:maxLines="1"
             android:textAppearance="@style/TextAppearance.AppCompat.Small"
             android:textStyle="bold"
             android:gravity="center"
             android:textSize="12sp"
-            tools:text="DAO: 12345678..." />
+            tools:text="DAO: 123" />
 
         <TextView
             android:id="@+id/appDeveloper"
