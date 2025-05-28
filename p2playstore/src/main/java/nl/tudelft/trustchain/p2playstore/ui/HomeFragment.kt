@@ -138,7 +138,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                 override fun onItemClick(daoBlock: TrustChainBlock) {
                     android.util.Log.d("P2PlayStore", "Navigating to joinDaoFragment from All DAOs")
                     try {
-                        findNavController().navigate(R.id.joinDaoFragment)
+                        findNavController().navigate(R.id.appDetails)
                     } catch (e: Exception) {
                         android.util.Log.e("P2PlayStore", "Navigation error: ${e.message}")
                     }
