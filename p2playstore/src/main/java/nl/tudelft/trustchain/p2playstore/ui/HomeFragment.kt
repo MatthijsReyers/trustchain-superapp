@@ -1,5 +1,6 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -7,13 +8,16 @@ import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.currencyii.ui.bitcoin.SharedWalletListAdapter
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
+import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.R
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
@@ -23,9 +27,9 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private var allDaoAdapter: SharedWalletListAdapter? = null
     private var myDaoAdapter: SharedWalletListAdapter? = null
 
-
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         super.onCreateView(inflater, container, savedInstanceState);
@@ -72,6 +76,10 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         binding.seeAllRecommended.setOnClickListener {
             findNavController().navigate(R.id.joinDaoFragment)
         }
+
+        binding.startApp.setOnClickListener {
+            loadDynamicCode("search.apk")
+        }
     }
 
     private fun loadDaoData() {
@@ -106,6 +114,19 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
 
     private fun updateMyDaoList(daoList: List<TrustChainBlock>) {
         android.util.Log.d("P2PlayStore", "Updating My DAOs list with ${daoList.size} items.")
+    }
+
+    private fun loadDynamicCode(fileName: String) {
+        try {
+            val intent = Intent(requireContext(), ExecutionActivity::class.java)
+            intent.putExtra(
+                "fileName",
+                "${requireContext().cacheDir}/${fileName.split("/").last()}"
+            )
+            startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun onDestroyView() {

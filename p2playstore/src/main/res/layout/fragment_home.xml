@@ -76,6 +76,7 @@
                 android:layout_height="wrap_content"
                 android:text="See all"
                 android:textColor="@color/colorPrimary" />
+
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
@@ -87,7 +88,9 @@
             android:paddingStart="0dp"
             android:paddingEnd="16dp"
             tools:itemCount="3"
-            tools:listitem="@layout/item_app" />
+            tools:listitem="@layout/item_app" >
+
+        </androidx.recyclerview.widget.RecyclerView>
 
         <TextView
             android:layout_width="match_parent"
@@ -104,6 +107,12 @@
             android:layout_height="wrap_content"
             tools:itemCount="5"
             tools:listitem="@layout/item_category" />
+
+        <Button
+            android:id="@+id/startApp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Button" />
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
