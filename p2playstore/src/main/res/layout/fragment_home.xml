@@ -32,7 +32,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="All DAOS"
+                android:text="All DAOs"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
                 android:textStyle="bold" />
 
@@ -52,7 +52,8 @@
             android:orientation="horizontal"
             android:paddingStart="0dp"
             android:paddingEnd="16dp"
-            tools:itemCount="3"
+            android:nestedScrollingEnabled="false"
+            tools:itemCount="4"
             tools:listitem="@layout/item_app" />
 
         <LinearLayout
@@ -66,7 +67,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="MyDAOS"
+                android:text="My DAOs"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
                 android:textStyle="bold" />
 
@@ -86,24 +87,9 @@
             android:orientation="horizontal"
             android:paddingStart="0dp"
             android:paddingEnd="16dp"
-            tools:itemCount="3"
+            android:nestedScrollingEnabled="false"
+            tools:itemCount="4"
             tools:listitem="@layout/item_app" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="8dp"
-            android:text="Categories"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:textStyle="bold" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvCategories"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            tools:itemCount="5"
-            tools:listitem="@layout/item_category" />
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
