@@ -30,9 +30,9 @@ class DAOCreateHelper {
     fun createBitcoinGenesisWallet(
         myPeer: Peer,
         entranceFee: Long,
-        filehash: String,
         name: String,
         description: String,
+        magnetLink: String,
         category: String,
         threshold: Int,
         context: Context
@@ -48,9 +48,9 @@ class DAOCreateHelper {
             myPeer,
             serializedTransaction,
             entranceFee,
-            filehash,
             name,
             description,
+            magnetLink,
             category,
             threshold,
             context
@@ -65,7 +65,7 @@ class DAOCreateHelper {
         myPeer: Peer,
         transactionSerialized: String,
         entranceFee: Long,
-        filehash: String,
+        magnetLink: String,
         name: String,
         description: String,
         category: String,
@@ -80,10 +80,6 @@ class DAOCreateHelper {
 
         val blockData =
             SWJoinBlockTransactionData(
-                filehash,
-                name,
-                description,
-                category,
                 entranceFee,
                 transactionSerialized,
                 votingThreshold,
@@ -94,7 +90,14 @@ class DAOCreateHelper {
 
         walletManager.storeNonceKey(blockData.getData().SW_UNIQUE_ID, context, nonceKey.first.privKeyBytes.toHex())
 
-        val transaction = mapOf("message" to blockData.getJsonString())
+        val transaction = mapOf(
+            "message" to blockData.getJsonString(),
+            "name" to name,
+            "description" to description,
+            "category" to category,
+            "magnetLink" to magnetLink,
+        )
+
         community.createProposalBlock(
             blockData.blockType,
             transaction,

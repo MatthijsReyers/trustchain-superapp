@@ -7,10 +7,6 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 
 data class SWJoinBlockTD(
     var SW_UNIQUE_ID: String,
-    var SW_FILEHASH: String,
-    var SW_NAME: String,
-    var SW_DESCRIPTION: String,
-    var SW_CATEGORY: String,
     var SW_ENTRANCE_FEE: Long,
     var SW_TRANSACTION_SERIALIZED: String,
     var SW_VOTING_THRESHOLD: Int,
@@ -52,10 +48,6 @@ class SWJoinBlockTransactionData(
     }
 
     constructor(
-        filehash: String,
-        name: String,
-        description: String,
-        category: String,
         entranceFee: Long,
         transactionSerialized: String,
         votingThreshold: Int,
@@ -67,10 +59,6 @@ class SWJoinBlockTransactionData(
         SWUtil.objectToJsonObject(
             SWJoinBlockTD(
                 uniqueId,
-                filehash,
-                name,
-                description,
-                category,
                 entranceFee,
                 transactionSerialized,
                 votingThreshold,

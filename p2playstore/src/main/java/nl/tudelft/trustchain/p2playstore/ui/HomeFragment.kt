@@ -46,10 +46,13 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         }
 
         val wallets = this.p2playStore.discoverSharedWallets()
+        println("apps: ${wallets.size}")
         println("====================================")
-        println("wallets: $wallets.length")
         for (wallet in wallets) {
-            println(" - wallet: $wallet ${wallet.blockId}")
+            println("block: $wallet ${wallet.blockId}")
+            println(" - transaction: ${wallet.transaction["message"]}")
+            println(" - name: ${wallet.transaction["name"]}")
+            println(" - description: ${wallet.transaction["description"]}")
         }
         println("====================================")
 

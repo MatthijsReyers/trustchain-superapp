@@ -167,10 +167,6 @@ class DAOTransferFundsHelper {
 
         val refreshDaoBlock =
             SWJoinBlockTransactionData(
-                walletData.SW_FILEHASH,
-                walletData.SW_NAME,
-                walletData.SW_DESCRIPTION,
-                walletData.SW_CATEGORY,
                 walletData.SW_ENTRANCE_FEE,
                 serializedTransaction,
                 walletData.SW_VOTING_THRESHOLD,
