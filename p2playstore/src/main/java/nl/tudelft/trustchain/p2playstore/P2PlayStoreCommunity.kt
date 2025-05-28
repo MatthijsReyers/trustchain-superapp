@@ -26,7 +26,7 @@ import nl.tudelft.trustchain.p2playstore.utils.DAOTransferFundsHelper
 
 
 class P2pStoreCommunity : Community() {
-    override val serviceId: String = "3344FF11BEEF3883287FAC632fc8db5899c5df5b";
+    override val serviceId: String = "3344FF11BEEF3883287FAC632fc8db5899c5df5b"
 
     private fun getTrustChainCommunity(): TrustChainCommunity {
         return IPv8Android.getInstance().getOverlay()
@@ -46,12 +46,20 @@ class P2pStoreCommunity : Community() {
      */
     fun createBitcoinGenesisWallet(
         entranceFee: Long,
+        name: String,
+        description: String,
+        magnetLink: String,
+        category: String,
         threshold: Int,
         context: Context
     ): SWJoinBlockTransactionData {
         return daoCreateHelper.createBitcoinGenesisWallet(
             myPeer,
             entranceFee,
+            name,
+            description,
+            magnetLink,
+            category,
             threshold,
             context
         )

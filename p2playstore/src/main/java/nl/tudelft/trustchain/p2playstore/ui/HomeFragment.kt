@@ -28,7 +28,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        super.onCreateView(inflater, container, savedInstanceState);
+        super.onCreateView(inflater, container, savedInstanceState)
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -45,11 +45,14 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             android.util.Log.w("P2PlayStore", "WalletManager is not initialized.")
         }
 
-        val wallets = this.p2playStore.discoverSharedWallets();
+        val wallets = this.p2playStore.discoverSharedWallets()
+        println("apps: ${wallets.size}")
         println("====================================")
-        println("wallets: $wallets.length")
         for (wallet in wallets) {
-            println(" - wallet: $wallet ${wallet.blockId}")
+            println("block: $wallet ${wallet.blockId}")
+            println(" - transaction: ${wallet.transaction["message"]}")
+            println(" - name: ${wallet.transaction["name"]}")
+            println(" - description: ${wallet.transaction["description"]}")
         }
         println("====================================")
 
@@ -57,7 +60,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             println("No wallets found creating one now..")
             try {
                 this.p2playStore.createBitcoinGenesisWallet(
-                    540, 1, this.requireContext()
+                    540, "Test app","Simple UI", "magnetlinkhere","Bitcoin", 1, this.requireContext()
                 )
             }
             catch (e: Exception) {

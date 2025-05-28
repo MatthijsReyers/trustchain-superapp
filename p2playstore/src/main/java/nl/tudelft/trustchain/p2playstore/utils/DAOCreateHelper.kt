@@ -8,8 +8,6 @@ import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.currencyii.util.taproot.TaprootUtil
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWUtil
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import org.bitcoinj.core.Coin
 import org.bitcoinj.core.ECKey
 
@@ -32,6 +30,10 @@ class DAOCreateHelper {
     fun createBitcoinGenesisWallet(
         myPeer: Peer,
         entranceFee: Long,
+        name: String,
+        description: String,
+        magnetLink: String,
+        category: String,
         threshold: Int,
         context: Context
     ): SWJoinBlockTransactionData {
@@ -46,6 +48,10 @@ class DAOCreateHelper {
             myPeer,
             serializedTransaction,
             entranceFee,
+            name,
+            description,
+            magnetLink,
+            category,
             threshold,
             context
         )
@@ -59,6 +65,10 @@ class DAOCreateHelper {
         myPeer: Peer,
         transactionSerialized: String,
         entranceFee: Long,
+        name: String,
+        description: String,
+        magnetLink: String,
+        category: String,
         votingThreshold: Int,
         context: Context
     ): SWJoinBlockTransactionData {
@@ -80,7 +90,14 @@ class DAOCreateHelper {
 
         walletManager.storeNonceKey(blockData.getData().SW_UNIQUE_ID, context, nonceKey.first.privKeyBytes.toHex())
 
-        val transaction = mapOf("message" to blockData.getJsonString())
+        val transaction = mapOf(
+            "message" to blockData.getJsonString(),
+            "name" to name,
+            "description" to description,
+            "category" to category,
+            "magnetLink" to magnetLink,
+        )
+
         community.createProposalBlock(
             blockData.blockType,
             transaction,
