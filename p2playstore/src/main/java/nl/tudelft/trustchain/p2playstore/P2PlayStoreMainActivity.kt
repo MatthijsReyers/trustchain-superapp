@@ -7,9 +7,6 @@ import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
-import com.frostwire.jlibtorrent.SessionManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import nl.tudelft.ipv8.IPv8
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.trustchain.common.BaseActivity
@@ -146,7 +143,7 @@ class P2PlayStoreMainActivity() : BaseActivity() {
             }
             else if (magnetLink != null) {
                 println(" - magnetLink is not known")
-                this.torrentManager.getMagnetLink(magnetLink, "app-$name")
+                this.torrentManager.downloadMagnetLink(magnetLink, "app-$name")
             }
         }
     }

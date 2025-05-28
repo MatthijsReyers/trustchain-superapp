@@ -1,7 +1,6 @@
 package nl.tudelft.trustchain.p2playstore
 
 import android.util.Log
-import android.widget.Toast
 import com.frostwire.jlibtorrent.*
 import com.frostwire.jlibtorrent.alerts.AddTorrentAlert
 import com.frostwire.jlibtorrent.alerts.Alert
@@ -9,24 +8,16 @@ import com.frostwire.jlibtorrent.alerts.AlertType
 import com.frostwire.jlibtorrent.alerts.BlockFinishedAlert
 import com.frostwire.jlibtorrent.alerts.TorrentFinishedAlert
 import kotlinx.coroutines.*
-import mu.KotlinLogging
-import nl.tudelft.ipv8.Peer
-import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.supportedAppExtensions
 import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.TORRENT_EXTENSION
 import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.ADDRESS_TRACKER
 import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.ADDRESS_TRACKER_APPENDER
-import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.constructMagnetLink
 import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.DISPLAY_NAME_APPENDER
 import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.MAGNET_HEADER_STRING
 import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.PRE_HASH_STRING
-import nl.tudelft.trustchain.common.freedomOfComputing.AppPayload
-import nl.tudelft.trustchain.foc.DOWNLOAD_DELAY
 import nl.tudelft.trustchain.foc.GOSSIP_DELAY
-import java.io.File
 import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlin.Pair
 
 class TorrentManager(activity: P2PlayStoreMainActivity) {
 
@@ -121,7 +112,7 @@ class TorrentManager(activity: P2PlayStoreMainActivity) {
         return ""
     }
 
-    fun getMagnetLink(
+    fun downloadMagnetLink(
         magnetLink: String,
         torrentName: String
     ) {
