@@ -9,4 +9,11 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
+    <application>
+        <activity
+            android:name=".ExecutionActivity"
+            android:exported="false"
+            android:configChanges="keyboardHidden|orientation|screenSize" />
+    </application>
+
 </manifest>

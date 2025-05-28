@@ -1,5 +1,6 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -7,11 +8,14 @@ import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
+import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
 
@@ -58,6 +62,10 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
 
         binding.seeAllRecommended.setOnClickListener {
             findNavController().navigate(R.id.joinDaoFragment)
+        }
+
+        binding.startApp.setOnClickListener {
+            loadDynamicCode("search.apk")
         }
     }
 
@@ -158,6 +166,19 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             }
         )
         binding.rvRecommended.adapter = myDaoAdapter
+    }
+
+    private fun loadDynamicCode(fileName: String) {
+        try {
+            val intent = Intent(requireContext(), ExecutionActivity::class.java)
+            intent.putExtra(
+                "fileName",
+                "${requireContext().cacheDir}/${fileName.split("/").last()}"
+            )
+            startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun onDestroyView() {
