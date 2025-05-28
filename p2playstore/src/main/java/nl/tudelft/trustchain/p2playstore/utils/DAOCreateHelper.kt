@@ -65,9 +65,9 @@ class DAOCreateHelper {
         myPeer: Peer,
         transactionSerialized: String,
         entranceFee: Long,
-        magnetLink: String,
         name: String,
         description: String,
+        magnetLink: String,
         category: String,
         votingThreshold: Int,
         context: Context

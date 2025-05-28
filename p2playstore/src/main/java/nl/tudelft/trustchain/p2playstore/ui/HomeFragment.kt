@@ -60,7 +60,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             println("No wallets found creating one now..")
             try {
                 this.p2playStore.createBitcoinGenesisWallet(
-                    540, "abcdef", "New app","Simple UI","Bitcoin", 1, this.requireContext()
+                    540, "Test app","Simple UI", "magnetlinkhere","Bitcoin", 1, this.requireContext()
                 )
             }
             catch (e: Exception) {
