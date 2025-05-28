@@ -7,12 +7,17 @@ import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
+import com.frostwire.jlibtorrent.SessionManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import nl.tudelft.trustchain.common.BaseActivity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 
 //import nl.tudelft.trustchain.currencyii.ui.bitcoin.DAOLoginChoiceFragment
 
 class P2PlayStoreMainActivity() : BaseActivity() {
+
+    public lateinit var torrentManager: TorrentManager;
 
     override val navigationGraph = R.navigation.nav_graph_p2pstore
 
@@ -48,8 +53,18 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         super.onCreate(savedInstanceState)
         performInitialNavigation()
 
+        this.torrentManager = TorrentManager(this)
+
+        // Always show the arrow button in the action bar so you can navigate back to the super app
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
+
+        this.torrentManager.start();
+
+        this.torrentManager.getMagnetLink(
+            "magnet:?xt=urn:btih:1fecb556cfdd403728f841a67e8541cc1329b615&dn=5z4oVp1.jpeg&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=http%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fopen.demonii.com%3A1337%2Fannounce&tr=udp%3A%2F%2Ftracker.torrent.eu.org%3A451%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Fexodus.desync.com%3A6969%2Fannounce&tr=http%3A%2F%2Ftracker.skyts.net%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.ololosh.space%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.bittor.pw%3A1337%2Fannounce&tr=udp%3A%2F%2Fopen.free-tracker.ga%3A6969%2Fannounce&tr=udp%3A%2F%2Fns-1.x-fins.com%3A6969%2Fannounce&tr=udp%3A%2F%2Fleet-tracker.moe%3A1337%2Fannounce&tr=udp%3A%2F%2Fisk.richardsw.club%3A6969%2Fannounce&tr=udp%3A%2F%2Fexplodie.org%3A6969%2Fannounce&tr=http%3A%2F%2Fwww.torrentsnipe.info%3A2701%2Fannounce&tr=http%3A%2F%2Fwww.genesis-sp.org%3A2710%2Fannounce&tr=http%3A%2F%2Ftracker810.xyz%3A11450%2Fannounce&tr=http%3A%2F%2Ftracker.xiaoduola.xyz%3A6969%2Fannounce&tr=http%3A%2F%2Ftracker.vanitycore.co%3A6969%2Fannounce&tr=http%3A%2F%2Ftracker.sbsub.com%3A2710%2Fannounce&tr=http%3A%2F%2Ftracker.ipv6tracker.org%3A80%2Fannounce&tr=http%3A%2F%2Ftracker.dmcomic.org%3A2710%2Fannounce&tr=http%3A%2F%2Ftracker.corpscorp.online%3A80%2Fannounce&tr=http%3A%2F%2Ftracker.bz%3A80%2Fannounce",
+            "testDownload"
+        );
     }
 
     private fun performInitialNavigation() {
@@ -95,7 +110,7 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         val currentDestinationId = navController.currentDestination?.id
 
         if (currentDestinationId != null && p2pTopLevelDestinationIds.contains(currentDestinationId)) {
-            Log.i("P2PStore", "Back press on a top-level P2P destination. Consumed.")
+            NavUtils.navigateUpFromSameTask(this)
         } else {
             super.onBackPressed()
         }
