@@ -34,7 +34,7 @@ class DaoAdapter(
             }
 
             daoData?.let { data ->
-                binding.appName.text = "DAO: ${data.SW_UNIQUE_ID.take(8)}..."
+                binding.appName.text = "${daoBlock.transaction["name"]}"
 
                 binding.appDeveloper.text = "${data.SW_TRUSTCHAIN_PKS.size} members"
 
