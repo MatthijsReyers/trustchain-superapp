@@ -15,8 +15,6 @@ import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.trustchain.common.BaseActivity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 
-//import nl.tudelft.trustchain.currencyii.ui.bitcoin.DAOLoginChoiceFragment
-
 class P2PlayStoreMainActivity() : BaseActivity() {
 
     public lateinit var torrentManager: TorrentManager;
