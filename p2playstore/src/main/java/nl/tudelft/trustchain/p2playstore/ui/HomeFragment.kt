@@ -70,7 +70,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
     }
 
     private fun createWalletIfNeeded() {
-        val wallets = this.p2playStore.discoverSharedWallets()
+        val wallets = this.p2playStore.fetchLatestJoinedSharedWalletBlocks()
         android.util.Log.d("P2PlayStore", "Found ${wallets.size} wallets")
 
         if (wallets.isEmpty()) {

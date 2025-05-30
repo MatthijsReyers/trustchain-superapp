@@ -1,11 +1,12 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
+import android.content.Intent
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
+import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 
 /**
@@ -54,5 +55,24 @@ class AppDetails : BaseFragment() {
 
         val description = this.block.transaction["description"] as? String
         binding.appDescription.text = description
+
+        val magnetLink = this.block.transaction["magnetLink"] as String
+        val fileName = magnetLink.split("&dn=").last().split("&tr=").first()
+        binding.btnInstallUpdate.setOnClickListener {
+            loadDynamicCode(fileName)
+        }
+    }
+
+    private fun loadDynamicCode(fileName: String) {
+        try {
+            val intent = Intent(requireContext(), ExecutionActivity::class.java)
+            intent.putExtra(
+                "fileName",
+                "${requireContext().cacheDir}/apps/${fileName.split("/").last()}"
+            )
+            startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
