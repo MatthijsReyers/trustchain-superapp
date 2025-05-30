@@ -60,7 +60,7 @@
     <fragment
         android:id="@+id/appDetails"
         android:name="nl.tudelft.trustchain.p2playstore.ui.AppDetails"
-        android:label="fragment_app_details"
+        android:label="App details"
         tools:layout="@layout/fragment_app_details" />
     <!--<navigation xmlns:android="http://schemas.android.com/apk/res/android"-->
 <!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
