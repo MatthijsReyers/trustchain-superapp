@@ -23,8 +23,6 @@ class P2PlayStoreMainActivity() : BaseActivity() {
 
     public lateinit var torrentManager: TorrentManager;
 
-    private lateinit var periodicJob: Job
-
     override val navigationGraph = R.navigation.nav_graph_p2pstore
 
     private val p2pTopLevelDestinationIds = setOf(
@@ -55,7 +53,6 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         return navController.navigateUp(appBarConfiguration)
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         performInitialNavigation()
@@ -65,49 +62,11 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
 
-        this.periodicJob = lifecycleScope.launch {
-            while (true) {
-                findNewApps()
-                delay(60_000 * 15)
-            }
-        }
 
         this.torrentManager = TorrentManager(this)
         this.torrentManager.start();
 
         this.initializeTorrents();
-    }
-
-    /**
-     *
-     */
-    private suspend fun findNewApps() {
-        Log.d("P2PlayStore", "I am ${this.trustChain.myPeer.publicKey} peers")
-        val peers = this.trustChain.getPeers()
-        Log.d("P2PlayStore", "Found ${peers.size} peers")
-        for (peer in peers) {
-            try {
-                Log.d(
-                    "P2PlayStore",
-                    "Crawling peer ${peer.publicKey}"
-                )
-                trustChain.crawlChain(peer)
-                val crawlResult = trustChain.database.getMutualBlocks(
-                    peer.publicKey.keyToBin(), 1000
-                )
-                Log.d(
-                    "P2PlayStore",
-                    "crawlResult ${crawlResult}"
-                )
-            }
-            catch (err: Throwable) {
-                Log.e(
-                    "P2PlayStore",
-                    "Crawling failed for: ${peer.publicKey}. $err."
-                )
-            }
-        }
-
     }
 
     private fun performInitialNavigation() {
@@ -207,21 +166,4 @@ class P2PlayStoreMainActivity() : BaseActivity() {
             }
         }
     }
-
-//    fun addTopLevelDestinationId(id: Int) {
-//        topLevelDestinationIds = topLevelDestinationIds + id
-//    }
-//
-//    fun removeTopLevelDestinationId(id: Int) {
-//        topLevelDestinationIds = topLevelDestinationIds - id
-//    }
-//        enableEdgeToEdge()
-//        setContentView(R.layout.activity_main)
-//        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-//            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-//            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-//            insets
-//        }
-//    }
-
 }
