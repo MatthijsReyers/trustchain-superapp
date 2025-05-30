@@ -3,21 +3,27 @@ package nl.tudelft.trustchain.p2playstore
 import android.os.Bundle
 import android.util.Log
 import androidx.core.app.NavUtils
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import nl.tudelft.ipv8.IPv8
 import nl.tudelft.ipv8.android.IPv8Android
+import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.trustchain.common.BaseActivity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 
 class P2PlayStoreMainActivity() : BaseActivity() {
 
     public lateinit var torrentManager: TorrentManager;
+
+    private lateinit var periodicJob: Job
 
     override val navigationGraph = R.navigation.nav_graph_p2pstore
 
@@ -49,19 +55,59 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         return navController.navigateUp(appBarConfiguration)
     }
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         performInitialNavigation()
 
-        this.torrentManager = TorrentManager(this)
 
         // Always show the arrow button in the action bar so you can navigate back to the super app
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
 
+        this.periodicJob = lifecycleScope.launch {
+            while (true) {
+                findNewApps()
+                delay(60_000 * 15)
+            }
+        }
+
+        this.torrentManager = TorrentManager(this)
         this.torrentManager.start();
 
         this.initializeTorrents();
+    }
+
+    /**
+     *
+     */
+    private suspend fun findNewApps() {
+        Log.d("P2PlayStore", "I am ${this.trustChain.myPeer.publicKey} peers")
+        val peers = this.trustChain.getPeers()
+        Log.d("P2PlayStore", "Found ${peers.size} peers")
+        for (peer in peers) {
+            try {
+                Log.d(
+                    "P2PlayStore",
+                    "Crawling peer ${peer.publicKey}"
+                )
+                trustChain.crawlChain(peer)
+                val crawlResult = trustChain.database.getMutualBlocks(
+                    peer.publicKey.keyToBin(), 1000
+                )
+                Log.d(
+                    "P2PlayStore",
+                    "crawlResult ${crawlResult}"
+                )
+            }
+            catch (err: Throwable) {
+                Log.e(
+                    "P2PlayStore",
+                    "Crawling failed for: ${peer.publicKey}. $err."
+                )
+            }
+        }
+
     }
 
     private fun performInitialNavigation() {
@@ -124,6 +170,15 @@ class P2PlayStoreMainActivity() : BaseActivity() {
 
     protected val p2playStore: P2pStoreCommunity by lazy {
         getP2pStoreCommunity()
+    }
+
+    protected fun getTrustChainCommunity(): TrustChainCommunity {
+        return getIpv8().getOverlay()
+            ?: throw IllegalStateException("TrustChainCommunity is not configured")
+    }
+
+    protected val trustChain: TrustChainCommunity by lazy {
+        getTrustChainCommunity()
     }
 
     private fun initializeTorrents() {
