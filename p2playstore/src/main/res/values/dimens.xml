@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="screenshot_width">120dp</dimen>
+    <dimen name="screenshot_margin_end">8dp</dimen>
+    <dimen name="padding_normal">16dp</dimen>
+    <dimen name="progress_bar_margin_horizontal">40dp</dimen>
+
+    <dimen name="padding_small">8dp</dimen>
+    <dimen name="padding_large">24dp</dimen>
+
+    <dimen name="text_size_small">12sp</dimen>
+    <dimen name="text_size_medium">16sp</dimen>
+    <dimen name="text_size_large">20sp</dimen>
+
+    <dimen name="card_corner_radius">8dp</dimen>
+    <dimen name="card_elevation">4dp</dimen>
+
+</resources>

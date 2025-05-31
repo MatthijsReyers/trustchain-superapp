@@ -10,8 +10,6 @@ import androidx.navigation.ui.navigateUp
 import nl.tudelft.trustchain.common.BaseActivity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 
-//import nl.tudelft.trustchain.currencyii.ui.bitcoin.DAOLoginChoiceFragment
-
 class P2PlayStoreMainActivity() : BaseActivity() {
 
     override val navigationGraph = R.navigation.nav_graph_p2pstore
