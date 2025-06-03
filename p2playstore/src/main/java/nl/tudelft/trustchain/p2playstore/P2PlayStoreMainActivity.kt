@@ -57,15 +57,12 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         super.onCreate(savedInstanceState)
         performInitialNavigation()
 
-
         // Always show the arrow button in the action bar so you can navigate back to the super app
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
 
-
-        this.torrentManager = TorrentManager(this)
+        this.torrentManager = TorrentManager(this.applicationContext.cacheDir)
         this.torrentManager.start();
-
         this.initializeTorrents();
     }
 
@@ -107,6 +104,7 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         val navController = findNavController(nl.tudelft.trustchain.common.R.id.navHostFragment)
         val currentDestinationId = navController.currentDestination?.id
@@ -157,11 +155,11 @@ class P2PlayStoreMainActivity() : BaseActivity() {
                 println(" - description: ${wallet.transaction["description"]}")
                 println(" - magnetLink: $magnetLink")
 
-                if (magnetLink != null && torrentManager.magnetLinkIsKnown(magnetLink)) {
-                    println(" - magnetLink is known")
-                } else if (magnetLink != null) {
-                    println(" - magnetLink is not known")
-                    torrentManager.downloadMagnetLink(magnetLink, "app-$name")
+                try {
+                    torrentManager.downloadApp(wallet);
+                }
+                catch (err: Throwable) {
+                    Log.e("P2PlayStore", "App download failed: $err")
                 }
             }
         }
