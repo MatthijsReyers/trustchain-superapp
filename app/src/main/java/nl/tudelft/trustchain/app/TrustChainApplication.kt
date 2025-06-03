@@ -208,6 +208,30 @@ class TrustChainApplication : Application() {
                 }
             }
         )
+
+        trustchain.addListener(
+            P2pStoreCommunity.JOIN_BLOCK,
+            object : BlockListener {
+                override fun onBlockReceived(block: TrustChainBlock) {
+                    Log.d(
+                        "P2pStore",
+                        "onBlockReceived: ${block.blockId} ${block.transaction}"
+                    )
+                }
+            }
+        )
+
+        trustchain.addListener(
+            P2pStoreCommunity.SIGNATURE_ASK_BLOCK,
+            object : BlockListener {
+                override fun onBlockReceived(block: TrustChainBlock) {
+                    Log.d(
+                        "P2pStore",
+                        "onBlockReceived: ${block.blockId} ${block.transaction}"
+                    )
+                }
+            }
+        )
     }
 
     private fun createWalletCommunity(): OverlayConfiguration<AttestationCommunity> {
@@ -273,11 +297,10 @@ class TrustChainApplication : Application() {
 
     private fun createP2PStoreCommunity(): OverlayConfiguration<P2pStoreCommunity> {
         val randomWalk = RandomWalk.Factory()
-        val store = GatewayStore.getInstance(this)
-        val trustStore = TrustStore.getInstance(this)
+        val nsd = NetworkServiceDiscovery.Factory(getSystemService()!!)
         return OverlayConfiguration(
             Overlay.Factory(P2pStoreCommunity::class.java),
-            listOf(randomWalk)
+            listOf(randomWalk, nsd)
         )
     }
 

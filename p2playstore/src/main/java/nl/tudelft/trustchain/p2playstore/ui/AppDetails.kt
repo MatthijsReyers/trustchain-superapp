@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
+import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
 
 /**
  * This is the app details fragment that displays information about an app after a user has clicked

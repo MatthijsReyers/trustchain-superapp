@@ -3,15 +3,19 @@ package nl.tudelft.trustchain.p2playstore
 import android.os.Bundle
 import android.util.Log
 import androidx.core.app.NavUtils
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import nl.tudelft.ipv8.IPv8
 import nl.tudelft.ipv8.android.IPv8Android
+import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.trustchain.common.BaseActivity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 
@@ -53,12 +57,13 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         super.onCreate(savedInstanceState)
         performInitialNavigation()
 
-        this.torrentManager = TorrentManager(this)
 
         // Always show the arrow button in the action bar so you can navigate back to the super app
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
 
+
+        this.torrentManager = TorrentManager(this)
         this.torrentManager.start();
 
         this.initializeTorrents();
@@ -126,6 +131,15 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         getP2pStoreCommunity()
     }
 
+    protected fun getTrustChainCommunity(): TrustChainCommunity {
+        return getIpv8().getOverlay()
+            ?: throw IllegalStateException("TrustChainCommunity is not configured")
+    }
+
+    protected val trustChain: TrustChainCommunity by lazy {
+        getTrustChainCommunity()
+    }
+
     private fun initializeTorrents() {
         // Downloading torrents is a blocking operation so we cannot do this on the UI thread or the
         // whole app will block.
@@ -152,21 +166,4 @@ class P2PlayStoreMainActivity() : BaseActivity() {
             }
         }
     }
-
-//    fun addTopLevelDestinationId(id: Int) {
-//        topLevelDestinationIds = topLevelDestinationIds + id
-//    }
-//
-//    fun removeTopLevelDestinationId(id: Int) {
-//        topLevelDestinationIds = topLevelDestinationIds - id
-//    }
-//        enableEdgeToEdge()
-//        setContentView(R.layout.activity_main)
-//        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-//            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-//            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-//            insets
-//        }
-//    }
-
 }

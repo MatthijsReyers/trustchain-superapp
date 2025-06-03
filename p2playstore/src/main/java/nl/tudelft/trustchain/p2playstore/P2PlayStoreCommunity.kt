@@ -24,7 +24,6 @@ import nl.tudelft.trustchain.p2playstore.utils.DAOCreateHelper
 import nl.tudelft.trustchain.p2playstore.utils.DAOJoinHelper
 import nl.tudelft.trustchain.p2playstore.utils.DAOTransferFundsHelper
 
-
 class P2pStoreCommunity : Community() {
     override val serviceId: String = "3344FF11BEEF3883287FAC632fc8db5899c5df5b"
 

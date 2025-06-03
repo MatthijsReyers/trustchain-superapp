@@ -40,6 +40,8 @@ class DaoAdapter(
 
                 binding.appEntranceFee.text = "Fee: ${Coin.valueOf(data.SW_ENTRANCE_FEE).toFriendlyString()}"
 
+                binding.appEntranceFee.text = "${daoBlock.hashNumber}"
+
                 binding.appVotingThreshold.text = "Threshold: ${data.SW_VOTING_THRESHOLD}%"
 
                 setDaoIcon(data.SW_UNIQUE_ID)

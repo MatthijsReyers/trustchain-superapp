@@ -151,7 +151,6 @@ class WalletManager(
                     super.progress(pct, blocksSoFar, date)
                     val percentage = pct.toInt()
                     progress = percentage
-                    println("Progress: $percentage")
                     Log.i("Coin", "Progress: $percentage")
                 }
 

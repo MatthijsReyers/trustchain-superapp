@@ -2,6 +2,7 @@ package nl.tudelft.trustchain.p2playstore.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +11,8 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -26,12 +29,25 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private var allDaoAdapter: DaoAdapter? = null
     private var myDaoAdapter: DaoAdapter? = null
 
+    /**
+     * This background job tries to find new apps on the trustchain at a set time interval.
+     */
+    private lateinit var discoverNewAppsJob: Job
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
+
+        this.discoverNewAppsJob = lifecycleScope.launch {
+            while (true) {
+                discoverNewApps()
+                delay(60_000 * 5)
+            }
+        }
+
         return binding.root
     }
 
@@ -110,26 +126,14 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                 }
             } catch (e: Exception) {
                 android.util.Log.e("P2PlayStore", "Error loading DAO data: ${e.message}")
-
-                if (isAdded) {
-                    createDummyData()
-                }
             }
         }
     }
 
-    private fun createDummyData() {
-        val dummyDaos = createDummyDaoBlocks()
-        updateAllDaoList(dummyDaos)
-        updateMyDaoList(dummyDaos.take(2))
-    }
-
-    private fun createDummyDaoBlocks(): List<TrustChainBlock> {
-        return emptyList()
-    }
-
     private fun updateAllDaoList(daoList: List<TrustChainBlock>) {
         if (!isAdded) return
+
+        binding.allApps.text = "All apps (${daoList.size})"
 
         android.util.Log.d("P2PlayStore", "Updating All DAOs list with ${daoList.size} items.")
         allDaoAdapter = DaoAdapter(
@@ -156,6 +160,8 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private fun updateMyDaoList(daoList: List<TrustChainBlock>) {
         if (!isAdded) return
 
+        binding.installedApps.text = "Installed apps (${daoList.size})"
+
         android.util.Log.d("P2PlayStore", "Updating My DAOs list with ${daoList.size} items.")
         myDaoAdapter = DaoAdapter(
             daoList,
@@ -176,6 +182,40 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             }
         )
         binding.rvRecommended.adapter = myDaoAdapter
+    }
+
+    /**
+     * This method looks for undiscovered apps on the trustchain based on the currently connected
+     * peers and their blocks.
+     */
+    private suspend fun discoverNewApps() {
+        val trustChain = getTrustChainCommunity();
+        Log.d("P2PlayStore", "I am peer ${trustChain.myPeer.publicKey}")
+        val peers = trustChain.getPeers()
+        Log.d("P2PlayStore", "Found ${peers.size} peers")
+        for (peer in peers) {
+            try {
+                Log.d(
+                    "P2PlayStore",
+                    "Crawling peer ${peer.publicKey}"
+                )
+                trustChain.crawlChain(peer)
+                val crawlResult = trustChain.database.getMutualBlocks(
+                    peer.publicKey.keyToBin(), 1000
+                )
+                Log.d(
+                    "P2PlayStore",
+                    "Found ${crawlResult.size} new blocks"
+                )
+            }
+            catch (err: Throwable) {
+                Log.e(
+                    "P2PlayStore",
+                    "Crawling failed for: ${peer.publicKey}. $err."
+                )
+            }
+            this.loadDaoData();
+        }
     }
 
     private fun loadDynamicCode(fileName: String) {
