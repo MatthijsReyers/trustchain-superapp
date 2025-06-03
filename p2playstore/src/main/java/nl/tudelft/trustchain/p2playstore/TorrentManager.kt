@@ -8,91 +8,37 @@ import com.frostwire.jlibtorrent.alerts.AlertType
 import com.frostwire.jlibtorrent.alerts.BlockFinishedAlert
 import com.frostwire.jlibtorrent.alerts.TorrentFinishedAlert
 import kotlinx.coroutines.*
+import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.TORRENT_EXTENSION
-import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.ADDRESS_TRACKER
-import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.ADDRESS_TRACKER_APPENDER
-import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.DISPLAY_NAME_APPENDER
 import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.MAGNET_HEADER_STRING
-import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.PRE_HASH_STRING
-import nl.tudelft.trustchain.foc.GOSSIP_DELAY
+import java.io.File
+import java.io.FileOutputStream
 import java.util.*
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
-class TorrentManager(activity: P2PlayStoreMainActivity) {
-
-    /**
-     * Location in file system where the torrent files are stored, note that this folder seems to
-     * be shared among all apps in the super app and thus contains files and torrents that do not
-     * belong to the P2PlayStore
-     */
-    private val appDirectory = activity.applicationContext.cacheDir
-
+class TorrentManager(cacheDir: File) {
     private val scope = CoroutineScope(Dispatchers.IO)
 
-    public val sessionManager: SessionManager = SessionManager()
+    /**
+     * JlibTorrent session manager, this manages the state/downloading of the torrents/magnet links
+     * that point to the actual APK files that make up the apps.
+     */
+    private val sessionManager: SessionManager = SessionManager()
+
+    /**
+     * Location in file system where the downloaded apk files for the different apps are stored.
+     */
+    private val appsDirectory = File(cacheDir, "p2p-apps")
+
+    init {
+        if (!appsDirectory.exists()) {
+            appsDirectory.mkdirs()
+        }
+    }
 
     private val torrentHandles = ArrayList<TorrentHandle>();
     private val torrentInfos = ArrayList<TorrentInfo>();
 
-    public fun start() {
-        this.populateKnownTorrents()
-        this.initializeTorrentSession()
-
-        val sp = SettingsPack()
-        sp.seedingOutgoingConnections(true)
-        val params = SessionParams(sp)
-        Log.d("TorrentManager", "Starting session manager")
-        this.sessionManager.start(params)
-
-        scope.launch {
-            seedTorrents()
-        }
-        scope.launch {
-            downloadTorrents()
-        }
-    }
-
-    private fun populateKnownTorrents() {
-        Log.d("TorrentManager", "populating known Torrents")
-        Log.d("TorrentManager", "found: ${appDirectory.listFiles()}")
-        appDirectory.listFiles()?.forEachIndexed { _, file ->
-            if (file.name.endsWith(TORRENT_EXTENSION)) {
-                Log.d("TorrentManager", "found torrent file: ${file.name}")
-                TorrentInfo(file).let { torrentInfo ->
-                    if (torrentInfo.isValid) {
-//                        TODO: FOC performs some extra validation to ensure the torrent actually
-//                         contains an APK file, which is probably smart but disabled for debugging
-//                        if (isTorrentOkay(torrentInfo, appDirectory)) { }
-                        if (!torrentInfos.any { it.infoHash() == torrentInfo.infoHash() }) {
-                            torrentInfos.add(torrentInfo)
-                        }
-                    }
-                }
-            }
-        }
-        Log.d("TorrentManager", "${torrentInfos.size} torrents known")
-    }
-
-    /**
-     * This method checks if the given magnet link has already been registered by the torrent
-     * manager.
-     */
-    public fun magnetLinkIsKnown(magnetLink: String): Boolean {
-        if (!magnetLink.startsWith(MAGNET_HEADER_STRING)) {
-            Log.e("TorrentManager", "Magnet link does not start with correct header")
-            return false;
-        }
-        val magnetHash: String = this.getHashOfMagnetLink(magnetLink)
-        for (info in this.torrentInfos) {
-            val knownHash: String = this.getHashOfMagnetLink(info.makeMagnetUri())
-            if (knownHash == magnetHash) {
-                return true;
-            }
-        }
-        return false;
-    }
-
+//    TODO: Replace with magnet utils..
     fun getHashOfMagnetLink(link: String): String {
         // Find the query part after '?'
         val queryStart = link.indexOf('?')
@@ -112,87 +58,70 @@ class TorrentManager(activity: P2PlayStoreMainActivity) {
         return ""
     }
 
-    fun downloadMagnetLink(
-        magnetLink: String,
-        torrentName: String
-    ) {
-        if (!magnetLink.startsWith(MAGNET_HEADER_STRING)) {
-            Log.e("TorrentManager", "Magnet link does not start with correct header")
-            return
-        }
-
-        val startIndexName = magnetLink.indexOf(DISPLAY_NAME_APPENDER)
-        val stopIndexName =
-            if (magnetLink.contains(ADDRESS_TRACKER_APPENDER)) magnetLink.indexOf(ADDRESS_TRACKER)
-            else magnetLink.length
-
-        val magnetNameRaw = magnetLink.substring(startIndexName + 4, stopIndexName)
-        Log.d("TorrentManager", "Magnet name raw: $magnetNameRaw")
-        val magnetName = magnetNameRaw.replace('+', ' ', false)
-        val magnetInfoHash = magnetLink.substring(PRE_HASH_STRING.length, startIndexName)
-        Log.d("TorrentManager", "Magnet name: $magnetName")
+    /**
+     * Actually starts the torrent manager and loads previously started/downloaded torrents and
+     * configures the torrent client to continue downloading/seeding those.
+     */
+    fun start() {
+        this.populateKnownTorrents()
+        this.initializeTorrentSession()
 
         val sp = SettingsPack()
         sp.seedingOutgoingConnections(true)
-        val params =
-            SessionParams(sp)
-        sessionManager.start(params)
+        val params = SessionParams(sp)
+        this.sessionManager.start(params)
 
-        val timer = Timer()
-        timer.schedule(
-            object : TimerTask() {
-                override fun run() {
-                    val nodes = sessionManager.stats().dhtNodes()
-                    // wait for at least 10 nodes in the DHT.
-                    if (nodes >= 10) {
-                        Log.i("TorrentManager", "DHT contains $nodes nodes")
-                        // signal.countDown();
-                        timer.cancel()
-                    }
-                }
-            },
-            0,
-            1000
-        )
-
-        Log.i("TorrentManager", "Fetching the magnet uri, please wait...")
-        val data: ByteArray?
-        try {
-            data = sessionManager.fetchMagnet(magnetLink, 30)
-        } catch (e: Exception) {
-            Log.e("TorrentManager", "Failed to retrieve the magnet: $e")
-//            TODO: Handle failure/communicate it back to the user.
-            return
+        scope.launch {
+            seedTorrents()
         }
-
-        var signal = CountDownLatch(0)
-
-        if (data != null) {
-            val torrentInfo = TorrentInfo.bdecode(data)
-            this.torrentInfos.add(torrentInfo)
-            sessionManager.download(torrentInfo, appDirectory)
-            Log.d("TorrentManager", "Fetched info for torrent $torrentName, trying to download")
-            signal.await(1, TimeUnit.MINUTES)
-
-            if (signal.count.toInt() == 1) {
-                Log.e("TorrentManager", "Download timed out")
-                signal = CountDownLatch(0)
-                sessionManager.find(torrentInfo.infoHash())?.let { torrentHandle ->
-                    sessionManager.remove(torrentHandle)
-                }
-                Log.e("TorrentManager", "Failed to retrieve the magnet")
-//            TODO: Handle failure/communicate it back to the user.
-            } else {
-                Log.i("TorrentManager", "Finished downloading torrent $magnetName")
-//            TODO: Handle success/communicate it back to the user.
-            }
-        }
-        else {
-            Log.e("TorrentManager", "Failed to retrieve the magnet")
-//            TODO: Handle failure/communicate it back to the user.
+        scope.launch {
+            downloadTorrents()
         }
     }
 
+    /**
+     * This method looks inside the apps directory for .torrent files created in a previous session
+     * that we can immediately open again to resume downloading/seeding
+     */
+    private fun populateKnownTorrents() {
+        appsDirectory.listFiles()?.forEachIndexed { _, file ->
+            if (file.name.endsWith(TORRENT_EXTENSION)) {
+                TorrentInfo(file).let { torrentInfo ->
+                    if (torrentInfo.isValid) {
+                        if (!torrentInfos.any { it.infoHash() == torrentInfo.infoHash() }) {
+                            torrentInfos.add(torrentInfo)
+                        }
+                    }
+                }
+            }
+        }
+        Log.d("P2P.TorrentManager", "Imported ${torrentInfos.size} known torrents")
+    }
+
+    /**
+     * For a given magnet link, try to find if we have already registered/downloaded the torrent it
+     * points to
+     */
+    private fun findTorrentInfo(magnetLink: String): TorrentInfo? {
+        if (!magnetLink.startsWith(MAGNET_HEADER_STRING)) {
+            Log.e("P2P.TorrentManager", "Magnet link does not start with correct header")
+            return null;
+        }
+        // TODO: Replace with Magnet utils...
+        val magnetHash: String = this.getHashOfMagnetLink(magnetLink)
+        for (info in this.torrentInfos) {
+            val knownHash: String = this.getHashOfMagnetLink(info.makeMagnetUri())
+            if (knownHash == magnetHash) {
+                return info;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Configure the jlibtorrent session manager and callbacks to inform us of the state of the
+     * torrents.
+     */
     private fun initializeTorrentSession() {
         sessionManager.addListener(
             object : AlertListener {
@@ -202,18 +131,18 @@ class TorrentManager(activity: P2PlayStoreMainActivity) {
                 override fun alert(alert: Alert<*>) {
                     when (alert.type()) {
                         AlertType.ADD_TORRENT -> {
-                            Log.d("TorrentManager", "Added torrent $alert")
+                            Log.d("P2P.TorrentManager", "Added torrent $alert")
                             (alert as AddTorrentAlert).handle().resume()
                         }
                         AlertType.BLOCK_FINISHED -> {
-                            Log.d("TorrentManager", "Block finished $alert")
+                            Log.d("P2P.TorrentManager", "Block finished $alert")
                             val a = alert as BlockFinishedAlert
                             val p = (a.handle().status().progress() * 100).toInt()
-                            Log.d("TorrentManager", "Progress $p for ${a.torrentName()}")
+                            Log.d("P2P.TorrentManager", "Progress $p for ${a.torrentName()}")
                         }
                         AlertType.TORRENT_FINISHED -> {
                             val a = alert as TorrentFinishedAlert
-                            Log.d("TorrentManager", "Download finished for ${a.torrentName()}")
+                            Log.d("P2P.TorrentManager", "Download finished for ${a.torrentName()}")
                         }
                         else -> {
                         }
@@ -223,20 +152,108 @@ class TorrentManager(activity: P2PlayStoreMainActivity) {
         )
     }
 
+    /**
+     * Resumes seeding previously downloaded apps to
+     */
     private suspend fun seedTorrents() {
         while (scope.isActive) {
             try {
+                // TODO: Actually implement this function
             }
             catch (e: Exception) {
-                Log.e("TorrentManager", "Exception while seeding apps")
+                Log.e("P2P.TorrentManager", "Exception while seeding apps")
             }
-            delay(GOSSIP_DELAY)
+            delay(30_000)
         }
     }
 
+    /**
+     * Resumes downloading any unfinished torrents from previous sessions.
+     */
     private suspend fun downloadTorrents() {
-        Log.d("TorrentManager", "Downloading torrents")
-
+        Log.d("P2P.TorrentManager", "Downloading torrents")
+        while (scope.isActive) {
+            try {
+                // TODO: Actually implement this function
+            }
+            catch (e: Exception) {
+                Log.e("P2P.TorrentManager", "Exception while downloading apps")
+            }
+            delay(30_000)
+        }
     }
 
+    /**
+     * Downloads the specific version of the app described by the given block.
+     */
+    fun downloadApp(block: TrustChainBlock) {
+        val magnetLink = block.transaction["magnetLink"]
+        if (magnetLink !is String) {
+            throw Exception("block ${block.hashNumber} does not describe a p2p app")
+        }
+
+        // Have we already downloaded this app?
+        var torrentInfo = this.findTorrentInfo(magnetLink);
+        if (torrentInfo != null) {
+            Log.d("P2P.TorrentManager", "Magnet link was already known")
+            // TODO: Maybe check if it was actually finished or restart if there was a failure?
+            return;
+        }
+
+        this.waitFor10Nodes();
+
+        torrentInfo = this.downloadTorrentInfo(magnetLink)
+        this.torrentInfos.add(torrentInfo)
+
+        // TODO: Replace with magnet utils.
+        val torrentHash = this.getHashOfMagnetLink(magnetLink)
+
+        // Create a .torrent file for this torrent so we can resume downloading/seeding after
+        // restarting the app without needing to download the torrent info from someone else first.
+        val entry: Entry = torrentInfo.toEntry()
+        val torrentFile = File(this.appsDirectory, "${torrentHash}.torrent")
+        FileOutputStream(torrentFile).use { fos -> fos.write(entry.bencode()) }
+
+        // Now finally actually start the download process.
+        val destDir = File(this.appsDirectory, "${torrentHash}")
+        this.sessionManager.download(torrentInfo, destDir)
+    }
+
+    /**
+     * Downloads all the required meta data in order to actually be able to download the torrent
+     * the magnet file points to. This is only needed if we have not yet saved this data to the
+     * cache folder as a .torrent file.
+     */
+    private fun downloadTorrentInfo(magnetLink: String): TorrentInfo {
+        try {
+            val data: ByteArray = sessionManager.fetchMagnet(magnetLink, 30)
+            return TorrentInfo.bdecode(data)
+        }
+        catch (_err: Throwable) {
+            throw Exception("Failed to download torrent info");
+        }
+    }
+
+    /***
+     * Blocks until the DHT to contain at least 10 nodes, this is taken from FOC, presumably so we
+     * can be relatively certain that we can at least find the info we want,
+     */
+    private fun waitFor10Nodes() {
+        val timer = Timer()
+        timer.schedule(
+            object : TimerTask() {
+                override fun run() {
+                    val nodes = sessionManager.stats().dhtNodes()
+                    // wait for at least 10 nodes in the DHT.
+                    if (nodes >= 10) {
+                        Log.i("P2P.TorrentManager", "DHT contains $nodes nodes")
+                        // signal.countDown();
+                        timer.cancel()
+                    }
+                }
+            },
+            0,
+            1000
+        )
+    }
 }
