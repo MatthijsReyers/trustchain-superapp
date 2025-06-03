@@ -41,6 +41,9 @@
             app:destination="@+id/joinDaoFragment"
             app:popUpToInclusive="true"
             app:popUpTo="@+id/homeFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_appDetails"
+            app:destination="@id/appDetails" />
     </fragment>
 
     <fragment
@@ -54,7 +57,12 @@
             app:popUpToInclusive="true"
             app:popUpTo="@+id/joinDaoFragment" />
     </fragment>
-<!--<navigation xmlns:android="http://schemas.android.com/apk/res/android"-->
+    <fragment
+        android:id="@+id/appDetails"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.AppDetails"
+        android:label="App details"
+        tools:layout="@layout/fragment_app_details" />
+    <!--<navigation xmlns:android="http://schemas.android.com/apk/res/android"-->
 <!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
 <!--    xmlns:tools="http://schemas.android.com/tools"-->
 <!--    android:id="@+id/nav_graph"-->

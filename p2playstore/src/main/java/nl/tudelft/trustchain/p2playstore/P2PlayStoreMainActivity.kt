@@ -7,12 +7,13 @@ import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import nl.tudelft.ipv8.IPv8
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.trustchain.common.BaseActivity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
-
-//import nl.tudelft.trustchain.currencyii.ui.bitcoin.DAOLoginChoiceFragment
 
 class P2PlayStoreMainActivity() : BaseActivity() {
 
@@ -60,7 +61,7 @@ class P2PlayStoreMainActivity() : BaseActivity() {
 
         this.torrentManager.start();
 
-        this.initalizeTorrents();
+        this.initializeTorrents();
     }
 
     private fun performInitialNavigation() {
@@ -125,25 +126,29 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         getP2pStoreCommunity()
     }
 
-    private fun initalizeTorrents() {
-        val wallets = this.p2playStore.fetchLatestJoinedSharedWalletBlocks()
-        println("apps: ${wallets.size}")
-        println("====================================")
-        for (wallet in wallets) {
-            val name = wallet.transaction["name"]
-            val magnetLink: String? = wallet.transaction["magnetLink"] as? String;
+    private fun initializeTorrents() {
+        // Downloading torrents is a blocking operation so we cannot do this on the UI thread or the
+        // whole app will block.
+        val scope = CoroutineScope(Dispatchers.IO);
+        scope.launch {
+            val wallets = p2playStore.fetchLatestJoinedSharedWalletBlocks()
+            println("apps: ${wallets.size}")
+            println("====================================")
+            for (wallet in wallets) {
+                val name = wallet.transaction["name"]
+                val magnetLink: String? = wallet.transaction["magnetLink"] as? String;
 
-            println("block: $wallet ${wallet.blockId}")
-            println(" - name: $name")
-            println(" - description: ${wallet.transaction["description"]}")
-            println(" - magnetLink: $magnetLink")
+                println("block: $wallet ${wallet.blockId}")
+                println(" - name: $name")
+                println(" - description: ${wallet.transaction["description"]}")
+                println(" - magnetLink: $magnetLink")
 
-            if (magnetLink != null && this.torrentManager.magnetLinkIsKnown(magnetLink)) {
-                println(" - magnetLink is known")
-            }
-            else if (magnetLink != null) {
-                println(" - magnetLink is not known")
-                this.torrentManager.downloadMagnetLink(magnetLink, "app-$name")
+                if (magnetLink != null && torrentManager.magnetLinkIsKnown(magnetLink)) {
+                    println(" - magnetLink is known")
+                } else if (magnetLink != null) {
+                    println(" - magnetLink is not known")
+                    torrentManager.downloadMagnetLink(magnetLink, "app-$name")
+                }
             }
         }
     }

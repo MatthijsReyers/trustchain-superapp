@@ -70,7 +70,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
     }
 
     private fun createWalletIfNeeded() {
-        val wallets = this.p2playStore.discoverSharedWallets()
+        val wallets = this.p2playStore.fetchLatestJoinedSharedWalletBlocks()
         android.util.Log.d("P2PlayStore", "Found ${wallets.size} wallets")
 
         if (wallets.isEmpty()) {
@@ -138,7 +138,12 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                 override fun onItemClick(daoBlock: TrustChainBlock) {
                     android.util.Log.d("P2PlayStore", "Navigating to joinDaoFragment from All DAOs")
                     try {
-                        findNavController().navigate(R.id.joinDaoFragment)
+                        val bundle = Bundle()
+                        bundle.apply {
+                            putByteArray("publicKey", daoBlock.publicKey);
+                            putInt("sequenceNumber", daoBlock.sequenceNumber.toInt());
+                        }
+                        findNavController().navigate(R.id.appDetails, bundle)
                     } catch (e: Exception) {
                         android.util.Log.e("P2PlayStore", "Navigation error: ${e.message}")
                     }
@@ -158,7 +163,12 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                 override fun onItemClick(daoBlock: TrustChainBlock) {
                     android.util.Log.d("P2PlayStore", "Navigating to joinDaoFragment from My DAOs")
                     try {
-                        findNavController().navigate(R.id.joinDaoFragment)
+                        val bundle = Bundle()
+                        bundle.apply {
+                            putByteArray("publicKey", daoBlock.publicKey);
+                            putInt("sequenceNumber", daoBlock.sequenceNumber.toInt());
+                        }
+                        findNavController().navigate(R.id.appDetails, bundle)
                     } catch (e: Exception) {
                         android.util.Log.e("P2PlayStore", "Navigation error: ${e.message}")
                     }
