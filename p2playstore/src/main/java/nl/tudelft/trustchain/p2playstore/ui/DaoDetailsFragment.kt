@@ -3,6 +3,7 @@ package nl.tudelft.trustchain.p2playstore.ui
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,10 +19,12 @@ import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTD
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTD
-import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTD
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTransactionData
 import nl.tudelft.trustchain.p2playstore.blockdata.VotingPollHelper
+import nl.tudelft.trustchain.p2playstore.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentDaoDeatilsBinding
+import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
+import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
 import org.bitcoinj.core.Coin
 
 class DaoDetailsFragment : BaseFragment() {
@@ -32,6 +35,19 @@ class DaoDetailsFragment : BaseFragment() {
     private lateinit var daoBlock: TrustChainBlock
     private lateinit var daoData: SWJoinBlockTD
     private var isUserMember = false
+
+    override fun onCreate(bundle: Bundle?) {
+        super.onCreate(bundle)
+
+        val args = this.requireArguments();
+        val publicKey = args.getByteArray("publicKey")!!
+        val sequenceNumber = args.getInt("sequenceNumber").toUInt()
+
+        val community = this.getTrustChainCommunity()
+        this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
+
+        println("Get block: $daoBlock")
+    }
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -570,6 +586,7 @@ class DaoDetailsFragment : BaseFragment() {
                         }
                 findNavController()
                         .navigate(
+                                // TODO: verify that these actions work
                                 R.id.action_daoDetailsFragment_to_featureListFragment,
                                 bundle
                         )
@@ -605,6 +622,72 @@ class DaoDetailsFragment : BaseFragment() {
         // loadLatestPendingFeatureRequest
     }
 
+    /**
+     * Join a shared bitcoin wallet.
+     */
+    private fun joinSharedWalletClicked(block: TrustChainBlock) {
+        val mostRecentSWBlock =
+            getP2pStoreCommunity().fetchLatestSharedWalletBlock(block.calculateHash())
+                ?: block
+        // Add a proposal to trust chain to join a shared wallet
+        val proposeBlockData =
+            try {
+                getP2pStoreCommunity().proposeJoinWallet(
+                    mostRecentSWBlock
+                ).getData()
+            } catch (t: Throwable) {
+                Log.e("P2P", "Join wallet proposal failed. ${t.message ?: "No further information"}.")
+//                setAlertText(t.message ?: "Unexpected error occurred. Try again")
+                return
+            }
+
+        val context = requireContext()
+        // Wait and collect signatures
+        var signatures: List<SWResponseSignatureBlockTD>? = null
+        while (signatures == null) {
+            Thread.sleep(1000)
+            signatures = collectJoinWalletResponses(proposeBlockData)
+        }
+
+        // Create a new shared wallet using the signatures of the others.
+        // Broadcast the new shared bitcoin wallet on trust chain.
+        try {
+            getP2pStoreCommunity().joinBitcoinWallet(
+                mostRecentSWBlock.transaction,
+                proposeBlockData,
+                signatures,
+                context
+            )
+            // Add new nonceKey after joining a DAO
+            WalletManagerAndroid.getInstance()
+                .addNewNonceKey(proposeBlockData.SW_UNIQUE_ID, context)
+        } catch (t: Throwable) {
+            Log.e("Coin", "Joining failed. ${t.message ?: "No further information"}.")
+//            setAlertText(t.message ?: "Unexpected error occurred. Try again")
+        }
+
+    }
+
+    /**
+     * Collect the signatures of a join proposal
+     */
+    private fun collectJoinWalletResponses(blockData: SWSignatureAskBlockTD): List<SWResponseSignatureBlockTD>? {
+        val responses =
+            getP2pStoreCommunity().fetchProposalResponses(
+                blockData.SW_UNIQUE_ID,
+                blockData.SW_UNIQUE_PROPOSAL_ID
+            )
+        Log.i(
+            "P2P",
+            "Waiting for signatures. ${responses.size}/${blockData.SW_SIGNATURES_REQUIRED} received!"
+        )
+
+        if (responses.size >= blockData.SW_SIGNATURES_REQUIRED) {
+            return responses
+        }
+        return null
+    }
+
     // Helper function to navigate to FeatureVotingFragment
     private fun navigateToVotingFragment(daoBlockId: String, solutionId: String) {
         val bundle =
@@ -634,7 +717,7 @@ class DaoDetailsFragment : BaseFragment() {
 
     private fun joinDao() {
         try {
-            getP2pStoreCommunity().proposeJoinWallet(daoBlock)
+            joinSharedWalletClicked(daoBlock)
             android.util.Log.d("DaoDetailsFragment", "Join proposal sent")
             lifecycleScope.launch {
                 checkMembership()
