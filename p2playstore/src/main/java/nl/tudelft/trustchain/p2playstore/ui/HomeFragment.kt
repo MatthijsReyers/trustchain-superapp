@@ -21,7 +21,6 @@ import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
-import android.util.Log
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private var _binding: FragmentHomeBinding? = null
@@ -90,7 +89,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         val context = requireContext()
         val builder = androidx.appcompat.app.AlertDialog.Builder(context)
         val inflater = layoutInflater
-        val dialogView = inflater.inflate(R.layout.fragment_p2p_create_sw, null)
+        val dialogView = inflater.inflate(R.layout.fragment_create_app_dialog, null)
 
         // Find views in the dialog layout
         val etDaoName = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDaoName) ?: return
