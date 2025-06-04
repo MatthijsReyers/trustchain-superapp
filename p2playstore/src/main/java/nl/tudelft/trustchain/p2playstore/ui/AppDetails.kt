@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
+import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
 
@@ -47,6 +48,15 @@ class AppDetails : BaseFragment() {
     }
 
     private fun updateView() {
+        val icon = this.block.transaction["iconIndex"]
+        val iconResource = when (icon) {
+            0 -> R.drawable.ic_bitcoin
+            1 -> R.drawable.ic_account_balance_wallet_black_24dp // TODO: Add more icons as needed
+            2 -> R.drawable.ic_group_work_black_24dp
+            else -> R.drawable.ic_device_hub_black_24dp
+        }
+        binding.daoIcon.setImageResource(iconResource)
+
         val name = this.block.transaction["name"] as String
         binding.appName.text = name
 

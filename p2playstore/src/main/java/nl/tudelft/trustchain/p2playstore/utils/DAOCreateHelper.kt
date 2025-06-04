@@ -30,6 +30,7 @@ class DAOCreateHelper {
     fun createBitcoinGenesisWallet(
         myPeer: Peer,
         entranceFee: Long,
+        iconIndex: Int,
         name: String,
         description: String,
         magnetLink: String,
@@ -48,6 +49,7 @@ class DAOCreateHelper {
             myPeer,
             serializedTransaction,
             entranceFee,
+            iconIndex,
             name,
             description,
             magnetLink,
@@ -65,6 +67,7 @@ class DAOCreateHelper {
         myPeer: Peer,
         transactionSerialized: String,
         entranceFee: Long,
+        iconIndex: Int,
         name: String,
         description: String,
         magnetLink: String,
@@ -92,6 +95,7 @@ class DAOCreateHelper {
 
         val transaction = mapOf(
             "message" to blockData.getJsonString(),
+            "iconIndex" to iconIndex,
             "name" to name,
             "description" to description,
             "category" to category,

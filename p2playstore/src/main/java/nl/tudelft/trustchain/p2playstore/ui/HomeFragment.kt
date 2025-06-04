@@ -21,6 +21,7 @@ import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
+import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private var _binding: FragmentHomeBinding? = null
@@ -95,6 +96,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         val etDaoCategory = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDaoCategory) ?: return
         val etEntranceFee = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etEntranceFee) ?: return
         val etVotingThreshold = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etVotingThreshold) ?: return
+        val etMagnetLink = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etMagnetLink) ?: return
         val ivDaoIcon = dialogView.findViewById<android.widget.ImageView>(R.id.ivDaoIcon)
         val btnSelectIcon = dialogView.findViewById<android.widget.Button>(R.id.btnSelectIcon)
         val btnCancel = dialogView.findViewById<android.widget.Button>(R.id.btnCancel)
@@ -145,7 +147,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             val category = etDaoCategory.text.toString().trim()
             val entranceFeeStr = etEntranceFee.text.toString().trim()
             val votingThresholdStr = etVotingThreshold.text.toString().trim()
-
+            val magnetLink = etMagnetLink.text.toString().trim()
             // Validation
             if (name.isEmpty()) {
                 etDaoName.error = "DAO name is required"
@@ -181,8 +183,21 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                 return@setOnClickListener
             }
 
+            if (magnetLink.isEmpty()) {
+                etMagnetLink.error = "Magnet Link is required"
+                return@setOnClickListener
+            }
+            try {
+                parseMagnet(magnetLink)
+            } catch (e: Exception) {
+                etMagnetLink.error = e.message
+            }
+            if (magnetLink.take(7) != "magnet:") {
+                etMagnetLink.error = "Invalid magnet link provided: $magnetLink"
+            }
+
             // Create DAO
-            createDao(name, description, entranceFee, votingThreshold, selectedIconIndex, category)
+            createDao(name, description, entranceFee, votingThreshold, selectedIconIndex, category, magnetLink)
             dialog.dismiss()
         }
 
@@ -195,16 +210,16 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         entranceFee: Long,
         votingThreshold: Int,
         iconIndex: Int,
-        category: String
+        category: String,
+        magnetLink: String
     ) {
         lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    // Generate a random magnet link for the DAO with icon information
-                    val magnetLink = "magnet:?xt=urn:btih:${java.util.UUID.randomUUID().toString().replace("-", "")}&dn=${name.replace(" ", "-")}.apk&icon=$iconIndex"
 
                     p2playStore.createBitcoinGenesisWallet(
                         entranceFee,
+                        iconIndex,
                         name,
                         description,
                         magnetLink,
