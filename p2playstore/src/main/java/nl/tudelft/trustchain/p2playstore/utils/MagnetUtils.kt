@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.core.net.toUri
 
 data class MagnetLink(
+    val raw: String,                        // Original
     val infoHash: String,                   // from xt=urn:btih:<hash>
     val displayName: String?,               // from dn=
     val fileSize: Long?,                    // from xl= (bytes), if present
@@ -64,6 +65,7 @@ object MagnetUtils {
         }
 
         return MagnetLink(
+            raw = magnetLink,
             infoHash = infoHash,
             displayName = displayName,
             fileSize = fileSize,
