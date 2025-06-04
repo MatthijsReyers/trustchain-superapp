@@ -37,26 +37,10 @@
         android:label="Welcome"
         tools:layout="@layout/fragment_home">
         <action
-            android:id="@+id/action_homeFragment_to_joinDaoFragment"
-            app:destination="@+id/joinDaoFragment"
-            app:popUpToInclusive="true"
-            app:popUpTo="@+id/homeFragment" />
-        <action
             android:id="@+id/action_homeFragment_to_appDetails"
             app:destination="@id/appDetails" />
     </fragment>
 
-    <fragment
-        android:id="@+id/joinDaoFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.ui.JoinDaoFragment"
-        android:label="Join"
-        tools:layout="@layout/fragment_join_dao">
-        <action
-            android:id="@+id/action_joinDaoFragment_to_proposalFragment"
-            app:destination="@+id/proposalsFragment"
-            app:popUpToInclusive="true"
-            app:popUpTo="@+id/joinDaoFragment" />
-    </fragment>
     <fragment
         android:id="@+id/appDetails"
         android:name="nl.tudelft.trustchain.p2playstore.ui.AppDetails"
