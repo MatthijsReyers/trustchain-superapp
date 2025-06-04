@@ -12,14 +12,30 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <androidx.appcompat.widget.SearchView
-            android:id="@+id/searchView"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/search_p2p_background"
-            app:iconifiedByDefault="false"
-            app:queryHint="Search for DAOs &amp; apps" />
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <androidx.appcompat.widget.SearchView
+                android:id="@+id/searchView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/search_p2p_background"
+                app:iconifiedByDefault="false"
+                app:queryHint="Search for DAOs &amp; apps" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnCreateDao"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:contentDescription="Create DAO"
+                app:srcCompat="@drawable/ic_add_black_24dp"
+                app:fabSize="mini" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"

@@ -183,6 +183,20 @@
             android:textColor="@android:color/white"
             android:visibility="visible" />
 
+        <!-- Join Proposal Pending Message -->
+        <TextView
+            android:id="@+id/tv_join_proposal_pending"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:gravity="center"
+            android:text="Join proposal pending. Waiting for members to vote."
+            android:textColor="@android:color/darker_gray"
+            android:visibility="gone" />
+
+
         <!-- Install/Update Button (for members) -->
         <Button
             android:id="@+id/btn_install_update"

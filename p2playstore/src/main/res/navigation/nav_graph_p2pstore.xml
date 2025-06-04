@@ -46,6 +46,9 @@
             app:destination="@+id/joinDaoFragment"
             app:popUpTo="@+id/homeFragment"
             app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_homeFragment_to_createDaoFragment"
+            app:destination="@id/joinDaoFragment" />
     </fragment>
 
     <fragment

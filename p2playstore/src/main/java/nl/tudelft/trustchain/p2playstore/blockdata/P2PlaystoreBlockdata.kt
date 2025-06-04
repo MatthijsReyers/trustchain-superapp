@@ -15,7 +15,8 @@ data class FeatureRequestTD(
     val reward: Long,
     val daoId: String,
     val requesterPublicKey: String,
-    val status: String // e.g., "OPEN", "COMPLETED"
+    val status: String , // e.g., "OPEN", "COMPLETED"
+    val requestType: String = "feature"
 )
 
 class FeatureRequestTransactionData(data: JsonObject) : SWBlockTransactionData(
@@ -31,7 +32,8 @@ class FeatureRequestTransactionData(data: JsonObject) : SWBlockTransactionData(
         reward: Long,
         daoId: String,
         requesterPublicKey: String,
-        status: String = "OPEN"
+        status: String = "OPEN",
+        requestType: String = "feature"
     ) : this(
         SWUtil.objectToJsonObject(
             FeatureRequestTD(
@@ -41,7 +43,8 @@ class FeatureRequestTransactionData(data: JsonObject) : SWBlockTransactionData(
                 reward,
                 daoId,
                 requesterPublicKey,
-                status
+                status,
+                requestType
             )
         )
     )

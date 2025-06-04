@@ -14,6 +14,7 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
+import android.util.Log
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private var _binding: FragmentHomeBinding? = null
@@ -58,6 +59,161 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
 
         binding.seeAllRecommended.setOnClickListener {
             findNavController().navigate(R.id.joinDaoFragment)
+        }
+
+        binding.btnCreateDao.setOnClickListener {
+            showCreateDaoDialog()
+        }
+    }
+
+    private fun showCreateDaoDialog() {
+        val context = requireContext()
+        val builder = androidx.appcompat.app.AlertDialog.Builder(context)
+        val inflater = layoutInflater
+        val dialogView = inflater.inflate(R.layout.fragment_p2p_create_sw, null)
+
+        // Find views in the dialog layout
+        val etDaoName = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDaoName) ?: return
+        val etDaoDescription = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDaoDescription) ?: return
+        val etDaoCategory = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etDaoCategory) ?: return
+        val etEntranceFee = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etEntranceFee) ?: return
+        val etVotingThreshold = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etVotingThreshold) ?: return
+        val ivDaoIcon = dialogView.findViewById<android.widget.ImageView>(R.id.ivDaoIcon)
+        val btnSelectIcon = dialogView.findViewById<android.widget.Button>(R.id.btnSelectIcon)
+        val btnCancel = dialogView.findViewById<android.widget.Button>(R.id.btnCancel)
+        val btnCreateDao = dialogView.findViewById<android.widget.Button>(R.id.btnCreateDao)
+
+        // Available icons (same as in DaoAdapter)
+        val availableIcons = listOf(
+            R.drawable.ic_bitcoin,
+            R.drawable.ic_account_balance_wallet_black_24dp,
+            R.drawable.ic_group_work_black_24dp,
+            R.drawable.ic_device_hub_black_24dp
+        )
+        var selectedIconIndex = 0
+
+        // Set default values
+        etDaoCategory.setText("Democracy")
+        etEntranceFee.setText("100")
+        etVotingThreshold.setText("60")
+
+        // Icon selection functionality
+        btnSelectIcon?.setOnClickListener {
+            val iconNames = arrayOf("Bitcoin", "Wallet", "Group", "Network")
+
+            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Select DAO Icon")
+                .setSingleChoiceItems(iconNames, selectedIconIndex) { dialog, which ->
+                    selectedIconIndex = which
+                    ivDaoIcon?.setImageResource(availableIcons[selectedIconIndex])
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+
+        builder.setView(dialogView)
+            .setCancelable(true)
+
+        val dialog = builder.create()
+
+        // Handle button clicks
+        btnCancel?.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        btnCreateDao?.setOnClickListener {
+            val name = etDaoName.text.toString().trim()
+            val description = etDaoDescription.text.toString().trim()
+            val category = etDaoCategory.text.toString().trim()
+            val entranceFeeStr = etEntranceFee.text.toString().trim()
+            val votingThresholdStr = etVotingThreshold.text.toString().trim()
+
+            // Validation
+            if (name.isEmpty()) {
+                etDaoName.error = "DAO name is required"
+                return@setOnClickListener
+            }
+
+            if (description.isEmpty()) {
+                etDaoDescription.error = "DAO description is required"
+                return@setOnClickListener
+            }
+
+            if (category.isEmpty()) {
+                etDaoCategory.error = "DAO category is required"
+                return@setOnClickListener
+            }
+
+            val entranceFee = try {
+                entranceFeeStr.toLong()
+            } catch (e: NumberFormatException) {
+                etEntranceFee.error = "Invalid entrance fee"
+                return@setOnClickListener
+            }
+
+            val votingThreshold = try {
+                val threshold = votingThresholdStr.toInt()
+                if (threshold < 1 || threshold > 100) {
+                    etVotingThreshold.error = "Voting threshold must be between 1-100%"
+                    return@setOnClickListener
+                }
+                threshold
+            } catch (e: NumberFormatException) {
+                etVotingThreshold.error = "Invalid voting threshold"
+                return@setOnClickListener
+            }
+
+            // Create DAO
+            createDao(name, description, entranceFee, votingThreshold, selectedIconIndex, category)
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun createDao(
+        name: String,
+        description: String,
+        entranceFee: Long,
+        votingThreshold: Int,
+        iconIndex: Int,
+        category: String
+    ) {
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    // Generate a random magnet link for the DAO with icon information
+                    val magnetLink = "magnet:?xt=urn:btih:${java.util.UUID.randomUUID().toString().replace("-", "")}&dn=${name.replace(" ", "-")}.apk&icon=$iconIndex"
+
+                    p2playStore.createBitcoinGenesisWallet(
+                        entranceFee,
+                        name,
+                        description,
+                        magnetLink,
+                        category,
+                        votingThreshold,
+                        requireContext()
+                    )
+                }
+
+                android.widget.Toast.makeText(
+                    requireContext(),
+                    "DAO '$name' created successfully!",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+                // Reload the DAO data
+                loadDaoData()
+            } catch (e: Exception) {
+                android.util.Log.e("P2PlayStore", "Error creating DAO: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    android.widget.Toast.makeText(
+                        requireContext(),
+                        "Failed to create DAO: ${e.message}",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
         }
     }
 

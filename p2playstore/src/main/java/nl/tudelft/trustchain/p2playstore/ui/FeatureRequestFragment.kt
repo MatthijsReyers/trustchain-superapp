@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.navigation.fragment.findNavController
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentFeatureRequestBinding
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 
 class FeatureRequestFragment : BaseFragment() {
     private var _binding: FragmentFeatureRequestBinding? = null
@@ -77,7 +78,8 @@ class FeatureRequestFragment : BaseFragment() {
                 daoId = daoUniqueId,
                 title = title,
                 description = description,
-                reward = reward
+                reward = reward,
+                requestType = P2pStoreCommunity.FEATURE_REQUEST_BLOCK
             )
 
             Toast.makeText(context, "Feature request submitted successfully!", Toast.LENGTH_SHORT).show()
