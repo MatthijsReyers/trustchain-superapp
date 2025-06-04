@@ -24,10 +24,10 @@ import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTransactionDat
 import nl.tudelft.trustchain.p2playstore.blockdata.VotingPollHelper
 import nl.tudelft.trustchain.p2playstore.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentDaoDeatilsBinding
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
+//import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
+//import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
+//import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
+//import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
 import nl.tudelft.trustchain.p2playstore.blockdata.VotingPoll
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTransactionData
 
