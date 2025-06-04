@@ -6,7 +6,7 @@ import com.google.common.base.Joiner
 import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.DEFAULT_BITCOIN_MAX_TIMEOUT
-import nl.tudelft.trustchain.p2playstore.utils.taproot.*
+import nl.tudelft.trustchain.currencyii.util.taproot.*
 import org.bitcoinj.core.*
 import org.bitcoinj.core.listeners.DownloadProgressTracker
 import org.bitcoinj.crypto.DeterministicKey
