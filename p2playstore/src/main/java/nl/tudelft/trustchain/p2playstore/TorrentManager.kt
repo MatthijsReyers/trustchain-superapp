@@ -22,8 +22,11 @@ class TorrentManager(cacheDir: File) {
     private val scope = CoroutineScope(Dispatchers.IO)
 
     private val _onStarted = MutableSharedFlow<MagnetLink>()
-    private val _onProgress = MutableSharedFlow<MagnetLink>()
+    private val _onProgress = MutableSharedFlow<Pair<MagnetLink, Int>>()
     private val _onFinished = MutableSharedFlow<MagnetLink>()
+
+    val onStarted = _onStarted.asSharedFlow()
+    val onProgress = _onProgress.asSharedFlow()
 
     /**
      * Flow that emits an event when a torrent finishes downloading.
@@ -120,13 +123,22 @@ class TorrentManager(cacheDir: File) {
                     when (alert.type()) {
                         AlertType.ADD_TORRENT -> {
                             Log.d("P2P.TorrentManager", "Added torrent $alert")
-                            (alert as AddTorrentAlert).handle().resume()
+                            val a = (alert as AddTorrentAlert)
+                            val link = MagnetUtils.parseMagnet(a.handle().makeMagnetUri())
+                            a.handle().resume()
+                            scope.launch {
+                                _onStarted.emit(link)
+                            }
                         }
                         AlertType.BLOCK_FINISHED -> {
                             Log.d("P2P.TorrentManager", "Block finished $alert")
                             val a = alert as BlockFinishedAlert
                             val p = (a.handle().status().progress() * 100).toInt()
+                            val link = MagnetUtils.parseMagnet(a.handle().makeMagnetUri())
                             Log.d("P2P.TorrentManager", "Progress $p for ${a.torrentName()}")
+                            scope.launch {
+                                _onProgress.emit(Pair(link, p))
+                            }
                         }
                         AlertType.TORRENT_FINISHED -> {
                             val a = alert as TorrentFinishedAlert
