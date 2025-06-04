@@ -36,18 +36,6 @@ class DaoDetailsFragment : BaseFragment() {
     private lateinit var daoData: SWJoinBlockTD
     private var isUserMember = false
 
-    override fun onCreate(bundle: Bundle?) {
-        super.onCreate(bundle)
-
-        val args = this.requireArguments();
-        val publicKey = args.getByteArray("publicKey")!!
-        val sequenceNumber = args.getInt("sequenceNumber").toUInt()
-
-        val community = this.getTrustChainCommunity()
-        this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
-
-        println("Get block: $daoBlock")
-    }
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -67,7 +55,7 @@ class DaoDetailsFragment : BaseFragment() {
             loadDaoDetails(blockId)
             setupClickListeners()
         } else {
-            android.util.Log.e("DaoDetailsFragment", "No block ID provided")
+            Log.e("DaoDetailsFragment", "No block ID provided")
             findNavController().navigateUp()
         }
     }
@@ -100,11 +88,11 @@ class DaoDetailsFragment : BaseFragment() {
                     loadLatestApprovedUpdate()
                     // request in the new section
                 } else {
-                    android.util.Log.e("DaoDetailsFragment", "DAO block not found for ID: $blockId")
+                    Log.e("DaoDetailsFragment", "DAO block not found for ID: $blockId")
                     findNavController().navigateUp()
                 }
             } catch (e: Exception) {
-                android.util.Log.e("DaoDetailsFragment", "Error loading DAO details: ${e.message}")
+                Log.e("DaoDetailsFragment", "Error loading DAO details: ${e.message}")
                 findNavController().navigateUp()
             }
         }
@@ -173,7 +161,7 @@ class DaoDetailsFragment : BaseFragment() {
                     binding.noProgressBar.requestLayout()
                     binding.pendingProgressBar.requestLayout()
                 } else {
-                    android.util.Log.w(
+                    Log.w(
                             "DaoDetailsFragment",
                             "Insufficient width for progress bars."
                     )
@@ -188,7 +176,7 @@ class DaoDetailsFragment : BaseFragment() {
             val myPublicKey = getP2pStoreCommunity().myPeer.publicKey.keyToBin().toHex()
             isUserMember = daoData.SW_TRUSTCHAIN_PKS.contains(myPublicKey)
         } catch (e: Exception) {
-            android.util.Log.e("DaoDetailsFragment", "Error checking membership: ${e.message}")
+            Log.e("DaoDetailsFragment", "Error checking membership: ${e.message}")
             isUserMember = false
         }
     }
@@ -222,18 +210,18 @@ class DaoDetailsFragment : BaseFragment() {
                     val featureRequests = withContext(Dispatchers.IO) {
                         p2playStore.getFeatureRequestsForDao(daoUniqueId)
                     }
-                    android.util.Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Found ${featureRequests.size} feature requests for DAO $daoUniqueId")
+                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Found ${featureRequests.size} feature requests for DAO $daoUniqueId")
                     // Get all solution blocks for this DAO
                     val solutionBlocks = withContext(Dispatchers.IO) {
                         p2playStore.getSolutionBlocksForDaoAndFeature(daoUniqueId)
                     }
-                    android.util.Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Found ${solutionBlocks.size} solution blocks for DAO $daoUniqueId.")
+                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Found ${solutionBlocks.size} solution blocks for DAO $daoUniqueId.")
 
                     // Get all votes for this DAO
                     val votes = withContext(Dispatchers.IO) {
                         p2playStore.getVotesForSolution(daoUniqueId)
                     }
-                    android.util.Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Found ${votes.size} votes for DAO $daoUniqueId.")
+                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Found ${votes.size} votes for DAO $daoUniqueId.")
 
 
                     val totalMembers = daoData.SW_TRUSTCHAIN_PKS.size
@@ -245,7 +233,7 @@ class DaoDetailsFragment : BaseFragment() {
                             val solutionData = FeatureSolutionTransactionData(block.transaction).getData()
                             block to solutionData
                         } catch (e: Exception) {
-                            android.util.Log.e("DaoDetailsFragment", "Failed to parse solution block in approved filter: ${e.message}")
+                            Log.e("DaoDetailsFragment", "Failed to parse solution block in approved filter: ${e.message}")
                             null
                         }
                     }.filter { (block, solution) ->
@@ -264,7 +252,7 @@ class DaoDetailsFragment : BaseFragment() {
                             false
                         }
                     }
-                    android.util.Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Found ${approvedSolutionDataWithBlocks.size} approved solutions with blocks for DAO $daoUniqueId.")
+                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Found ${approvedSolutionDataWithBlocks.size} approved solutions with blocks for DAO $daoUniqueId.")
                     // Sort by block timestamp descending and take the first one
                     val latestApprovedSolutionWithBlock = approvedSolutionDataWithBlocks
                         .sortedByDescending { it.first.timestamp.time }
@@ -273,7 +261,7 @@ class DaoDetailsFragment : BaseFragment() {
 
                     if (latestApprovedSolutionWithBlock != null) {
                         val (block, solution) = latestApprovedSolutionWithBlock
-                        android.util.Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Latest approved solution found: ${solution.solutionId} (Feature ${solution.featureId}), Block Timestamp: ${block.timestamp.time}")
+                        Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Latest approved solution found: ${solution.solutionId} (Feature ${solution.featureId}), Block Timestamp: ${block.timestamp.time}")
                         // Update UI with latest approved version info
                         binding.daoVersion.text = "v${block.sequenceNumber}" // Use block sequence number as a simple version
                         // Set click listener for update button
@@ -285,17 +273,17 @@ class DaoDetailsFragment : BaseFragment() {
                         return@launch
 
                     } else {
-                        android.util.Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): No approved solutions found for DAO $daoUniqueId.")
+                        Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): No approved solutions found for DAO $daoUniqueId.")
                         binding.daoVersion.text = "No updates"
                         binding.btnInstallUpdate.visibility = View.GONE // Hide update button if no approved updates
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Error loading latest approved update: ${e.message}")
+                    Log.e("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Error loading latest approved update: ${e.message}")
                     binding.daoVersion.text = "Error loading update info"
                     binding.btnInstallUpdate.visibility = View.GONE
                 }
                 if (retry < maxRetries) {
-                    android.util.Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Retrying in ${retryDelayMillis}ms...")
+                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Retrying in ${retryDelayMillis}ms...")
                 }
             }
         }
@@ -303,18 +291,18 @@ class DaoDetailsFragment : BaseFragment() {
 
     private fun downloadAndInstallUpdate(magnetLink: String) {
         if (magnetLink.isNotEmpty()) {
-            android.util.Log.d("DaoDetailsFragment", "Attempting to download/install from magnet link: $magnetLink")
+            Log.d("DaoDetailsFragment", "Attempting to download/install from magnet link: $magnetLink")
             // TODO: Implement actual download/install logic.
             Toast.makeText(context, "Downloading update from $magnetLink (simulated)", Toast.LENGTH_LONG).show()
             try {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(magnetLink))
                 startActivity(intent)
             } catch (e: Exception) {
-                android.util.Log.e("DaoDetailsFragment", "Failed to open magnet link: ${e.message}")
+                Log.e("DaoDetailsFragment", "Failed to open magnet link: ${e.message}")
                 Toast.makeText(context, "Could not open magnet link. Please ensure you have a torrent client installed.", Toast.LENGTH_LONG).show()
             }
         } else {
-            android.util.Log.w("DaoDetailsFragment", "No magnet link available for the latest approved update.")
+            Log.w("DaoDetailsFragment", "No magnet link available for the latest approved update.")
             Toast.makeText(context, "No download link available for this update.", Toast.LENGTH_SHORT).show()
         }
     }
@@ -332,7 +320,7 @@ class DaoDetailsFragment : BaseFragment() {
                     val featureRequests = withContext(Dispatchers.IO) {
                         p2playStore.getFeatureRequestsForDao(daoUniqueId)
                     }
-                    android.util.Log.d("DaoDetailsFragment", "loadRecentVotingPoll (Attempt ${retry + 1}): Found ${featureRequests.size} feature requests for DAO $daoUniqueId")
+                    Log.d("DaoDetailsFragment", "loadRecentVotingPoll (Attempt ${retry + 1}): Found ${featureRequests.size} feature requests for DAO $daoUniqueId")
 
 
                     val latestVotableSolutionWithBlock = withContext(Dispatchers.IO) {
@@ -341,7 +329,7 @@ class DaoDetailsFragment : BaseFragment() {
 
                     if (latestVotableSolutionWithBlock != null) {
                         val (latestVotableSolution, solutionBlock) = latestVotableSolutionWithBlock
-                        android.util.Log.d("DaoDetailsFragment", "loadRecentVotingPoll: Latest votable solution found: ${latestVotableSolution.solutionId} for feature ${latestVotableSolution.featureId} in DAO $daoUniqueId")
+                        Log.d("DaoDetailsFragment", "loadRecentVotingPoll: Latest votable solution found: ${latestVotableSolution.solutionId} for feature ${latestVotableSolution.featureId} in DAO $daoUniqueId")
 //                      TODO: might not be necessary but looks cool
                         binding.votingCard.visibility = View.VISIBLE
                         // Hide the "See All" button initially if we only show the latest,
@@ -350,7 +338,7 @@ class DaoDetailsFragment : BaseFragment() {
                             // Fetch votes specifically for this solution within this DAO
                             p2playStore.getVotesForSolution(daoUniqueId, latestVotableSolution.solutionId)
                         }
-                        android.util.Log.d("DaoDetailsFragment", "loadRecentVotingPoll: Found ${votes.size} votes for solution ${latestVotableSolution.solutionId} in DAO ${daoUniqueId}")
+                        Log.d("DaoDetailsFragment", "loadRecentVotingPoll: Found ${votes.size} votes for solution ${latestVotableSolution.solutionId} in DAO ${daoUniqueId}")
 
 
                         // Find the corresponding feature request again to get its details
@@ -373,7 +361,7 @@ class DaoDetailsFragment : BaseFragment() {
                                 hasUserVoted = hasUserVoted,
                                 userVote = userVote
                             )
-                            android.util.Log.d("DaoDetailsFragment", "loadRecentVotingPoll: Created voting poll for UI. Active: ${votingPoll.isActive}, Voted: ${votingPoll.hasUserVoted}, Approved: ${votingPoll.isApproved}")
+                            Log.d("DaoDetailsFragment", "loadRecentVotingPoll: Created voting poll for UI. Active: ${votingPoll.isActive}, Voted: ${votingPoll.hasUserVoted}, Approved: ${votingPoll.isApproved}")
 
 
                             updateVotingCardUI(votingPoll)
@@ -412,7 +400,7 @@ class DaoDetailsFragment : BaseFragment() {
                             return@launch
 
                         } else {
-                            android.util.Log.e("DaoDetailsFragment", "loadRecentVotingPoll: Found votable solution but corresponding open feature request not found. Solution ID: ${latestVotableSolution.solutionId} in DAO ${daoUniqueId}")
+                            Log.e("DaoDetailsFragment", "loadRecentVotingPoll: Found votable solution but corresponding open feature request not found. Solution ID: ${latestVotableSolution.solutionId} in DAO ${daoUniqueId}")
                             binding.votingCard.visibility = View.GONE
                             binding.btnVote.visibility = View.GONE
                             binding.btnSeeAllVotes.isEnabled = false
@@ -421,7 +409,7 @@ class DaoDetailsFragment : BaseFragment() {
 
                     } else {
                         // No open feature request has a submitted solution to vote on
-                        android.util.Log.d("DaoDetailsFragment", "loadRecentVotingPoll (Attempt ${retry + 1}): No latest votable solution found for DAO $daoUniqueId.")
+                        Log.d("DaoDetailsFragment", "loadRecentVotingPoll (Attempt ${retry + 1}): No latest votable solution found for DAO $daoUniqueId.")
                         binding.votingCard.visibility = View.GONE
                         binding.btnVote.visibility = View.GONE
                         binding.btnSeeAllVotes.isEnabled = false // Disable "See All" if no polls
@@ -429,14 +417,14 @@ class DaoDetailsFragment : BaseFragment() {
 
                         // If no votable solution is found, we might need to wait for sync.
                         if (retry < maxRetries) {
-                            android.util.Log.d("DaoDetailsFragment", "loadRecentVotingPoll: Retrying in ${retryDelayMillis}ms...")
+                            Log.d("DaoDetailsFragment", "loadRecentVotingPoll: Retrying in ${retryDelayMillis}ms...")
                         }
                     }
 
                 } catch (e: Exception) {
-                    android.util.Log.e("DaoDetailsFragment", "loadRecentVotingPoll (Attempt ${retry + 1}): Error loading recent voting poll: ${e.message}")
+                    Log.e("DaoDetailsFragment", "loadRecentVotingPoll (Attempt ${retry + 1}): Error loading recent voting poll: ${e.message}")
                     if (retry < maxRetries) {
-                        android.util.Log.e("DaoDetailsFragment", "loadRecentVotingPoll: Retrying in ${retryDelayMillis}ms due to error...")
+                        Log.e("DaoDetailsFragment", "loadRecentVotingPoll: Retrying in ${retryDelayMillis}ms due to error...")
                     } else {
                         // exhausted retries, show error UI
                         binding.votingCard.visibility = View.GONE
@@ -465,7 +453,7 @@ class DaoDetailsFragment : BaseFragment() {
 
 
                     if (latestPendingRequest != null) {
-                        android.util.Log.d("DaoDetailsFragment", "loadLatestPendingFeatureRequest: Latest pending request found: ${latestPendingRequest.featureId} for DAO $daoUniqueId")
+                        Log.d("DaoDetailsFragment", "loadLatestPendingFeatureRequest: Latest pending request found: ${latestPendingRequest.featureId} for DAO $daoUniqueId")
                         binding.latestFeatureRequestPreviewCard.visibility = View.VISIBLE
                         binding.tvNoPendingFeatureRequests.visibility = View.GONE
 
@@ -489,7 +477,7 @@ class DaoDetailsFragment : BaseFragment() {
 
                     } else {
                         // No pending feature requests without solutions
-                        android.util.Log.d("DaoDetailsFragment", "loadLatestPendingFeatureRequest (Attempt ${retry + 1}): No latest pending request found for DAO $daoUniqueId.")
+                        Log.d("DaoDetailsFragment", "loadLatestPendingFeatureRequest (Attempt ${retry + 1}): No latest pending request found for DAO $daoUniqueId.")
                         binding.latestFeatureRequestPreviewCard.visibility = View.GONE
                         binding.tvNoPendingFeatureRequests.visibility = View.VISIBLE
                         binding.latestFeatureRequestPreviewCard.setOnClickListener(null)
@@ -499,9 +487,9 @@ class DaoDetailsFragment : BaseFragment() {
                     }
 
                 } catch (e: Exception) {
-                    android.util.Log.e("DaoDetailsFragment", "loadLatestPendingFeatureRequest (Attempt ${retry + 1}): Error loading latest pending feature request: ${e.message}")
+                    Log.e("DaoDetailsFragment", "loadLatestPendingFeatureRequest (Attempt ${retry + 1}): Error loading latest pending feature request: ${e.message}")
                     if (retry < maxRetries) {
-                        android.util.Log.e("DaoDetailsFragment", "loadLatestPendingFeatureRequest: Retrying in ${retryDelayMillis}ms due to error...")
+                        Log.e("DaoDetailsFragment", "loadLatestPendingFeatureRequest: Retrying in ${retryDelayMillis}ms due to error...")
                     } else {
                         // exhausted retries, show error UI
                         binding.latestFeatureRequestPreviewCard.visibility = View.GONE
@@ -718,7 +706,7 @@ class DaoDetailsFragment : BaseFragment() {
     private fun joinDao() {
         try {
             joinSharedWalletClicked(daoBlock)
-            android.util.Log.d("DaoDetailsFragment", "Join proposal sent")
+            Log.d("DaoDetailsFragment", "Join proposal sent")
             lifecycleScope.launch {
                 checkMembership()
                 updateUIBasedOnMembership()
@@ -727,7 +715,7 @@ class DaoDetailsFragment : BaseFragment() {
                 loadLatestApprovedUpdate()
             }
         } catch (e: Exception) {
-            android.util.Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
+            Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
             // Show an error message
         }
     }
