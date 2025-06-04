@@ -77,6 +77,22 @@ class TorrentManager(cacheDir: File) {
     }
 
     /**
+     * Checks if the torrent for the magnetlink of this app version has finished downloading.
+     */
+    fun finishedDownloading(app: TrustChainBlock): Boolean {
+        val magnetLink = MagnetUtils.parseMagnet(app.transaction["magnetLink"] as String)
+        val info = this.findTorrentInfo(magnetLink)
+        try {
+            val tmp = this.sessionManager.find(info?.infoHash())
+            return tmp.status().isFinished;
+        }
+        catch (err: Throwable) {
+            Log.e("P2P.TorrentManager", "Failed to find torrent handle: $err")
+            return false;
+        }
+    }
+
+    /**
      * This method looks inside the apps directory for .torrent files created in a previous session
      * that we can immediately open again to resume downloading/seeding
      */

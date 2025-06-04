@@ -1,5 +1,6 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
+import kotlinx.coroutines.launch
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -9,8 +10,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
+import androidx.annotation.RequiresApi
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,6 +32,8 @@ import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 import org.bitcoinj.core.Coin
 import java.math.BigInteger
+import nl.tudelft.trustchain.p2playstore.ExecutionActivity
+import nl.tudelft.trustchain.p2playstore.P2PlayStoreMainActivity
 
 class AppDetails : BaseFragment() {
     private var _binding: FragmentAppDetailsBinding? = null
@@ -41,6 +44,50 @@ class AppDetails : BaseFragment() {
     private lateinit var daoData: SWJoinBlockTD
     private var isUserMember = false
 
+    /**
+     * Integer between 0-100, this indicates how far along the torrent download for this apps
+     * APK file is.
+     */
+    private var downloadProgress: Int = 0;
+
+    /**
+     * Has the torrent with the APK file for this app finished downloading yet?
+     */
+    private fun downloadFinished(): Boolean {
+        return this.downloadProgress >= 100
+    }
+
+    private lateinit var block: TrustChainBlock
+
+    override fun onCreate(bundle: Bundle?) {
+        super.onCreate(bundle)
+
+        // The previous fragment (home) tells us which block/app/version to show
+        val args = this.requireArguments();
+        val publicKey = args.getByteArray("publicKey")!!
+        val sequenceNumber = args.getInt("sequenceNumber").toUInt()
+
+        // Actually retrieve the block
+        val community = this.getTrustChainCommunity()
+        this.block = community.database.get(publicKey, sequenceNumber)!!
+
+        val torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
+        if (torrentManager.finishedDownloading(this.block)) {
+            this.downloadProgress = 100;
+        }
+
+        println("this.downloadProgress: ${this.downloadProgress}")
+
+        if (!this.downloadFinished()) {
+            lifecycleScope.launch {
+                torrentManager.onFinished.collect({ link ->
+                    println("link: $link")
+                })
+            }
+        }
+
+        println("Get block: ${block.transaction}")
+    }
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -108,7 +155,7 @@ class AppDetails : BaseFragment() {
     @RequiresApi(Build.VERSION_CODES.S)
     private fun setupDaoDetailsUI() {
         // Set DAO basic info from the block data
-        binding.daoName.text = daoBlock.transaction["name"]?.toString() ?: "Unknown DAO"
+        binding.appName.text = daoBlock.transaction["name"]?.toString() ?: "Unknown DAO"
         binding.daoCategory.text = daoBlock.transaction["category"]?.toString() ?: "General"
         binding.daoMembersCount.text = daoData.SW_TRUSTCHAIN_PKS.size.toString()
         binding.daoDownloads.text = "0" // TODO: Implement download tracking
