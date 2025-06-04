@@ -90,13 +90,8 @@ class TrustChainApplication : Application() {
 
             // Only start IPv8 here if we are on Android 11 or below.
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                Log.d("YourClass", "Android version <= S.")
                 initIPv8()
-            } else {
-                    // Android 12 (S) and higher
-                    Log.d("YourClass", "Android version >= S.")
-                    initIPv8()
-                }
+            }
         }
 
     fun initIPv8() {
