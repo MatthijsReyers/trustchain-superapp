@@ -52,6 +52,7 @@ class MagnetUtilsTest {
 
         val magnet = MagnetUtils.parseMagnet(magnetUri)
 
+        assertEquals(magnetUri, magnet.link)
         assertEquals("9f65cf30a02d654151bd26108a6fe91f7c000409", magnet.infoHash)
         assertEquals("test-app.apk", magnet.displayName)
         assertEquals(36, magnet.trackers.size) // Validate total number of trackers

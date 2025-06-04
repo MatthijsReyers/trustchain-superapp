@@ -2,12 +2,15 @@ package nl.tudelft.trustchain.p2playstore.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
+import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
+import java.io.File
 
 /**
  * This is the app details fragment that displays information about an app after a user has clicked
@@ -56,23 +59,48 @@ class AppDetails : BaseFragment() {
         val description = this.block.transaction["description"] as? String
         binding.appDescription.text = description
 
-        val magnetLink = this.block.transaction["magnetLink"] as String
-        val fileName = magnetLink.split("&dn=").last().split("&tr=").first()
         binding.btnInstallUpdate.setOnClickListener {
-            loadDynamicCode(fileName)
+            loadDynamicCode()
         }
     }
 
-    private fun loadDynamicCode(fileName: String) {
+    private fun loadDynamicCode() {
+        val applicationContext = requireContext()
+        val magnet = parseMagnet(this.block.transaction["magnetLink"] as String)
+
         try {
-            val intent = Intent(requireContext(), ExecutionActivity::class.java)
+            val intent = Intent(applicationContext, ExecutionActivity::class.java)
             intent.putExtra(
                 "fileName",
-                "${requireContext().cacheDir}/apps/${fileName.split("/").last()}"
+                "${applicationContext}/p2p-apps/${magnet.infoHash}/${magnet.displayName}"
             )
             startActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    /**
+     * Logs all files in the given subfolder within the app's cache directory.
+     *
+     * This function retrieves and logs the absolute paths of all files located in the specified
+     * subfolder inside the application's cache directory. Useful for debugging file presence
+     * and structure when working with dynamically loaded code or cached assets.
+     *
+     * @param subfolderInCache The relative subfolder path inside the cache directory to inspect.
+     *                         Defaults to the root of the cache directory ("/").
+     *
+     * Example usage:
+     * ```
+     * printFiles("/dynamic_apks/")
+     * ```
+     */
+    private fun printFiles(subfolderInCache: String = "/") {
+        val applicationContext = requireContext()
+
+        val files = File("${applicationContext.cacheDir}$subfolderInCache").listFiles()
+        for (file in files!!) {
+            Log.d("P2P", "File: $file")
         }
     }
 }
