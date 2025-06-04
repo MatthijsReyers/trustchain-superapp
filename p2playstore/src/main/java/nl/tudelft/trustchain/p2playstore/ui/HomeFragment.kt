@@ -79,10 +79,6 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         binding.seeAllRecommended.setOnClickListener {
             findNavController().navigate(R.id.joinDaoFragment)
         }
-
-        binding.startApp.setOnClickListener {
-            loadDynamicCode("search.apk")
-        }
     }
 
     private fun createWalletIfNeeded() {
