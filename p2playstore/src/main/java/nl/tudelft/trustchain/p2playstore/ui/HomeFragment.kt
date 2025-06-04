@@ -55,7 +55,6 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         super.onViewCreated(view, savedInstanceState)
 
         setupRecyclerViews()
-        setupClickListeners()
 
         if (WalletManagerAndroid.isInitialized()) {
             loadDaoData()
@@ -69,16 +68,6 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private fun setupRecyclerViews() {
         binding.rvTopApps.layoutManager = GridLayoutManager(context, 2, GridLayoutManager.HORIZONTAL, false)
         binding.rvRecommended.layoutManager = GridLayoutManager(context, 2, GridLayoutManager.HORIZONTAL, false)
-    }
-
-    private fun setupClickListeners() {
-        binding.seeAllTopApps.setOnClickListener {
-            findNavController().navigate(R.id.joinDaoFragment)
-        }
-
-        binding.seeAllRecommended.setOnClickListener {
-            findNavController().navigate(R.id.joinDaoFragment)
-        }
     }
 
     private fun createWalletIfNeeded() {
