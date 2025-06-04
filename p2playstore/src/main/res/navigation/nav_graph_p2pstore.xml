@@ -44,6 +44,9 @@
         <action
             android:id="@+id/action_homeFragment_to_appDetails"
             app:destination="@id/appDetails" />
+        <action
+            android:id="@+id/action_homeFragment_to_createDaoFragment"
+            app:destination="@id/joinDaoFragment" />
     </fragment>
 
     <fragment
