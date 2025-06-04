@@ -10,7 +10,8 @@ import com.frostwire.jlibtorrent.alerts.TorrentFinishedAlert
 import kotlinx.coroutines.*
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.TORRENT_EXTENSION
-import nl.tudelft.trustchain.foc.util.MagnetUtils.Companion.MAGNET_HEADER_STRING
+import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
+import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
@@ -35,28 +36,10 @@ class TorrentManager(cacheDir: File) {
         }
     }
 
-    private val torrentHandles = ArrayList<TorrentHandle>();
+    /**
+     * List of all torrents the manager knows about/manages.
+     */
     private val torrentInfos = ArrayList<TorrentInfo>();
-
-//    TODO: Replace with magnet utils..
-    fun getHashOfMagnetLink(link: String): String {
-        // Find the query part after '?'
-        val queryStart = link.indexOf('?')
-        if (queryStart == -1 || queryStart == link.length - 1) return ""
-
-        val query = link.substring(queryStart + 1)
-        val params = query.split('&')
-
-        for (param in params) {
-            if (param.startsWith("xt=")) {
-                val value = param.substringAfter("xt=")
-                if (value.startsWith("urn:btih:")) {
-                    return value.substringAfter("urn:btih:")
-                }
-            }
-        }
-        return ""
-    }
 
     /**
      * Actually starts the torrent manager and loads previously started/downloaded torrents and
@@ -102,16 +85,10 @@ class TorrentManager(cacheDir: File) {
      * For a given magnet link, try to find if we have already registered/downloaded the torrent it
      * points to
      */
-    private fun findTorrentInfo(magnetLink: String): TorrentInfo? {
-        if (!magnetLink.startsWith(MAGNET_HEADER_STRING)) {
-            Log.e("P2P.TorrentManager", "Magnet link does not start with correct header")
-            return null;
-        }
-        // TODO: Replace with Magnet utils...
-        val magnetHash: String = this.getHashOfMagnetLink(magnetLink)
+    private fun findTorrentInfo(magnetLink: MagnetLink): TorrentInfo? {
         for (info in this.torrentInfos) {
-            val knownHash: String = this.getHashOfMagnetLink(info.makeMagnetUri())
-            if (knownHash == magnetHash) {
+            val knownHash = MagnetUtils.parseMagnet(info.makeMagnetUri())
+            if (knownHash.infoHash == magnetLink.infoHash) {
                 return info;
             }
         }
@@ -187,10 +164,7 @@ class TorrentManager(cacheDir: File) {
      * Downloads the specific version of the app described by the given block.
      */
     fun downloadApp(block: TrustChainBlock) {
-        val magnetLink = block.transaction["magnetLink"]
-        if (magnetLink !is String) {
-            throw Exception("block ${block.hashNumber} does not describe a p2p app")
-        }
+        val magnetLink = MagnetUtils.parseMagnet(block.transaction["magnetLink"] as String)
 
         // Have we already downloaded this app?
         var torrentInfo = this.findTorrentInfo(magnetLink);
@@ -205,17 +179,14 @@ class TorrentManager(cacheDir: File) {
         torrentInfo = this.downloadTorrentInfo(magnetLink)
         this.torrentInfos.add(torrentInfo)
 
-        // TODO: Replace with magnet utils.
-        val torrentHash = this.getHashOfMagnetLink(magnetLink)
-
         // Create a .torrent file for this torrent so we can resume downloading/seeding after
         // restarting the app without needing to download the torrent info from someone else first.
         val entry: Entry = torrentInfo.toEntry()
-        val torrentFile = File(this.appsDirectory, "${torrentHash}.torrent")
+        val torrentFile = File(this.appsDirectory, "${magnetLink.infoHash}.torrent")
         FileOutputStream(torrentFile).use { fos -> fos.write(entry.bencode()) }
 
         // Now finally actually start the download process.
-        val destDir = File(this.appsDirectory, "${torrentHash}")
+        val destDir = File(this.appsDirectory, magnetLink.infoHash)
         this.sessionManager.download(torrentInfo, destDir)
     }
 
@@ -224,9 +195,9 @@ class TorrentManager(cacheDir: File) {
      * the magnet file points to. This is only needed if we have not yet saved this data to the
      * cache folder as a .torrent file.
      */
-    private fun downloadTorrentInfo(magnetLink: String): TorrentInfo {
+    private fun downloadTorrentInfo(link: MagnetLink): TorrentInfo {
         try {
-            val data: ByteArray = sessionManager.fetchMagnet(magnetLink, 30)
+            val data: ByteArray = sessionManager.fetchMagnet(link.raw, 30)
             return TorrentInfo.bdecode(data)
         }
         catch (_err: Throwable) {
