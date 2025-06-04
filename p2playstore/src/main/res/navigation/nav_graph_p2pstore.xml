@@ -59,9 +59,9 @@
 
     <fragment
         android:id="@+id/daoDetailsFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.ui.DaoDetailsFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.AppDetails"
         android:label="DAO Details"
-        tools:layout="@layout/fragment_dao_deatils">
+        tools:layout="@layout/fragment_app_details">
         <argument
             android:name="blockId"
             app:argType="string"
