@@ -8,6 +8,8 @@ import com.frostwire.jlibtorrent.alerts.AlertType
 import com.frostwire.jlibtorrent.alerts.BlockFinishedAlert
 import com.frostwire.jlibtorrent.alerts.TorrentFinishedAlert
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.TORRENT_EXTENSION
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
@@ -18,6 +20,15 @@ import java.util.*
 
 class TorrentManager(cacheDir: File) {
     private val scope = CoroutineScope(Dispatchers.IO)
+
+    private val _onStarted = MutableSharedFlow<MagnetLink>()
+    private val _onProgress = MutableSharedFlow<MagnetLink>()
+    private val _onFinished = MutableSharedFlow<MagnetLink>()
+
+    /**
+     * Flow that emits an event when a torrent finishes downloading.
+     */
+    val onFinished = _onFinished.asSharedFlow()
 
     /**
      * JlibTorrent session manager, this manages the state/downloading of the torrents/magnet links
@@ -120,6 +131,10 @@ class TorrentManager(cacheDir: File) {
                         AlertType.TORRENT_FINISHED -> {
                             val a = alert as TorrentFinishedAlert
                             Log.d("P2P.TorrentManager", "Download finished for ${a.torrentName()}")
+                            val link = MagnetUtils.parseMagnet(a.handle().makeMagnetUri())
+                            scope.launch {
+                                _onFinished.emit(link);
+                            }
                         }
                         else -> {
                         }
