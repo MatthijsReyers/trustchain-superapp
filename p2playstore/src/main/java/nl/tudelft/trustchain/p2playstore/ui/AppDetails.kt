@@ -1,15 +1,17 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
+import java.math.BigInteger
 
 /**
  * This is the app details fragment that displays information about an app after a user has clicked
@@ -24,7 +26,7 @@ class AppDetails : BaseFragment() {
     override fun onCreate(bundle: Bundle?) {
         super.onCreate(bundle)
 
-        val args = this.requireArguments();
+        val args = this.requireArguments()
         val publicKey = args.getByteArray("publicKey")!!
         val sequenceNumber = args.getInt("sequenceNumber").toUInt()
 
@@ -42,14 +44,16 @@ class AppDetails : BaseFragment() {
         return binding.root
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onStart() {
         super.onStart()
         this.updateView()
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun updateView() {
-        val icon = this.block.transaction["iconIndex"]
-        val iconResource = when (icon) {
+        val icon = this.block.transaction["iconIndex"] as BigInteger
+        val iconResource = when (icon.intValueExact()) {
             0 -> R.drawable.ic_bitcoin
             1 -> R.drawable.ic_account_balance_wallet_black_24dp // TODO: Add more icons as needed
             2 -> R.drawable.ic_group_work_black_24dp

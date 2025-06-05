@@ -61,7 +61,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         if (WalletManagerAndroid.isInitialized()) {
             loadDaoData()
         } else {
-            android.util.Log.w("P2PlayStore", "WalletManager is not initialized.")
+            Log.w("P2PlayStore", "WalletManager is not initialized.")
         }
     }
 
@@ -190,10 +190,12 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             try {
                 parseMagnet(magnetLink)
             } catch (e: Exception) {
-                etMagnetLink.error = e.message
+                etMagnetLink.error = "Magnet link could not be parsed: ${e.message}"
+                return@setOnClickListener
             }
             if (magnetLink.take(7) != "magnet:") {
                 etMagnetLink.error = "Invalid magnet link provided: $magnetLink"
+                return@setOnClickListener
             }
 
             // Create DAO
@@ -237,7 +239,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                 // Reload the DAO data
                 loadDaoData()
             } catch (e: Exception) {
-                android.util.Log.e("P2PlayStore", "Error creating DAO: ${e.message}")
+                Log.e("P2PlayStore", "Error creating DAO: ${e.message}")
                 withContext(Dispatchers.Main) {
                     android.widget.Toast.makeText(
                         requireContext(),
@@ -267,7 +269,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                     updateMyDaoList(myDaos)
                 }
             } catch (e: Exception) {
-                android.util.Log.e("P2PlayStore", "Error loading DAO data: ${e.message}")
+                Log.e("P2PlayStore", "Error loading DAO data: ${e.message}")
             }
         }
     }
@@ -277,12 +279,12 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
 
         binding.allApps.text = "All apps (${daoList.size})"
 
-        android.util.Log.d("P2PlayStore", "Updating All DAOs list with ${daoList.size} items.")
+        Log.d("P2PlayStore", "Updating All DAOs list with ${daoList.size} items.")
         allDaoAdapter = DaoAdapter(
             daoList,
             object : DaoAdapter.OnItemClickListener {
                 override fun onItemClick(daoBlock: TrustChainBlock) {
-                    android.util.Log.d("P2PlayStore", "Navigating to joinDaoFragment from All DAOs")
+                    Log.d("P2PlayStore", "Navigating to joinDaoFragment from All DAOs")
                     try {
                         val bundle = Bundle()
                         bundle.apply {
@@ -291,7 +293,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                         }
                         findNavController().navigate(R.id.appDetails, bundle)
                     } catch (e: Exception) {
-                        android.util.Log.e("P2PlayStore", "Navigation error: ${e.message}")
+                        Log.e("P2PlayStore", "Navigation error: ${e.message}")
                     }
                 }
             }
@@ -304,12 +306,12 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
 
         binding.installedApps.text = "Installed apps (${daoList.size})"
 
-        android.util.Log.d("P2PlayStore", "Updating My DAOs list with ${daoList.size} items.")
+        Log.d("P2PlayStore", "Updating My DAOs list with ${daoList.size} items.")
         myDaoAdapter = DaoAdapter(
             daoList,
             object : DaoAdapter.OnItemClickListener {
                 override fun onItemClick(daoBlock: TrustChainBlock) {
-                    android.util.Log.d("P2PlayStore", "Navigating to joinDaoFragment from My DAOs")
+                    Log.d("P2PlayStore", "Navigating to joinDaoFragment from My DAOs")
                     try {
                         val bundle = Bundle()
                         bundle.apply {
@@ -318,7 +320,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                         }
                         findNavController().navigate(R.id.appDetails, bundle)
                     } catch (e: Exception) {
-                        android.util.Log.e("P2PlayStore", "Navigation error: ${e.message}")
+                        Log.e("P2PlayStore", "Navigation error: ${e.message}")
                     }
                 }
             }
