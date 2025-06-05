@@ -20,7 +20,8 @@ import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTD
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTD
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureVoteTD
 import nl.tudelft.trustchain.p2playstore.blockdata.VotingPollHelper
-
+import nl.tudelft.trustchain.p2playstore.blockdata.VotingPoll
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 
 class FeatureVotingFragment : BaseFragment() {
     private var _binding: FragmentFeatureVotingBinding? = null
@@ -28,10 +29,12 @@ class FeatureVotingFragment : BaseFragment() {
 
     private lateinit var daoBlock: TrustChainBlock
     private lateinit var daoData: SWJoinBlockTD
-    private var featureSolution: FeatureSolutionTD? = null
+    private var featureSolution: FeatureSolutionTD? = null // For standard feature solutions
+    private var joinRequestFeature: FeatureRequestTD? = null // For join request features
     private var votes: List<FeatureVoteTD> = emptyList()
     private var hasUserVoted = false
     private lateinit var daoUniqueId: String
+    private var isJoinRequest = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,20 +49,87 @@ class FeatureVotingFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val blockId = arguments?.getString("blockId")
-        val solutionId = arguments?.getString("solutionId")
+        val solutionId = arguments?.getString("solutionId") // Used for standard features
+        val featureId = arguments?.getString("featureId") // Used for join requests
         daoUniqueId = arguments?.getString("daoUniqueId") ?: ""
+        isJoinRequest = arguments?.getBoolean("isJoinRequest") ?: false // Get the boolean flag
 
 
-        if (blockId != null && solutionId != null && daoUniqueId.isNotEmpty()) {
-            loadDaoBlockAndSolution(blockId, solutionId)
-            setupClickListeners()
+        if (blockId != null && daoUniqueId.isNotEmpty()) {
+            if (isJoinRequest && featureId != null) {
+                android.util.Log.d("FeatureVotingFragment", "Loading for Join Request: Feature ID $featureId, DAO ID $daoUniqueId BlockID $blockId")
+                loadDaoBlockAndJoinRequest(blockId, featureId)
+                setupClickListeners()
+            } else if (!isJoinRequest && solutionId != null) {
+                android.util.Log.d("FeatureVotingFragment", "Loading for Standard Feature Solution: Solution ID $solutionId, DAO ID $daoUniqueId")
+                loadDaoBlockAndSolution(blockId, solutionId)
+                setupClickListeners()
+            } else {
+                android.util.Log.e("FeatureVotingFragment", "Missing required arguments for voting. isJoinRequest: $isJoinRequest, featureId: $featureId, solutionId: $solutionId")
+                Toast.makeText(context, "Error: Missing voting information.", Toast.LENGTH_SHORT).show()
+                findNavController().navigateUp()
+            }
         } else {
-            android.util.Log.e("FeatureVotingFragment", "Missing DAO block ID, Solution ID, or DAO Unique ID")
+            android.util.Log.e("FeatureVotingFragment", "Missing DAO block ID or DAO Unique ID")
             Toast.makeText(context, "Error: Missing voting information.", Toast.LENGTH_SHORT).show()
             findNavController().navigateUp()
         }
     }
 
+
+    // New function to load data for a Join Request feature
+    private fun loadDaoBlockAndJoinRequest(blockId: String, featureId: String) {
+        lifecycleScope.launch {
+            try {
+                if (daoUniqueId.isEmpty()) {
+                    android.util.Log.e("FeatureVotingFragment", "daoUniqueId is empty. Cannot load voting data for join request.")
+                    setupFallbackUI() // Or a different fallback UI for join requests
+                    return@launch
+                }
+
+                val daoBlock = withContext(Dispatchers.IO) {
+                    p2playStore.getDaoBlock(blockId)
+                }
+
+                if (daoBlock != null) {
+                    this@FeatureVotingFragment.daoBlock = daoBlock
+                    daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
+
+                    // Load the specific join request feature
+                    val featureRequests = withContext(Dispatchers.IO) {
+                        p2playStore.getFeatureRequestsForDao(daoUniqueId).filter {
+                            it.featureId == featureId && it.requestType == P2pStoreCommunity.JOIN_REQUEST_FEATURE_TYPE
+                        }
+                    }
+                    joinRequestFeature = featureRequests.firstOrNull()
+
+                    if (joinRequestFeature != null) {
+                        // Load votes for this join request feature
+                        votes = withContext(Dispatchers.IO) {
+                            p2playStore.getVotesForSolution(daoUniqueId, featureId) // Use featureId as 'solutionId' for votes on join requests
+                        }
+                        android.util.Log.d("FeatureVotingFragment", "loadDaoBlockAndJoinRequest: Loaded ${votes.size} votes for join request feature ${featureId} in DAO ${daoUniqueId}")
+                        setupVotingUIForJoinRequest(joinRequestFeature!!)
+
+                    } else {
+                        android.util.Log.e("FeatureVotingFragment", "Join request feature not found for ID: $featureId in DAO $daoUniqueId")
+                        setupFallbackUI() // Or a different fallback UI
+                    }
+
+                } else {
+                    android.util.Log.e("FeatureVotingFragment", "DAO block not found for ID: $blockId")
+                    findNavController().navigateUp()
+                }
+
+            } catch (e: Exception) {
+                android.util.Log.e("FeatureVotingFragment", "Error loading DAO block or join request: ${e.message}")
+                setupFallbackUI() // Or a different fallback UI
+            }
+        }
+    }
+
+
+    // Existing function to load data for a standard feature solution
     private fun loadDaoBlockAndSolution(blockId: String, solutionId: String) {
         lifecycleScope.launch {
             try {
@@ -87,8 +157,10 @@ class FeatureVotingFragment : BaseFragment() {
                     if (featureSolution != null) {
                         // Load the corresponding feature request for context and reward info for this DAO
                         val featureRequests = withContext(Dispatchers.IO) {
-                            // Fetch all feature requests for the DAO and filter by featureId
-                            p2playStore.getFeatureRequestsForDao(daoUniqueId).filter { it.featureId == featureSolution!!.featureId }
+                            // Fetch all feature requests for the DAO and filter by featureId (and ensure it's a standard feature)
+                            p2playStore.getFeatureRequestsForDao(daoUniqueId).filter {
+                                it.featureId == featureSolution!!.featureId && it.requestType != P2pStoreCommunity.JOIN_REQUEST_FEATURE_TYPE
+                            }
                         }
                         val correspondingRequest = featureRequests.firstOrNull()
 
@@ -100,9 +172,9 @@ class FeatureVotingFragment : BaseFragment() {
                                 p2playStore.getVotesForSolution(daoUniqueId, solutionId)
                             }
                             android.util.Log.d("FeatureVotingFragment", "loadDaoBlockAndSolution: Loaded ${votes.size} votes for solution ${solutionId} in DAO ${daoUniqueId}")
-                            setupVotingUI(correspondingRequest, featureSolution!!)
+                            setupVotingUIForSolution(correspondingRequest, featureSolution!!) // Use a specific UI setup for solutions
                         } else {
-                            android.util.Log.e("FeatureVotingFragment", "Corresponding feature request not found for solution ID: $solutionId in DAO $daoUniqueId")
+                            android.util.Log.e("FeatureVotingFragment", "Corresponding standard feature request not found for solution ID: $solutionId in DAO $daoUniqueId")
                             setupFallbackUI()
                         }
                     } else {
@@ -122,7 +194,58 @@ class FeatureVotingFragment : BaseFragment() {
         }
     }
 
-    private fun setupVotingUI(featureRequest: FeatureRequestTD, solution: FeatureSolutionTD) {
+    // New function to set up UI for Join Request voting
+    private fun setupVotingUIForJoinRequest(joinRequest: FeatureRequestTD) {
+        try {
+            // Set UI elements for Join Request
+            binding.originalFeatureTitle.text = "Join Request" // Title for join request
+            binding.implementationDescription.text = "Details: ${joinRequest.description}" // Use description from the feature request
+            binding.developerName.text = "Requester: ${joinRequest.requesterPublicKey.take(8)}..." // Show requester
+            binding.rewardAmount.text = "Entrance Fee: ${joinRequest.reward} sats" // Show entrance fee as reward
+
+            // Hide download APK button for join requests
+            binding.btnDownloadApk.visibility = View.GONE
+
+            val totalMembers = daoData.SW_TRUSTCHAIN_PKS.size
+            val votingThreshold = daoData.SW_VOTING_THRESHOLD // Use DAO's general voting threshold for join requests
+            val myPublicKey = p2playStore.myPeer.publicKey.keyToBin().toHex()
+
+            // Check if user has voted on this specific join request feature
+            // For join requests, the vote's solutionId is set to the featureId
+            hasUserVoted = votes.any { it.voterPublicKey == myPublicKey && it.solutionId == joinRequest.featureId }
+            val userVote = votes.find { it.voterPublicKey == myPublicKey && it.solutionId == joinRequest.featureId }?.isYes
+
+            // Manually create the VotingPoll object for the join request
+            val yesVotes = votes.count { it.isYes }
+            val noVotes = votes.count { !it.isYes }
+            val isActive = joinRequest.status == "OPEN" // Assume active if status is OPEN
+
+            val votingPoll = VotingPoll(
+                id = joinRequest.featureId, // Use featureId as the poll ID for join requests
+                title = "Vote on Join Request",
+                question = "Should ${joinRequest.requesterPublicKey.take(8)}... be allowed to join the DAO?",
+                yesVotes = yesVotes,
+                noVotes = noVotes,
+                totalMembers = totalMembers,
+                votingThreshold = votingThreshold,
+                isActive = isActive,
+                hasUserVoted = hasUserVoted,
+                userVote = userVote
+            )
+
+            updateVotingUIWithPoll(votingPoll)
+
+        } catch (e: Exception) {
+            android.util.Log.e("FeatureVotingFragment", "Error setting up voting UI for join request: ${e.message}")
+            setupFallbackUI()
+        }
+    }
+
+
+
+
+    // Existing function to set up UI for standard Feature voting
+    private fun setupVotingUIForSolution(featureRequest: FeatureRequestTD, solution: FeatureSolutionTD) {
         try {
             // Use feature request and solution data
             binding.originalFeatureTitle.text = featureRequest.title
@@ -132,13 +255,17 @@ class FeatureVotingFragment : BaseFragment() {
             // Display the actual reward from the feature request
             binding.rewardAmount.text = "${featureRequest.reward} sats"
 
+            // Show download APK button for solutions if magnet link exists
+            binding.btnDownloadApk.visibility = if (solution.apkMagnetLink.isNotEmpty()) View.VISIBLE else View.GONE
+
             val totalMembers = daoData.SW_TRUSTCHAIN_PKS.size
             val votingThreshold = daoData.SW_VOTING_THRESHOLD
             val myPublicKey = p2playStore.myPeer.publicKey.keyToBin().toHex()
 
-            // Check if user has voted
-            hasUserVoted = votes.any { it.voterPublicKey == myPublicKey }
-            val userVote = votes.find { it.voterPublicKey == myPublicKey }?.isYes
+            // Check if user has voted on this specific solution
+            hasUserVoted = votes.any { it.voterPublicKey == myPublicKey && it.solutionId == solution.solutionId }
+            val userVote = votes.find { it.voterPublicKey == myPublicKey && it.solutionId == solution.solutionId }?.isYes
+
 
             // Create a VotingPoll object
             val votingPoll = VotingPollHelper.createVotingPoll(
@@ -191,8 +318,8 @@ class FeatureVotingFragment : BaseFragment() {
 //    TODO: still in draft mode
     private fun updateVotingState(poll: nl.tudelft.trustchain.p2playstore.blockdata.VotingPoll) {
         val isUserMember = daoData.SW_TRUSTCHAIN_PKS.contains(p2playStore.myPeer.publicKey.keyToBin().toHex())
-        val isDaoInitiator = daoBlock.publicKey.toHex() == p2playStore.myPeer.publicKey.keyToBin().toHex() // Assuming DAO initiator is the block creator
-
+        // DAO initiator status might be relevant if only initiator can finalize join after vote
+        // val isDaoInitiator = daoBlock.publicKey.toHex() == p2playStore.myPeer.publicKey.keyToBin().toHex()
 
         binding.votingButtonsLayout.visibility = View.GONE // Hide vote buttons by default
         binding.btnClaimReward.visibility = View.GONE // Hide claim reward button by default
@@ -207,29 +334,46 @@ class FeatureVotingFragment : BaseFragment() {
                 binding.alreadyVotedText.setTextColor(resources.getColor(android.R.color.holo_green_dark, null))
                 binding.votesRequiredText.visibility = View.GONE // Hide required text when decided
 
-                // If approved and I am the developer who submitted the solution, show claim button
-                if (featureSolution?.developerPublicKey == p2playStore.myPeer.publicKey.pub().toString()) {
-                    binding.btnClaimReward.visibility = View.VISIBLE
-
-                    if (isDaoInitiator) {
-                        binding.btnClaimReward.text = "Transfer Reward"
+                // For Join Requests, approval means the user can now be added to the DAO.
+                // This is where the actual Bitcoin multisig update needs to be triggered.
+                // For now, let's just indicate approval. The actual join needs separate logic.
+                if (isJoinRequest) {
+                    // If current user is the requester of the join request
+                    if (joinRequestFeature?.requesterPublicKey == p2playStore.myPeer.publicKey.pub().toString()) {
+                        // Display a message to the requester that they are approved
+                        binding.btnClaimReward.visibility = View.VISIBLE // Reusing the button for message/action
+                        binding.btnClaimReward.text = "Join Approved! Finalize Join."
+                        binding.btnClaimReward.isEnabled = isUserMember // Only members can finalize? Or only initiator?
+                        binding.btnClaimReward.alpha = if (isUserMember) 1.0f else 0.5f
                         binding.btnClaimReward.setOnClickListener {
-                            triggerRewardTransfer(poll)
+                            // TODO: Implement logic to trigger the actual Bitcoin multisig join here
+                            android.util.Log.d("FeatureVotingFragment", "Finalize Join button clicked for approved join request.")
+                            Toast.makeText(context, "Finalizing join (TODO: Bitcoin multisig update needed)", Toast.LENGTH_LONG).show()
                         }
-                        binding.btnClaimReward.isEnabled = true
-                        binding.btnClaimReward.alpha = 1.0f
-                    } else {
-                        // Developer is a member but not initiator, they can see it's approved
-                        binding.btnClaimReward.text = "Approved - Reward Pending"
+                    } else if (isUserMember) {
+                        // If current user is an existing DAO member and it's approved
+                        binding.btnClaimReward.visibility = View.VISIBLE
+                        binding.btnClaimReward.text = "Join Request Approved" // Indicate approval to members
                         binding.btnClaimReward.isEnabled = false
                         binding.btnClaimReward.alpha = 0.5f
                     }
 
+                } else {
+                    // Existing logic for standard feature solutions: Show Claim Reward button if user is developer and initiator
+                    if (featureSolution?.developerPublicKey == p2playStore.myPeer.publicKey.pub().toString() /* && isDaoInitiator */) { // Re-evaluate initiator check
+                        binding.btnClaimReward.visibility = View.VISIBLE
+                        binding.btnClaimReward.text = "Trigger Reward Transfer" // Or "Claim Reward"
+                        binding.btnClaimReward.isEnabled = isUserMember // Only members can trigger? Or only initiator?
+                        binding.btnClaimReward.alpha = if (isUserMember) 1.0f else 0.5f
+                        binding.btnClaimReward.setOnClickListener {
+                            triggerRewardTransfer(poll)
+                        }
+                    }
                 }
             }
             // Voting closed and not approved
             !poll.isActive && poll.yesVotes < poll.votesNeeded -> {
-                binding.alreadyVotedText.text = "Voting Closed - Not Approved" // Use the total votes TextView
+                binding.alreadyVotedText.text = if (isJoinRequest) "Join Request Denied" else "Voting Closed - Not Approved"
                 binding.alreadyVotedText.setTextColor(resources.getColor(android.R.color.darker_gray, null))
                 binding.votesRequiredText.visibility = View.GONE // Hide required text when decided
             }
@@ -431,11 +575,35 @@ class FeatureVotingFragment : BaseFragment() {
     private fun submitVote(isYes: Boolean) {
         lifecycleScope.launch { // Use lifecycleScope for coroutine
             try {
-                val solution = featureSolution ?: run {
-                    android.util.Log.e("FeatureVotingFragment", "Cannot submit vote: Feature solution is null.")
-                    Toast.makeText(context, "Error: Solution data missing.", Toast.LENGTH_SHORT).show()
-                    return@launch // Use return@launch in coroutine
+                // Declare as var so they can be assigned later
+                var targetFeatureId: String? = null
+                var targetSolutionId: String = "" // Initialize with empty string
+
+                if (isJoinRequest) {
+                    val joinRequest = joinRequestFeature ?: run {
+                        android.util.Log.e("FeatureVotingFragment", "Cannot submit vote: Join request feature is null.")
+                        Toast.makeText(context, "Error: Join request data missing.", Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+                    targetFeatureId = joinRequest.featureId
+                    targetSolutionId = joinRequest.featureId // For join requests, use featureId as solutionId in the vote block
+                } else {
+                    val solution = featureSolution ?: run {
+                        android.util.Log.e("FeatureVotingFragment", "Cannot submit vote: Feature solution is null.")
+                        Toast.makeText(context, "Error: Solution data missing.", Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+                    targetFeatureId = solution.featureId
+                    targetSolutionId = solution.solutionId // This is a non-nullable String from FeatureSolutionTD
                 }
+
+                // Add a check to ensure targetFeatureId is not null before proceeding
+                if (targetFeatureId == null) {
+                    android.util.Log.e("FeatureVotingFragment", "Cannot submit vote: targetFeatureId is null.")
+                    Toast.makeText(context, "Error submitting vote: Invalid feature information.", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+
 
                 if (daoUniqueId.isEmpty()) {
                     android.util.Log.e("FeatureVotingFragment", "Cannot submit vote: daoUniqueId is empty.")
@@ -446,17 +614,24 @@ class FeatureVotingFragment : BaseFragment() {
                 // Use the community method to create the vote block
                 p2playStore.createFeatureVote(
                     daoId = daoUniqueId, // Use the retrieved DAO unique ID
-                    featureId = solution.featureId,
-                    solutionId = solution.solutionId,
+                    featureId = targetFeatureId, // Pass non-nullable targetFeatureId
+                    solutionId = targetSolutionId, // Use targetSolutionId (which is featureId for join requests)
                     isYes = isYes
                 )
 
-                android.util.Log.d("FeatureVotingFragment", "Vote submitted: ${if (isYes) "Yes" else "No"} for Solution ${solution.solutionId} (Feature ${solution.featureId}) in DAO ${daoUniqueId}")
+                android.util.Log.d("FeatureVotingFragment", "Vote submitted: ${if (isYes) "Yes" else "No"} for ${if(isJoinRequest) "Join Request Feature" else "Solution"} $targetFeatureId${if(!isJoinRequest) " (Solution $targetSolutionId)" else ""} in DAO ${daoUniqueId}")
 
                 if (context != null) {
                     Toast.makeText(context, "Vote submitted successfully!", Toast.LENGTH_SHORT).show()
                 }
-                loadDaoBlockAndSolution(daoBlock.blockId, solution.solutionId)
+                // Reload data based on whether it's a join request or standard feature
+                if (isJoinRequest) {
+                    // When reloading for a join request, use the featureId
+                    loadDaoBlockAndJoinRequest(daoBlock.blockId, targetFeatureId)
+                } else {
+                    // When reloading for a standard feature solution, use the solutionId
+                    loadDaoBlockAndSolution(daoBlock.blockId, targetSolutionId) // solutionId is guaranteed not null here by the 'else' block
+                }
 
 
             } catch (e: Exception) {
@@ -468,6 +643,7 @@ class FeatureVotingFragment : BaseFragment() {
             }
         }
     }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

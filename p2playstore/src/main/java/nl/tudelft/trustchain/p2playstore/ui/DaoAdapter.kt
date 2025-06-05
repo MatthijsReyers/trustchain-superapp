@@ -40,11 +40,11 @@ class DaoAdapter(
 
                 binding.appEntranceFee.text = "Fee: ${Coin.valueOf(data.SW_ENTRANCE_FEE).toFriendlyString()}"
 
-                binding.appEntranceFee.text = "${daoBlock.hashNumber}"
+//                binding.appEntranceFee.text = "${daoBlock.hashNumber}"
 
                 binding.appVotingThreshold.text = "Threshold: ${data.SW_VOTING_THRESHOLD}%"
 
-                setDaoIcon(data.SW_UNIQUE_ID)
+                setDaoIcon("${daoBlock.transaction["iconIndex"]}")
 
                 itemView.setOnClickListener {
                     android.util.Log.d("DaoAdapter", "DAO clicked: ${data.SW_UNIQUE_ID}")
@@ -53,7 +53,7 @@ class DaoAdapter(
                     val bundle = Bundle().apply {
                         putString("blockId", daoBlock.blockId)
                     }
-                    itemView.findNavController().navigate(R.id.action_homeFragment_to_daoDetailsFragment, bundle)
+                    itemView.findNavController().navigate(R.id.action_homeFragment_to_appDetails, bundle)
                 }
 
                 itemView.isClickable = true
@@ -72,12 +72,12 @@ class DaoAdapter(
             }
         }
 
-        private fun setDaoIcon(uniqueId: String) {
-            val iconResource = when (uniqueId.hashCode() % 4) {
-                0 -> R.drawable.ic_bitcoin
-                1 -> R.drawable.ic_bitcoin // TODO: Add more icons as needed
-                2 -> R.drawable.ic_bitcoin
-                else -> R.drawable.ic_bitcoin
+        private fun setDaoIcon(iconId: String) {
+            val iconResource = when (iconId) {
+                "0" -> R.drawable.ic_bitcoin
+                "1" -> R.drawable.ic_account_balance_wallet_black_24dp // TODO: Add more icons as needed
+                "2" -> R.drawable.ic_group_work_black_24dp
+                else -> R.drawable.ic_device_hub_black_24dp
             }
             binding.appIcon.setImageResource(iconResource)
         }

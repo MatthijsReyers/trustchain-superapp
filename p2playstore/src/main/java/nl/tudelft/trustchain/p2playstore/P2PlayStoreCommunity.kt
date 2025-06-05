@@ -18,6 +18,8 @@ import nl.tudelft.trustchain.p2playstore.blockdata.FeatureVoteTD
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureVoteTransactionData
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTD
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
+import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinRequestTransactionData
+import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinRequestTD
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseNegativeSignatureBlockTD
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseNegativeSignatureTransactionData
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
@@ -56,6 +58,7 @@ class P2pStoreCommunity : Community() {
      */
     fun createBitcoinGenesisWallet(
             entranceFee: Long,
+            iconIndex: Int,
             name: String,
             description: String,
             magnetLink: String,
@@ -66,6 +69,7 @@ class P2pStoreCommunity : Community() {
         return daoCreateHelper.createBitcoinGenesisWallet(
                 myPeer,
                 entranceFee,
+                iconIndex,
                 name,
                 description,
                 magnetLink,
@@ -385,70 +389,71 @@ class P2pStoreCommunity : Community() {
     }
 
     /** Create a feature request proposal block on trust chain. */
-    fun createFeatureRequest(daoId: String, title: String, description: String, reward: Long) {
+    fun createFeatureRequest(daoId: String, title: String, description: String, reward: Long, requestType: String) {
         val featureId = SWUtil.randomUUID()
 
         // Create the transaction data object
         val featureRequestData =
-                FeatureRequestTransactionData(
-                        featureId = featureId,
-                        title = title,
-                        description = description,
-                        reward = reward,
-                        daoId = daoId,
-                        requesterPublicKey = myPeer.publicKey.pub().toString(),
-                        status = "OPEN"
-                )
+            FeatureRequestTransactionData(
+                featureId = featureId,
+                title = title,
+                description = description,
+                reward = reward,
+                daoId = daoId,
+                requesterPublicKey = myPeer.publicKey.pub().toString(),
+                status = "OPEN",
+                requestType = requestType
+            )
 
         val transaction = featureRequestData.getTransactionData()
 
         getTrustChainCommunity()
-                .createProposalBlock(
-                        featureRequestData.blockType,
-                        transaction,
-                        myPeer.publicKey.keyToBin()
-                )
+            .createProposalBlock(
+                featureRequestData.blockType,
+                transaction,
+                myPeer.publicKey.keyToBin()
+            )
 
         Log.d(
-                "P2PlayStore",
-                "Created Feature Request proposal block for DAO $daoId with ID $featureId"
+            "P2PlayStore",
+            "Created Feature Request proposal block for DAO $daoId with ID $featureId"
         )
     }
 
     fun createFeatureSolution(
-            daoId: String,
-            featureId: String,
-            title: String,
-            description: String,
-            apkMagnetLink: String
+        daoId: String,
+        featureId: String,
+        title: String,
+        description: String,
+        apkMagnetLink: String
     ) {
 
         val solutionId = SWUtil.randomUUID()
 
         val featureSolutionData =
-                FeatureSolutionTransactionData(
-                        solutionId = solutionId,
-                        featureId = featureId,
-                        daoId = daoId,
-                        title = title,
-                        description = description,
-                        apkMagnetLink = apkMagnetLink,
-                        developerPublicKey = myPeer.publicKey.pub().toString()
-                )
+            FeatureSolutionTransactionData(
+                solutionId = solutionId,
+                featureId = featureId,
+                daoId = daoId,
+                title = title,
+                description = description,
+                apkMagnetLink = apkMagnetLink,
+                developerPublicKey = myPeer.publicKey.pub().toString()
+            )
 
         val transaction = featureSolutionData.getTransactionData()
 //        TODO: not sure if it is a proposal block but dont see anyother block option
         getTrustChainCommunity()
-                .createProposalBlock(
-                        featureSolutionData.blockType,
-                        transaction,
+            .createProposalBlock(
+                featureSolutionData.blockType,
+                transaction,
 //                        TODO: figure out who to send it to
-                        myPeer.publicKey
-                                .keyToBin()
-                        )
+                myPeer.publicKey
+                    .keyToBin()
+            )
         Log.d(
-                "P2PlayStore",
-                "Created Feature Solution block for Feature $featureId in DAO $daoId with ID $solutionId"
+            "P2PlayStore",
+            "Created Feature Solution block for Feature $featureId in DAO $daoId with ID $solutionId"
         )
     }
 
@@ -752,6 +757,8 @@ class P2pStoreCommunity : Community() {
         const val FEATURE_REQUEST_BLOCK = "feature_request"
 
         const val FEATURE_SOLUTION_BLOCK = "feature_solution"
+
+        const val JOIN_REQUEST_FEATURE_TYPE = "join_request"
 
         const val FEATURE_VOTE_BLOCK = "feature_vote"
     }
