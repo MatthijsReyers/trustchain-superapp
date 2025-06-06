@@ -15,22 +15,22 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Create New DAO"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
+            android:layout_marginBottom="32dp"
             android:gravity="center"
-            android:layout_marginBottom="32dp" />
+            android:text="Add new application"
+            android:textColor="@android:color/black"
+            android:textSize="24sp"
+            android:textStyle="bold" />
 
         <!-- DAO Icon Selection -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="DAO Icon"
-            android:textSize="16sp"
-            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:text="App icon"
             android:textColor="@android:color/black"
-            android:layout_marginBottom="8dp" />
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -72,7 +72,7 @@
                 android:id="@+id/etDaoName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="DAO Name"
+                android:hint="Name"
                 android:inputType="text"
                 android:maxLines="1"
                 android:textSize="16sp" />
@@ -91,12 +91,12 @@
                 android:id="@+id/etDaoDescription"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="DAO Description"
+                android:gravity="top"
+                android:hint="Description"
                 android:inputType="textMultiLine"
                 android:maxLines="4"
                 android:minLines="2"
-                android:textSize="16sp"
-                android:gravity="top" />
+                android:textSize="16sp" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -112,7 +112,7 @@
                 android:id="@+id/etDaoCategory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="DAO Category (e.g., Democracy, Eurotoken, etc)"
+                android:hint="Category"
                 android:inputType="text"
                 android:maxLines="1"
                 android:textSize="16sp" />
@@ -200,12 +200,12 @@
                 android:id="@+id/btnCreateDao"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                android:text="Create DAO"
-                android:textSize="16sp"
+                android:layout_weight="1"
                 android:backgroundTint="@android:color/holo_blue_dark"
-                android:textColor="@android:color/white" />
+                android:text="Create app"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
 
         </LinearLayout>
 

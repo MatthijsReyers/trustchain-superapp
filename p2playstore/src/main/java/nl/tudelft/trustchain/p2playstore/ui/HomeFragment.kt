@@ -108,7 +108,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             val iconNames = arrayOf("Bitcoin", "Wallet", "Group", "Network")
 
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                .setTitle("Select DAO Icon")
+                .setTitle("Select App Icon")
                 .setSingleChoiceItems(iconNames, selectedIconIndex) { dialog, which ->
                     selectedIconIndex = which
                     ivDaoIcon?.setImageResource(availableIcons[selectedIconIndex])
@@ -137,17 +137,17 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             val magnetLink = etMagnetLink.text.toString().trim()
             // Validation
             if (name.isEmpty()) {
-                etDaoName.error = "DAO name is required"
+                etDaoName.error = "App name is required"
                 return@setOnClickListener
             }
 
             if (description.isEmpty()) {
-                etDaoDescription.error = "DAO description is required"
+                etDaoDescription.error = "App description is required"
                 return@setOnClickListener
             }
 
             if (category.isEmpty()) {
-                etDaoCategory.error = "DAO category is required"
+                etDaoCategory.error = "App category is required"
                 return@setOnClickListener
             }
 
