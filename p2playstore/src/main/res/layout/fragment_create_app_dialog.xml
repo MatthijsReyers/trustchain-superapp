@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="24dp"
+    android:background="@android:color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            android:gravity="center"
+            android:text="Add new application"
+            android:textColor="@android:color/black"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <!-- DAO Icon Selection -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="App icon"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="24dp">
+
+            <ImageView
+                android:id="@+id/ivDaoIcon"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/ic_bitcoin"
+                android:background="@drawable/p2p_border"
+                android:padding="8dp"
+                android:layout_marginEnd="16dp"
+                android:contentDescription="DAO Icon" />
+
+            <Button
+                android:id="@+id/btnSelectIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Select Icon"
+                android:textSize="14sp"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:textColor="@android:color/holo_blue_dark" />
+
+        </LinearLayout>
+
+        <!-- DAO Name -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:boxStrokeColor="@android:color/holo_blue_dark"
+            app:hintTextColor="@android:color/holo_blue_dark">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etDaoName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Name"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textSize="16sp" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- DAO Description -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:boxStrokeColor="@android:color/holo_blue_dark"
+            app:hintTextColor="@android:color/holo_blue_dark">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etDaoDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:hint="Description"
+                android:inputType="textMultiLine"
+                android:maxLines="4"
+                android:minLines="2"
+                android:textSize="16sp" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- DAO Category -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:boxStrokeColor="@android:color/holo_blue_dark"
+            app:hintTextColor="@android:color/holo_blue_dark">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etDaoCategory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Category"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textSize="16sp" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Entrance Fee -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:boxStrokeColor="@android:color/holo_blue_dark"
+            app:hintTextColor="@android:color/holo_blue_dark"
+            app:suffixText="satoshis">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etEntranceFee"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Entrance Fee"
+                android:inputType="number"
+                android:maxLines="1"
+                android:textSize="16sp" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Voting Threshold -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            app:boxStrokeColor="@android:color/holo_blue_dark"
+            app:hintTextColor="@android:color/holo_blue_dark"
+            app:suffixText="%">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etVotingThreshold"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Voting Threshold"
+                android:inputType="number"
+                android:maxLines="1"
+                android:textSize="16sp" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Magnet Link -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:boxStrokeColor="@android:color/holo_blue_dark"
+            app:hintTextColor="@android:color/holo_blue_dark">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etMagnetLink"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Magnet Link"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="16dp">
+
+            <Button
+                android:id="@+id/btnCancel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="Cancel"
+                android:textSize="16sp"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:textColor="@android:color/darker_gray" />
+
+            <Button
+                android:id="@+id/btnCreateDao"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:backgroundTint="@android:color/holo_blue_dark"
+                android:text="Create app"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

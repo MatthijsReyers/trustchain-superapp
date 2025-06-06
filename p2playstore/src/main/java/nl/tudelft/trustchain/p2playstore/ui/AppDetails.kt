@@ -2,20 +2,22 @@ package nl.tudelft.trustchain.p2playstore.ui
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
-import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.ipv8.util.hexToBytes
+import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTD
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.R
@@ -26,7 +28,9 @@ import nl.tudelft.trustchain.p2playstore.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
+import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 import org.bitcoinj.core.Coin
+import java.math.BigInteger
 
 class AppDetails : BaseFragment() {
     private var _binding: FragmentAppDetailsBinding? = null
@@ -47,6 +51,7 @@ class AppDetails : BaseFragment() {
         return binding.root
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -61,6 +66,7 @@ class AppDetails : BaseFragment() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun loadDaoDetails(blockId: String) {
         lifecycleScope.launch {
             try {
@@ -99,6 +105,7 @@ class AppDetails : BaseFragment() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun setupDaoDetailsUI() {
         // Set DAO basic info from the block data
         binding.daoName.text = daoBlock.transaction["name"]?.toString() ?: "Unknown DAO"
@@ -112,6 +119,8 @@ class AppDetails : BaseFragment() {
         // Set entrance fee for join button
         val entranceFee = Coin.valueOf(daoData.SW_ENTRANCE_FEE).toFriendlyString()
         binding.btnJoinDao.text = "Join DAO - $entranceFee" // Keeping original text for now
+
+        binding.daoIcon.setImageResource(iconFromIconId(this.daoBlock.transaction["iconIndex"]))
     }
 
 //    TODO: make functional
@@ -175,6 +184,8 @@ class AppDetails : BaseFragment() {
             // Voting card clickability/alpha handled in loadRecentVotingPoll
         }
     }
+
+
     // This function finds the latest solution block that has met the voting threshold for its feature request.
     private fun loadLatestApprovedUpdate() {
         lifecycleScope.launch {

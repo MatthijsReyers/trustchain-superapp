@@ -56,6 +56,7 @@ class P2pStoreCommunity : Community() {
      */
     fun createBitcoinGenesisWallet(
             entranceFee: Long,
+            iconIndex: Int,
             name: String,
             description: String,
             magnetLink: String,
@@ -66,6 +67,7 @@ class P2pStoreCommunity : Community() {
         return daoCreateHelper.createBitcoinGenesisWallet(
                 myPeer,
                 entranceFee,
+                iconIndex,
                 name,
                 description,
                 magnetLink,
