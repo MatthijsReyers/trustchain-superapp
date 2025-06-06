@@ -1,5 +1,6 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
+import android.app.AlertDialog
 import kotlinx.coroutines.launch
 import android.content.Intent
 import android.net.Uri
@@ -14,10 +15,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.annotation.RequiresApi
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
-import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTD
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
@@ -31,9 +30,8 @@ import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 import org.bitcoinj.core.Coin
-import java.math.BigInteger
-import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.P2PlayStoreMainActivity
+import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 
 class AppDetails : BaseFragment() {
     private var _binding: FragmentAppDetailsBinding? = null
@@ -57,8 +55,6 @@ class AppDetails : BaseFragment() {
         return this.downloadProgress >= 100
     }
 
-    private lateinit var block: TrustChainBlock
-
     override fun onCreate(bundle: Bundle?) {
         super.onCreate(bundle)
 
@@ -69,24 +65,10 @@ class AppDetails : BaseFragment() {
 
         // Actually retrieve the block
         val community = this.getTrustChainCommunity()
-        this.block = community.database.get(publicKey, sequenceNumber)!!
+        this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
+        this.daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
 
-        val torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
-        if (torrentManager.finishedDownloading(this.block)) {
-            this.downloadProgress = 100;
-        }
-
-        println("this.downloadProgress: ${this.downloadProgress}")
-
-        if (!this.downloadFinished()) {
-            lifecycleScope.launch {
-                torrentManager.onFinished.collect({ link ->
-                    println("link: $link")
-                })
-            }
-        }
-
-        println("Get block: ${block.transaction}")
+        this.setupTorrentDownloadStatus()
     }
 
     override fun onCreateView(
@@ -102,52 +84,44 @@ class AppDetails : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Get the block ID from arguments
-        val blockId = arguments?.getString("blockId")
-        if (blockId != null) {
-            loadDaoDetails(blockId)
-            setupClickListeners()
-        } else {
-            Log.e("DaoDetailsFragment", "No block ID provided")
-            findNavController().navigateUp()
-        }
+        setupDaoDetailsUI()
+        checkMembership()
+        updateUIBasedOnMembership()
+        updateDownloadButton()
+        loadRecentVotingPoll()
+        loadLatestPendingFeatureRequest()
+        loadLatestApprovedUpdate()
+        setupClickListeners()
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
-    private fun loadDaoDetails(blockId: String) {
-        lifecycleScope.launch {
-            try {
-                // Get the block from the TrustChain store (using coroutine-safe call)
-                val block =
-                        withContext(Dispatchers.IO) {
-                            val parts = blockId.split(".")
-                            if (parts.size != 2) {
-                                throw IllegalArgumentException("Invalid block ID format")
-                            }
-                            val publicKey = parts[0].hexToBytes()
-                            val sequenceNumber = parts[1].toUInt()
-                            getTrustChainCommunity().database.get(publicKey, sequenceNumber)
-                        }
-
-                if (block != null) {
-                    daoBlock = block
-                    // Parse DAO data once after loading the block
-                    daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
-
-                    setupDaoDetailsUI()
-                    checkMembership()
-                    updateUIBasedOnMembership()
-                    loadRecentVotingPoll()
-                    loadLatestPendingFeatureRequest()
-                    loadLatestApprovedUpdate()
-                    // request in the new section
-                } else {
-                    Log.e("DaoDetailsFragment", "DAO block not found for ID: $blockId")
-                    findNavController().navigateUp()
+    private fun setupTorrentDownloadStatus() {
+        val magnetLink = MagnetUtils.parseMagnet(this.daoBlock.transaction["magnetLink"] as String)
+        val torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
+        if (torrentManager.finishedDownloading(this.daoBlock)) {
+            this.downloadProgress = 100;
+        } else {
+            lifecycleScope.launch {
+                torrentManager.onStarted.collect { link ->
+                    if (link.infoHash == magnetLink.infoHash) {
+                        downloadProgress = 0
+                    }
                 }
-            } catch (e: Exception) {
-                Log.e("DaoDetailsFragment", "Error loading DAO details: ${e.message}")
-                findNavController().navigateUp()
+            }
+            lifecycleScope.launch {
+                torrentManager.onProgress.collect { data ->
+                    val link = data.first
+                    val progress = data.second
+                    if (link.infoHash == magnetLink.infoHash) {
+                        downloadProgress = progress
+                    }
+                }
+            }
+            lifecycleScope.launch {
+                torrentManager.onFinished.collect { link ->
+                    if (link.infoHash == magnetLink.infoHash) {
+                        downloadProgress = 100
+                    }
+                }
             }
         }
     }
@@ -231,7 +205,6 @@ class AppDetails : BaseFragment() {
             // Voting card clickability/alpha handled in loadRecentVotingPoll
         }
     }
-
 
     // This function finds the latest solution block that has met the voting threshold for its feature request.
     private fun loadLatestApprovedUpdate() {
@@ -474,7 +447,6 @@ class AppDetails : BaseFragment() {
         }
     }
 
-
     private fun loadLatestPendingFeatureRequest() {
         lifecycleScope.launch {
             val maxRetries = 3
@@ -540,6 +512,77 @@ class AppDetails : BaseFragment() {
         }
     }
 
+    /**
+     * Called when the user presses the install button (which is only shown when the user is not
+     * yet in the app's DAO), effectively this means they will spend bitcoins to join the shared
+     * wallet, so we'll ask them for confirmation of that first.
+     */
+    private fun onInstallApp() {
+        val entranceFee = daoData.SW_ENTRANCE_FEE
+        val msg = "In order to download this app you must join its DAO and pay an enterance fee " +
+            "of $entranceFee Satoshi to the shared wallet."
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Are you sure?")
+            .setMessage(msg)
+            .setPositiveButton("Join DAO") { dialog, _ ->
+                onJoinDoa()
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+    }
+
+    /**
+     * Called when the user presses the "open" button, which is only shown when the user is a member
+     * of the app's DAO and has finished downloading the
+     */
+    private fun onOpenApp() {
+        // TODO: Launch APK
+    }
+
+    /**
+     * Called when the user agrees to spend bitcoins to join the app's DAO.
+     */
+    private fun onJoinDoa() {
+        try {
+            joinSharedWalletClicked(daoBlock)
+            Log.d("DaoDetailsFragment", "Join proposal sent")
+            lifecycleScope.launch {
+                checkMembership()
+                updateUIBasedOnMembership()
+                loadRecentVotingPoll()
+                loadLatestPendingFeatureRequest()
+                loadLatestApprovedUpdate()
+            }
+        } catch (e: Exception) {
+            Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
+            // Show an error message
+        }
+    }
+
+    /**
+     *
+     */
+    private fun updateDownloadButton() {
+        if (this.isUserMember) {
+            if (this.downloadFinished()) {
+                this.binding.installOpenBtn.isEnabled = true
+                this.binding.installOpenBtn.text = "Open"
+            } else {
+                this.binding.installOpenBtn.isEnabled = false
+                this.binding.installOpenBtn.text = "${this.downloadProgress}%"
+            }
+        }
+        else {
+            this.binding.installOpenBtn.isEnabled = true
+            this.binding.installOpenBtn.text = "Install"
+        }
+    }
+
     private fun updateVotingCardUI(poll: nl.tudelft.trustchain.p2playstore.blockdata.VotingPoll) {
         binding.updateTitle.text = poll.title
         binding.votesRequiredText.visibility = View.VISIBLE
@@ -599,7 +642,15 @@ class AppDetails : BaseFragment() {
     }
 
     private fun setupClickListeners() {
-        binding.btnJoinDao.setOnClickListener { joinDao() }
+        binding.installOpenBtn.setOnClickListener {
+            if (this.isUserMember) {
+                if (this.downloadFinished()) {
+                    this.onOpenApp()
+                }
+            } else {
+                this.onInstallApp()
+            }
+        }
 
         // btnFeatureRequest click listener is correct for navigating to FeatureListFragment
         binding.btnFeatureRequest.setOnClickListener {
@@ -690,7 +741,6 @@ class AppDetails : BaseFragment() {
             Log.e("Coin", "Joining failed. ${t.message ?: "No further information"}.")
 //            setAlertText(t.message ?: "Unexpected error occurred. Try again")
         }
-
     }
 
     /**
@@ -725,7 +775,6 @@ class AppDetails : BaseFragment() {
                 .navigate(R.id.action_daoDetailsFragment_to_featureVotingFragment, bundle)
     }
 
-
     // Helper function to navigate to FeatureSolutionFragment
     private fun navigateToSubmitSolution(featureRequest: FeatureRequestTD) {
         val bundle =
@@ -738,23 +787,6 @@ class AppDetails : BaseFragment() {
                 }
 
         findNavController().navigate(R.id.action_daoDetailsFragment_to_featureSolutionFragment, bundle)
-    }
-
-    private fun joinDao() {
-        try {
-            joinSharedWalletClicked(daoBlock)
-            Log.d("DaoDetailsFragment", "Join proposal sent")
-            lifecycleScope.launch {
-                checkMembership()
-                updateUIBasedOnMembership()
-                loadRecentVotingPoll()
-                loadLatestPendingFeatureRequest()
-                loadLatestApprovedUpdate()
-            }
-        } catch (e: Exception) {
-            Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
-            // Show an error message
-        }
     }
 
     override fun onDestroyView() {

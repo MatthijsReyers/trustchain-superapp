@@ -53,7 +53,8 @@ class DaoAdapter(
 
                     // Navigate to DAO details with block ID
                     val bundle = Bundle().apply {
-                        putString("blockId", daoBlock.blockId)
+                        putByteArray("publicKey", daoBlock.publicKey)
+                        putInt("sequenceNumber", daoBlock.sequenceNumber.toInt())
                     }
                     itemView.findNavController().navigate(R.id.action_homeFragment_to_daoDetailsFragment, bundle)
                 }

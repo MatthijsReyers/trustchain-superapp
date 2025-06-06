@@ -39,14 +39,6 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
-
-        this.discoverNewAppsJob = lifecycleScope.launch {
-            while (true) {
-                discoverNewApps()
-                delay(60_000 * 5)
-            }
-        }
-
         return binding.root
     }
 
@@ -55,14 +47,21 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
 
         setupRecyclerViews()
 
-        binding.btnCreateDao.setOnClickListener {
-            showCreateDaoDialog()
-        }
-
         if (WalletManagerAndroid.isInitialized()) {
             loadDaoData()
         } else {
             Log.w("P2PlayStore", "WalletManager is not initialized.")
+        }
+
+        binding.btnCreateDao.setOnClickListener {
+            showCreateDaoDialog()
+        }
+
+        this.discoverNewAppsJob = lifecycleScope.launch {
+            while (true) {
+                discoverNewApps()
+                delay(60_000 * 5)
+            }
         }
     }
 

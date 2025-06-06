@@ -18,6 +18,7 @@ import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.trustchain.common.BaseActivity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
+import java.io.File
 
 class P2PlayStoreMainActivity() : BaseActivity() {
 
