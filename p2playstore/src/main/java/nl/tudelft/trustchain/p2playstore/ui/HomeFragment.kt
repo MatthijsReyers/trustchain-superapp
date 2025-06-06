@@ -62,8 +62,6 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         } else {
             Log.w("P2PlayStore", "WalletManager is not initialized.")
         }
-
-        createWalletIfNeeded()
     }
 
     private fun setupRecyclerViews() {
@@ -72,11 +70,11 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
     }
 
     private fun setupClickListeners() {
-        binding.seeAllTopApps.setOnClickListener {
+        binding.rvTopApps.setOnClickListener {
             findNavController().navigate(R.id.joinDaoFragment)
         }
 
-        binding.seeAllRecommended.setOnClickListener {
+        binding.rvRecommended.setOnClickListener {
             findNavController().navigate(R.id.joinDaoFragment)
         }
 
