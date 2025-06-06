@@ -120,9 +120,7 @@ class AppDetails : BaseFragment() {
         val entranceFee = Coin.valueOf(daoData.SW_ENTRANCE_FEE).toFriendlyString()
         binding.btnJoinDao.text = "Join DAO - $entranceFee" // Keeping original text for now
 
-        binding.daoIcon.setImageResource(iconFromIconId(
-            this.daoBlock.transaction["iconIndex"] as? Int
-        ))
+        binding.daoIcon.setImageResource(iconFromIconId(this.daoBlock.transaction["iconIndex"]))
     }
 
 //    TODO: make functional

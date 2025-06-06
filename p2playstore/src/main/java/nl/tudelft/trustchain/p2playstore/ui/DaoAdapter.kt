@@ -46,9 +46,7 @@ class DaoAdapter(
 
                 binding.appVotingThreshold.text = "Threshold: ${data.SW_VOTING_THRESHOLD}%"
 
-                binding.appIcon.setImageResource(iconFromIconId(
-                    daoBlock.transaction["iconIndex"] as? Int
-                ));
+                binding.appIcon.setImageResource(iconFromIconId(daoBlock.transaction["iconIndex"]))
 
                 itemView.setOnClickListener {
                     android.util.Log.d("DaoAdapter", "DAO clicked: ${data.SW_UNIQUE_ID}")
