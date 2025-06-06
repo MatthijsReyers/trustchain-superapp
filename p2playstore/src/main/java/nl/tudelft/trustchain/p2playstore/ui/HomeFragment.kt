@@ -57,6 +57,10 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
 
         setupRecyclerViews()
 
+        binding.btnCreateDao.setOnClickListener {
+            showCreateDaoDialog()
+        }
+
         if (WalletManagerAndroid.isInitialized()) {
             loadDaoData()
         } else {
@@ -67,20 +71,6 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private fun setupRecyclerViews() {
         binding.rvTopApps.layoutManager = GridLayoutManager(context, 2, GridLayoutManager.HORIZONTAL, false)
         binding.rvRecommended.layoutManager = GridLayoutManager(context, 2, GridLayoutManager.HORIZONTAL, false)
-    }
-
-    private fun setupClickListeners() {
-        binding.rvTopApps.setOnClickListener {
-            findNavController().navigate(R.id.joinDaoFragment)
-        }
-
-        binding.rvRecommended.setOnClickListener {
-            findNavController().navigate(R.id.joinDaoFragment)
-        }
-
-        binding.btnCreateDao.setOnClickListener {
-            showCreateDaoDialog()
-        }
     }
 
     private fun showCreateDaoDialog() {
@@ -358,19 +348,6 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                 )
             }
             this.loadDaoData();
-        }
-    }
-
-    private fun loadDynamicCode(fileName: String) {
-        try {
-            val intent = Intent(requireContext(), ExecutionActivity::class.java)
-            intent.putExtra(
-                "fileName",
-                "${requireContext().cacheDir}/${fileName.split("/").last()}"
-            )
-            startActivity(intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
