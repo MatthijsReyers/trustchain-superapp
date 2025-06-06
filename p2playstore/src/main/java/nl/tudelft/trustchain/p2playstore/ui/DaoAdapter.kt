@@ -1,6 +1,7 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.navigation.findNavController
@@ -9,6 +10,7 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.ItemAppBinding
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
+import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 import org.bitcoinj.core.Coin
 
 class DaoAdapter(
@@ -44,7 +46,9 @@ class DaoAdapter(
 
                 binding.appVotingThreshold.text = "Threshold: ${data.SW_VOTING_THRESHOLD}%"
 
-                setDaoIcon("${daoBlock.transaction["iconIndex"]}")
+                binding.appIcon.setImageResource(iconFromIconId(
+                    daoBlock.transaction["iconIndex"] as? Int
+                ));
 
                 itemView.setOnClickListener {
                     android.util.Log.d("DaoAdapter", "DAO clicked: ${data.SW_UNIQUE_ID}")
@@ -65,21 +69,11 @@ class DaoAdapter(
                 binding.appDeveloper.text = ""
                 binding.appEntranceFee.text = ""
                 binding.appVotingThreshold.text = ""
-                binding.appIcon.setImageResource(R.drawable.ic_bitcoin)
+                binding.appIcon.setImageResource(iconFromIconId(null))
                 itemView.setOnClickListener(null)
                 itemView.isClickable = false
                 itemView.isFocusable = false
             }
-        }
-
-        private fun setDaoIcon(iconId: String) {
-            val iconResource = when (iconId) {
-                "0" -> R.drawable.ic_bitcoin
-                "1" -> R.drawable.ic_account_balance_wallet_black_24dp // TODO: Add more icons as needed
-                "2" -> R.drawable.ic_group_work_black_24dp
-                else -> R.drawable.ic_device_hub_black_24dp
-            }
-            binding.appIcon.setImageResource(iconResource)
         }
     }
 

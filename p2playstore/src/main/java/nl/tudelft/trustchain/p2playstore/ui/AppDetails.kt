@@ -28,6 +28,7 @@ import nl.tudelft.trustchain.p2playstore.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
+import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 import org.bitcoinj.core.Coin
 import java.math.BigInteger
 
@@ -119,14 +120,9 @@ class AppDetails : BaseFragment() {
         val entranceFee = Coin.valueOf(daoData.SW_ENTRANCE_FEE).toFriendlyString()
         binding.btnJoinDao.text = "Join DAO - $entranceFee" // Keeping original text for now
 
-        val icon = this.daoBlock.transaction["iconIndex"] as? Int
-        val iconResource = when (icon) {
-            0 -> R.drawable.ic_bitcoin
-            1 -> R.drawable.ic_account_balance_wallet_black_24dp // TODO: Add more icons as needed
-            2 -> R.drawable.ic_group_work_black_24dp
-            else -> R.drawable.ic_device_hub_black_24dp
-        }
-        binding.daoIcon.setImageResource(iconResource)
+        binding.daoIcon.setImageResource(iconFromIconId(
+            this.daoBlock.transaction["iconIndex"] as? Int
+        ))
     }
 
 //    TODO: make functional
