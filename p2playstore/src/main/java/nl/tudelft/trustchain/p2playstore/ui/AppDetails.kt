@@ -119,8 +119,8 @@ class AppDetails : BaseFragment() {
         val entranceFee = Coin.valueOf(daoData.SW_ENTRANCE_FEE).toFriendlyString()
         binding.btnJoinDao.text = "Join DAO - $entranceFee" // Keeping original text for now
 
-        val icon = this.daoBlock.transaction["iconIndex"] as BigInteger
-        val iconResource = when (icon.intValueExact()) {
+        val icon = this.daoBlock.transaction["iconIndex"] as? Int
+        val iconResource = when (icon) {
             0 -> R.drawable.ic_bitcoin
             1 -> R.drawable.ic_account_balance_wallet_black_24dp // TODO: Add more icons as needed
             2 -> R.drawable.ic_group_work_black_24dp
