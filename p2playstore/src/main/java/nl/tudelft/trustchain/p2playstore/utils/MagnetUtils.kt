@@ -7,12 +7,12 @@ data class MagnetLink(
     val raw: String,                        // The original link
     val infoHash: String,                   // from xt=urn:btih:<hash>
     val displayName: String?,               // from dn=
-    val fileSize: Long?,                    // from xl= (bytes), if present
+    val fileSize: Long?,                    // from xl= (bytes)
     val trackers: List<String>,             // from tr= (may be empty)
     val webSeeds: List<String>,             // from ws= (may be empty)
     val acceptableSources: List<String>,    // from as= (may be empty)
     val exactSources: List<String>,         // from xs= (may be empty)
-    val keywordTopic: String?,              // from kt=
+    val keywordTopic: List<String>,         // from kt= (may be empty)
     val manifestTopic: String?,             // from mt=
     val selectOnly: List<IntRange>,         // from so= (may be empty)
     val peerEndpoints: List<String>         // from x.pe= (may be empty)
@@ -32,7 +32,7 @@ object MagnetUtils {
 
         // Scheme must be "magnet"
         require(uri.scheme == "magnet") {
-            "Invalid scheme: expected magnet:, got ${uri.scheme}"
+            "Invalid scheme. Expected magnet, got: ${uri.scheme}"
         }
 
         // Mandatory eXact Topic (xt)
@@ -50,7 +50,7 @@ object MagnetUtils {
         val webSeeds = params["ws"] ?: emptyList()
         val acceptableSources = params["as"] ?: emptyList()
         val exactSources = params["xs"] ?: emptyList()
-        val keywordTopic = params["kt"]?.firstOrNull()
+        val keywordTopic = params["kt"]?.firstOrNull()?.split('+')?.filter { it.isNotBlank() } ?: emptyList()
         val manifestTopic = params["mt"]?.firstOrNull()
         val peerEndpoints = params["x.pe"] ?: emptyList()
 
@@ -58,7 +58,7 @@ object MagnetUtils {
         params["so"]?.flatMap { it.split(",") }?.forEach { part ->
             if (part.contains("-")) {
                 val (start, end) = part.split("-").mapNotNull { it.toIntOrNull() }
-                if (start != null && end != null) selectOnly += start..end
+                selectOnly += start..end
             } else {
                 part.toIntOrNull()?.let { selectOnly += it..it }
             }
@@ -80,6 +80,30 @@ object MagnetUtils {
         )
     }
 
+    /**
+     * Parses a URL-style query string into a map of keys to lists of values.
+     *
+     * This method splits a query string (e.g., from a URI) into individual key-value pairs,
+     * decodes the values using `Uri.decode`, and returns a map where each key maps to a list
+     * of values associated with it. Keys that appear multiple times (e.g., `tr=...&tr=...`)
+     * will have their values grouped in a list.
+     *
+     * Query parameters without an equals sign (`=`) or missing a value are ignored.
+     *
+     * @param query The raw query string, typically obtained from a URI (e.g., everything after `?`).
+     * @return A map of decoded query parameters, where each key maps to one or more associated values.
+     *
+     * Example:
+     * ```
+     * val query = "dn=example&tr=udp%3A%2F%2Ftracker.com%2Fannounce&tr=http%3A%2F%2Ftracker2.com"
+     * val parsed = parseQuery(query)
+     * // Result:
+     * // {
+     * //   "dn" -> ["example"],
+     * //   "tr" -> ["udp://tracker.com/announce", "http://tracker2.com"]
+     * // }
+     * ```
+     */
     private fun parseQuery(query: String): Map<String, List<String>> {
         return query.split("&").mapNotNull { param ->
             val (key, value) = param.split("=", limit = 2).let {

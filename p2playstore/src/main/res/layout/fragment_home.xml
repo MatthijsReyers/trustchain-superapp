@@ -111,10 +111,5 @@
             tools:itemCount="5"
             tools:listitem="@layout/item_category" />
 
-        <Button
-            android:id="@+id/startApp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Button" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

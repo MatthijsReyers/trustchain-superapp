@@ -1,5 +1,6 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -9,6 +10,8 @@ import android.view.ViewGroup
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
+import nl.tudelft.trustchain.p2playstore.utils.DebugUtils.printToast
+import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
 import java.io.File
 
@@ -60,47 +63,53 @@ class AppDetails : BaseFragment() {
         binding.appDescription.text = description
 
         binding.btnInstallUpdate.setOnClickListener {
-            loadDynamicCode()
+            loadDynamicAPK()
         }
     }
 
-    private fun loadDynamicCode() {
+    private fun loadDynamicAPK() {
         val applicationContext = requireContext()
-        val magnet = parseMagnet(this.block.transaction["magnetLink"] as String)
+
+        val rawMagnetLink = this.block.transaction["magnetLink"] as? String
+        if (rawMagnetLink.isNullOrBlank()) {
+            Log.e("P2P", "No magnet link found in transaction.")
+            printToast(applicationContext, "No magnet link connected to this DAO.")
+            return
+        }
+
+        val magnet: MagnetLink = try {
+            parseMagnet(rawMagnetLink)
+        } catch (e: IllegalArgumentException) {
+            Log.e("P2P", "Malformed magnet link: ${e.message}")
+            printToast(applicationContext, "Malformed magnet link connected to this DAO.")
+            return
+        }
+
+        val apkPath = "${applicationContext.cacheDir}/p2p-apps/${magnet.infoHash}/${magnet.displayName}"
+        val apkFile = File(apkPath)
+
+        if (!apkFile.exists() || !apkFile.isFile) {
+            Log.e("P2P", "File not found or invalid: $apkFile")
+            printToast(applicationContext, "No APK found connected to this DAO.")
+            return
+        }
+
+        val intent = Intent(applicationContext, ExecutionActivity::class.java).apply {
+            putExtra("fileName", apkPath)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
 
         try {
-            val intent = Intent(applicationContext, ExecutionActivity::class.java)
-            intent.putExtra(
-                "fileName",
-                "${applicationContext}/p2p-apps/${magnet.infoHash}/${magnet.displayName}"
-            )
-            startActivity(intent)
+            applicationContext.startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Log.e("P2P", "No activity found to handle intent for APK: $apkPath", e)
+            printToast(applicationContext, "Unable to open APK – app component not found.")
+        } catch (e: SecurityException) {
+            Log.e("P2P", "Security exception when launching APK: $apkPath", e)
+            printToast(applicationContext, "Permission denied to launch APK.")
         } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    /**
-     * Logs all files in the given subfolder within the app's cache directory.
-     *
-     * This function retrieves and logs the absolute paths of all files located in the specified
-     * subfolder inside the application's cache directory. Useful for debugging file presence
-     * and structure when working with dynamically loaded code or cached assets.
-     *
-     * @param subfolderInCache The relative subfolder path inside the cache directory to inspect.
-     *                         Defaults to the root of the cache directory ("/").
-     *
-     * Example usage:
-     * ```
-     * printFiles("/dynamic_apks/")
-     * ```
-     */
-    private fun printFiles(subfolderInCache: String = "/") {
-        val applicationContext = requireContext()
-
-        val files = File("${applicationContext.cacheDir}$subfolderInCache").listFiles()
-        for (file in files!!) {
-            Log.d("P2P", "File: $file")
+            Log.e("P2P", "Unexpected error launching APK: $apkPath", e)
+            printToast(applicationContext, "Something went wrong when opening the APK.")
         }
     }
 }
