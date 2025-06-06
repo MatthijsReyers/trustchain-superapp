@@ -104,6 +104,7 @@ class AppDetails : BaseFragment() {
                 torrentManager.onStarted.collect { link ->
                     if (link.infoHash == magnetLink.infoHash) {
                         downloadProgress = 0
+                        updateDownloadButton()
                     }
                 }
             }
@@ -113,6 +114,7 @@ class AppDetails : BaseFragment() {
                     val progress = data.second
                     if (link.infoHash == magnetLink.infoHash) {
                         downloadProgress = progress
+                        updateDownloadButton()
                     }
                 }
             }
@@ -120,6 +122,7 @@ class AppDetails : BaseFragment() {
                 torrentManager.onFinished.collect { link ->
                     if (link.infoHash == magnetLink.infoHash) {
                         downloadProgress = 100
+                        updateDownloadButton()
                     }
                 }
             }
@@ -136,11 +139,6 @@ class AppDetails : BaseFragment() {
         binding.daoDeveloper.text = daoBlock.publicKey.toHex().take(8) + "..."
         binding.daoDescription.text =
                 daoBlock.transaction["description"]?.toString() ?: "No description available"
-
-        // Set entrance fee for join button
-        val entranceFee = Coin.valueOf(daoData.SW_ENTRANCE_FEE).toFriendlyString()
-        binding.btnJoinDao.text = "Join DAO - $entranceFee" // Keeping original text for now
-
         binding.daoIcon.setImageResource(iconFromIconId(this.daoBlock.transaction["iconIndex"]))
     }
 
