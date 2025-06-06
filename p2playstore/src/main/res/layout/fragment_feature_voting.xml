@@ -317,6 +317,17 @@
                     android:layout_marginStart="8dp" />
 
             </LinearLayout>
+            <!-- Claim Reward Button (Hidden by default) -->
+            <Button
+                android:id="@+id/btn_claim_reward"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Claim Reward"
+                android:textColor="@android:color/white"
+                android:backgroundTint="#007BFF"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone" />
+
 
             <!-- Vote Status -->
             <androidx.cardview.widget.CardView

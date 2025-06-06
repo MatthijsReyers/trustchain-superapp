@@ -56,13 +56,14 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         super.onViewCreated(view, savedInstanceState)
 
         setupRecyclerViews()
-        setupClickListeners()
 
         if (WalletManagerAndroid.isInitialized()) {
             loadDaoData()
         } else {
             Log.w("P2PlayStore", "WalletManager is not initialized.")
         }
+
+        createWalletIfNeeded()
     }
 
     private fun setupRecyclerViews() {

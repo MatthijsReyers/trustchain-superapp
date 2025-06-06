@@ -2,7 +2,70 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
-    <!-- Add the missing strings here -->
     <string name="hello_welcome_to_the_p2playstore_app">Hello, welcome to the P2PlayStore App!</string>
     <string name="join_dao">Join DAO</string>
+
+    <string name="not_available">N/A</string>
+    <string name="no_description_available">No description available.</string>
+    <string name="join_dao_with_fee">Join DAO - %s</string>
+    <string name="error_loading_proposals">Error loading pending proposals.</string>
+    <string name="no_pending_feature_requests">No pending feature requests</string>
+    <string name="join_proposal_title">Join Proposal: %s</string>
+    <string name="transfer_proposal_title">Transfer Proposal: %s</string>
+    <string name="votes_required_text">%1$d of %2$d votes needed</string>
+    <string name="percentage_format">%d%%</string>
+    <string name="total_votes_text">%1$d of %2$d members voted</string>
+    <string name="could_not_load_votes">Could not load votes.</string>
+    <string name="install_update_button_text">Install/Update</string>
+    <string name="feature_request_button_text">Request Feature</string>
+    <string name="see_all_votes_button_text">See All Votes</string>
+    <string name="empty_feature_requests_default_text">No feature requests available.</string>
+    <string name="recent_update_voting_card_title">Recent Update Voting</string>
+    <string name="voting_status_voted">You have already voted on this proposal.</string>
+    <string name="vote_button_card_text">Vote</string>
+    <string name="developer_label">Developer:</string>
+    <string name="members_label">Members:</string>
+    <string name="category_label">Category:</string>
+    <string name="version_label">Version:</string>
+    <string name="downloads_label">Downloads:</string>
+    <string name="description_label">Description:</string>
+    <string name="screenshots_label">Screenshots:</string>
+    <string name="feature_requests_label">Feature Requests</string>
+    <string name="error_parsing_dao_data">Error: Could not parse DAO information.</string>
+
+    <string name="feature_voting_fragment_title">Vote on Proposal</string>
+    <string name="join_proposal_title_short">Join Proposal</string>
+    <string name="join_proposal_description">A new member is proposed to join this DAO.</string>
+    <string name="transfer_proposal_title_short">Transfer Funds Proposal</string>
+    <string name="transfer_proposal_description">Proposal to transfer funds from the DAO wallet.</string>
+    <string name="unknown_proposal_title">Unknown Proposal Type</string>
+    <string name="cannot_display_proposal_details">Details for this proposal type cannot be displayed.</string>
+    <string name="reward_amount_label">Reward:</string>
+    <string name="developer_name_label">Proposed by:</string>
+    <string name="implementation_description_label">Details:</string>
+    <string name="original_feature_title_label">Proposal:</string>
+    <string name="could_not_load_voting_requirements">Could not load voting requirements for this proposal.</string>
+    <string name="error_loading_voting_status">Error: Could not load the current voting status.</string>
+    <string name="download_not_implemented">Download APK functionality is not yet available for this proposal.</string>
+    <string name="error_casting_vote_generic">An error occurred while trying to cast your vote.</string>
+    <string name="cannot_vote_on_this_proposal_type">Voting is not supported for this type of proposal.</string>
+    <string name="vote_cast_successfully">Your vote has been successfully cast!</string>
+    <string name="failed_to_cast_vote">Failed to cast vote: %s</string>
+    <string name="already_voted_text">You have already voted on this proposal.</string>
+    <string name="btn_vote_yes_text">Vote Yes</string>
+    <string name="btn_vote_no_text">Vote No</string>
+    <string name="btn_download_apk_text">Download Proposed APK</string>
+    <string name="voting_progress_label">Voting Progress:</string>
+    <string name="votes_yes_label">Yes</string>
+    <string name="votes_no_label">No</string>
+    <string name="votes_pending_label">Pending</string>
+    <string name="error_casting_vote">Error: Could not cast your vote.</string>"
+
+    <string name="loading">Loading…</string>
+    <string name="error_occurred">An error occurred. Please try again.</string>
+    <string name="retry_button">Retry</string>
+    <string name="ok_button">OK</string>
+    <string name="cancel_button">Cancel</string>
+
+
 </resources>

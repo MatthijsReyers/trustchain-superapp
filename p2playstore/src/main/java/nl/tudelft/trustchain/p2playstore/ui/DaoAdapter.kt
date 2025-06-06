@@ -1,7 +1,9 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.p2playstore.R
@@ -46,7 +48,12 @@ class DaoAdapter(
 
                 itemView.setOnClickListener {
                     android.util.Log.d("DaoAdapter", "DAO clicked: ${data.SW_UNIQUE_ID}")
-                    listener?.onItemClick(daoBlock)
+
+                    // Navigate to DAO details with block ID
+                    val bundle = Bundle().apply {
+                        putString("blockId", daoBlock.blockId)
+                    }
+                    itemView.findNavController().navigate(R.id.action_homeFragment_to_daoDetailsFragment, bundle)
                 }
 
                 itemView.isClickable = true
@@ -74,22 +81,6 @@ class DaoAdapter(
             }
             binding.appIcon.setImageResource(iconResource)
         }
-
-        // Method for future custom icon implementation
-//        private fun setCustomIcon(base64Icon: String?) {
-//            if (!base64Icon.isNullOrEmpty()) {
-//                try {
-//                    val decodedBytes = Base64.decode(base64Icon, Base64.DEFAULT)
-//                    val bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
-//                    binding.appIcon.setImageBitmap(bitmap)
-//                } catch (e: Exception) {
-//                    android.util.Log.e("DaoAdapter", "Error loading custom icon: ${e.message}")
-//                    binding.appIcon.setImageResource(R.drawable.ic_bitcoin)
-//                }
-//            } else {
-//                binding.appIcon.setImageResource(R.drawable.ic_bitcoin)
-//            }
-//        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DaoViewHolder {

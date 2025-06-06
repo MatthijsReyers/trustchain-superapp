@@ -2,92 +2,721 @@ package nl.tudelft.trustchain.p2playstore.ui
 
 import android.content.Intent
 import android.os.Build
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
+import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.R
+import nl.tudelft.ipv8.util.toHex
+import nl.tudelft.ipv8.util.hexToBytes
+import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTD
+import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
+import nl.tudelft.trustchain.p2playstore.R
+import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTD
+import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTransactionData
+import nl.tudelft.trustchain.p2playstore.blockdata.VotingPollHelper
+import nl.tudelft.trustchain.p2playstore.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import java.math.BigInteger
+import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
+import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
+import org.bitcoinj.core.Coin
 
-/**
- * This is the app details fragment that displays information about an app after a user has clicked
- * on it, here the user can actually open the app or join the app's DAO.
- */
 class AppDetails : BaseFragment() {
     private var _binding: FragmentAppDetailsBinding? = null
-    private val binding get() = _binding!!
+    private val binding
+        get() = _binding!!
 
-    private lateinit var block: TrustChainBlock
+    private lateinit var daoBlock: TrustChainBlock
+    private lateinit var daoData: SWJoinBlockTD
+    private var isUserMember = false
 
-    override fun onCreate(bundle: Bundle?) {
-        super.onCreate(bundle)
-
-        val args = this.requireArguments()
-        val publicKey = args.getByteArray("publicKey")!!
-        val sequenceNumber = args.getInt("sequenceNumber").toUInt()
-
-        val community = this.getTrustChainCommunity()
-        this.block = community.database.get(publicKey, sequenceNumber)!!
-
-        println("Get block: ${block.transaction}")
-    }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
     ): View {
         _binding = FragmentAppDetailsBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
-    override fun onStart() {
-        super.onStart()
-        this.updateView()
-    }
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
-    @RequiresApi(Build.VERSION_CODES.S)
-    private fun updateView() {
-        val icon = this.block.transaction["iconIndex"] as BigInteger
-        val iconResource = when (icon.intValueExact()) {
-            0 -> R.drawable.ic_bitcoin
-            1 -> R.drawable.ic_account_balance_wallet_black_24dp // TODO: Add more icons as needed
-            2 -> R.drawable.ic_group_work_black_24dp
-            else -> R.drawable.ic_device_hub_black_24dp
-        }
-        binding.daoIcon.setImageResource(iconResource)
-
-        val name = this.block.transaction["name"] as String
-        binding.appName.text = name
-
-        var category = this.block.transaction["category"] as? String
-        if (category.isNullOrEmpty()) { category = "[none]" }
-        binding.appCategory.text = category
-
-        val description = this.block.transaction["description"] as? String
-        binding.appDescription.text = description
-
-        val magnetLink = this.block.transaction["magnetLink"] as String
-        val fileName = magnetLink.split("&dn=").last().split("&tr=").first()
-        binding.btnInstallUpdate.setOnClickListener {
-            loadDynamicCode(fileName)
+        // Get the block ID from arguments
+        val blockId = arguments?.getString("blockId")
+        if (blockId != null) {
+            loadDaoDetails(blockId)
+            setupClickListeners()
+        } else {
+            Log.e("DaoDetailsFragment", "No block ID provided")
+            findNavController().navigateUp()
         }
     }
 
-    private fun loadDynamicCode(fileName: String) {
+    private fun loadDaoDetails(blockId: String) {
+        lifecycleScope.launch {
+            try {
+                // Get the block from the TrustChain store (using coroutine-safe call)
+                val block =
+                        withContext(Dispatchers.IO) {
+                            val parts = blockId.split(".")
+                            if (parts.size != 2) {
+                                throw IllegalArgumentException("Invalid block ID format")
+                            }
+                            val publicKey = parts[0].hexToBytes()
+                            val sequenceNumber = parts[1].toUInt()
+                            getTrustChainCommunity().database.get(publicKey, sequenceNumber)
+                        }
+
+                if (block != null) {
+                    daoBlock = block
+                    // Parse DAO data once after loading the block
+                    daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
+
+                    setupDaoDetailsUI()
+                    checkMembership()
+                    updateUIBasedOnMembership()
+                    loadRecentVotingPoll()
+                    loadLatestPendingFeatureRequest()
+                    loadLatestApprovedUpdate()
+                    // request in the new section
+                } else {
+                    Log.e("DaoDetailsFragment", "DAO block not found for ID: $blockId")
+                    findNavController().navigateUp()
+                }
+            } catch (e: Exception) {
+                Log.e("DaoDetailsFragment", "Error loading DAO details: ${e.message}")
+                findNavController().navigateUp()
+            }
+        }
+    }
+
+    private fun setupDaoDetailsUI() {
+        // Set DAO basic info from the block data
+        binding.daoName.text = daoBlock.transaction["name"]?.toString() ?: "Unknown DAO"
+        binding.daoCategory.text = daoBlock.transaction["category"]?.toString() ?: "General"
+        binding.daoMembersCount.text = daoData.SW_TRUSTCHAIN_PKS.size.toString()
+        binding.daoDownloads.text = "0" // TODO: Implement download tracking
+        binding.daoDeveloper.text = daoBlock.publicKey.toHex().take(8) + "..."
+        binding.daoDescription.text =
+                daoBlock.transaction["description"]?.toString() ?: "No description available"
+
+        // Set entrance fee for join button
+        val entranceFee = Coin.valueOf(daoData.SW_ENTRANCE_FEE).toFriendlyString()
+        binding.btnJoinDao.text = "Join DAO - $entranceFee" // Keeping original text for now
+    }
+
+//    TODO: make functional
+    private fun updateVotingProgressBars(yesPercent: Int, noPercent: Int, pendingPercent: Int) {
+        binding.root.post {
+            val containerWidth = binding.votingCard.width
+
+            if (containerWidth > 0) {
+                val horizontalPaddingAndMargins =
+                        resources.getDimensionPixelSize(R.dimen.padding_normal) *
+                                2 +
+                        resources.getDimensionPixelSize(R.dimen.progress_bar_margin_horizontal) *
+                                        2
+                val availableWidth = containerWidth - horizontalPaddingAndMargins
+
+                if (availableWidth > 0) {
+                    val yesWidth = maxOf(1, (availableWidth * yesPercent / 100))
+                    val noWidth = maxOf(1, (availableWidth * noPercent / 100))
+                    val pendingWidth = maxOf(1, (availableWidth * pendingPercent / 100))
+
+                    binding.yesProgressBar.layoutParams.width = yesWidth
+                    binding.noProgressBar.layoutParams.width = noWidth
+                    binding.pendingProgressBar.layoutParams.width = pendingWidth
+
+                    binding.yesProgressBar.requestLayout()
+                    binding.noProgressBar.requestLayout()
+                    binding.pendingProgressBar.requestLayout()
+                } else {
+                    Log.w(
+                            "DaoDetailsFragment",
+                            "Insufficient width for progress bars."
+                    )
+                }
+            }
+        }
+    }
+
+    private fun checkMembership() {
         try {
-            val intent = Intent(requireContext(), ExecutionActivity::class.java)
-            intent.putExtra(
-                "fileName",
-                "${requireContext().cacheDir}/apps/${fileName.split("/").last()}"
-            )
-            startActivity(intent)
+            val daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
+            val myPublicKey = getP2pStoreCommunity().myPeer.publicKey.keyToBin().toHex()
+            isUserMember = daoData.SW_TRUSTCHAIN_PKS.contains(myPublicKey)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("DaoDetailsFragment", "Error checking membership: ${e.message}")
+            isUserMember = false
         }
+    }
+
+    private fun updateUIBasedOnMembership() {
+        if (isUserMember) {
+            binding.btnJoinDao.visibility = View.GONE
+            binding.btnInstallUpdate.visibility = View.VISIBLE
+            binding.btnFeatureRequest.isEnabled = true
+            binding.btnFeatureRequest.alpha = 1.0f
+            // Voting card clickability/alpha handled in loadRecentVotingPoll
+        } else {
+            binding.btnJoinDao.visibility = View.VISIBLE
+            binding.btnInstallUpdate.visibility = View.GONE
+            binding.btnFeatureRequest.isEnabled = false
+            binding.btnFeatureRequest.alpha = 0.5f
+            // Voting card clickability/alpha handled in loadRecentVotingPoll
+        }
+    }
+
+    val icon = this.block.transaction["iconIndex"] as BigInteger
+    val iconResource = when (icon.intValueExact()) {
+        0 -> R.drawable.ic_bitcoin
+        1 -> R.drawable.ic_account_balance_wallet_black_24dp // TODO: Add more icons as needed
+        2 -> R.drawable.ic_group_work_black_24dp
+        else -> R.drawable.ic_device_hub_black_24dp
+    }
+    binding.daoIcon.setImageResource(iconResource)
+
+
+    // This function finds the latest solution block that has met the voting threshold for its feature request.
+    private fun loadLatestApprovedUpdate() {
+        lifecycleScope.launch {
+            val maxRetries = 3
+            val retryDelayMillis = 1000L // 1 second delay
+
+            for (retry in 0..maxRetries) {
+                try {
+                    val daoUniqueId = daoData.SW_UNIQUE_ID
+
+                    // Get all feature requests for this DAO
+                    val featureRequests = withContext(Dispatchers.IO) {
+                        p2playStore.getFeatureRequestsForDao(daoUniqueId)
+                    }
+                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Found ${featureRequests.size} feature requests for DAO $daoUniqueId")
+                    // Get all solution blocks for this DAO
+                    val solutionBlocks = withContext(Dispatchers.IO) {
+                        p2playStore.getSolutionBlocksForDaoAndFeature(daoUniqueId)
+                    }
+                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Found ${solutionBlocks.size} solution blocks for DAO $daoUniqueId.")
+
+                    // Get all votes for this DAO
+                    val votes = withContext(Dispatchers.IO) {
+                        p2playStore.getVotesForSolution(daoUniqueId)
+                    }
+                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Found ${votes.size} votes for DAO $daoUniqueId.")
+
+
+                    val totalMembers = daoData.SW_TRUSTCHAIN_PKS.size
+                    val votingThreshold = daoData.SW_VOTING_THRESHOLD
+
+                    // Filter for approved solutions
+                    val approvedSolutionDataWithBlocks = solutionBlocks.mapNotNull { block ->
+                        try {
+                            val solutionData = FeatureSolutionTransactionData(block.transaction).getData()
+                            block to solutionData
+                        } catch (e: Exception) {
+                            Log.e("DaoDetailsFragment", "Failed to parse solution block in approved filter: ${e.message}")
+                            null
+                        }
+                    }.filter { (block, solution) ->
+                        // Find the corresponding feature request
+                        val correspondingRequest = featureRequests.find { it.featureId == solution.featureId }
+
+                        // Only consider solutions linked to a feature request
+                        if (correspondingRequest != null) {
+                            // Count votes for this specific solution
+                            val votesForSolution = votes.filter { it.solutionId == solution.solutionId }
+                            val yesVotes = votesForSolution.count { it.isYes }
+                            val votesNeeded = votingThreshold
+                            // An update is approved if YES votes meet the threshold
+                            yesVotes >= votesNeeded
+                        } else {
+                            false
+                        }
+                    }
+                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Found ${approvedSolutionDataWithBlocks.size} approved solutions with blocks for DAO $daoUniqueId.")
+                    // Sort by block timestamp descending and take the first one
+                    val latestApprovedSolutionWithBlock = approvedSolutionDataWithBlocks
+                        .sortedByDescending { it.first.timestamp.time }
+                        .firstOrNull()
+
+
+                    if (latestApprovedSolutionWithBlock != null) {
+                        val (block, solution) = latestApprovedSolutionWithBlock
+                        Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Latest approved solution found: ${solution.solutionId} (Feature ${solution.featureId}), Block Timestamp: ${block.timestamp.time}")
+                        // Update UI with latest approved version info
+                        binding.daoVersion.text = "v${block.sequenceNumber}" // Use block sequence number as a simple version
+                        // Set click listener for update button
+                        binding.btnInstallUpdate.setOnClickListener {
+                            downloadAndInstallUpdate(solution.apkMagnetLink)
+                        }
+                        binding.btnInstallUpdate.visibility = View.VISIBLE // Make sure update button is visible if user is member (handled by updateUIBasedOnMembership)
+                        // Success, break out of retry loop
+                        return@launch
+
+                    } else {
+                        Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): No approved solutions found for DAO $daoUniqueId.")
+                        binding.daoVersion.text = "No updates"
+                        binding.btnInstallUpdate.visibility = View.GONE // Hide update button if no approved updates
+                    }
+                } catch (e: Exception) {
+                    Log.e("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Error loading latest approved update: ${e.message}")
+                    binding.daoVersion.text = "Error loading update info"
+                    binding.btnInstallUpdate.visibility = View.GONE
+                }
+                if (retry < maxRetries) {
+                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Retrying in ${retryDelayMillis}ms...")
+                }
+            }
+        }
+    }
+
+    private fun downloadAndInstallUpdate(magnetLink: String) {
+        if (magnetLink.isNotEmpty()) {
+            Log.d("DaoDetailsFragment", "Attempting to download/install from magnet link: $magnetLink")
+            // TODO: Implement actual download/install logic.
+            Toast.makeText(context, "Downloading update from $magnetLink (simulated)", Toast.LENGTH_LONG).show()
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(magnetLink))
+                startActivity(intent)
+            } catch (e: Exception) {
+                Log.e("DaoDetailsFragment", "Failed to open magnet link: ${e.message}")
+                Toast.makeText(context, "Could not open magnet link. Please ensure you have a torrent client installed.", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            Log.w("DaoDetailsFragment", "No magnet link available for the latest approved update.")
+            Toast.makeText(context, "No download link available for this update.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun loadRecentVotingPoll() {
+        lifecycleScope.launch {
+            val maxRetries = 3
+            val retryDelayMillis = 1000L
+
+            for (retry in 0..maxRetries) {
+                try {
+                    val daoUniqueId = daoData.SW_UNIQUE_ID
+
+                    // Get all feature requests for this DAO
+                    val featureRequests = withContext(Dispatchers.IO) {
+                        p2playStore.getFeatureRequestsForDao(daoUniqueId)
+                    }
+                    Log.d("DaoDetailsFragment", "loadRecentVotingPoll (Attempt ${retry + 1}): Found ${featureRequests.size} feature requests for DAO $daoUniqueId")
+
+
+                    val latestVotableSolutionWithBlock = withContext(Dispatchers.IO) {
+                        p2playStore.fetchLatestVotableSolutionBlock(daoUniqueId, featureRequests)
+                    }
+
+                    if (latestVotableSolutionWithBlock != null) {
+                        val (latestVotableSolution, solutionBlock) = latestVotableSolutionWithBlock
+                        Log.d("DaoDetailsFragment", "loadRecentVotingPoll: Latest votable solution found: ${latestVotableSolution.solutionId} for feature ${latestVotableSolution.featureId} in DAO $daoUniqueId")
+//                      TODO: might not be necessary but looks cool
+                        binding.votingCard.visibility = View.VISIBLE
+                        // Hide the "See All" button initially if we only show the latest,
+
+                        val votes = withContext(Dispatchers.IO) {
+                            // Fetch votes specifically for this solution within this DAO
+                            p2playStore.getVotesForSolution(daoUniqueId, latestVotableSolution.solutionId)
+                        }
+                        Log.d("DaoDetailsFragment", "loadRecentVotingPoll: Found ${votes.size} votes for solution ${latestVotableSolution.solutionId} in DAO ${daoUniqueId}")
+
+
+                        // Find the corresponding feature request again to get its details
+                        val correspondingRequest = featureRequests.find { it.featureId == latestVotableSolution.featureId }
+
+                        if (correspondingRequest != null) {
+                            val totalMembers = daoData.SW_TRUSTCHAIN_PKS.size
+                            val votingThreshold = daoData.SW_VOTING_THRESHOLD
+                            val myPublicKey = p2playStore.myPeer.publicKey.keyToBin().toHex()
+                            val hasUserVoted = votes.any { it.voterPublicKey == myPublicKey }
+                            val userVote = votes.find { it.voterPublicKey == myPublicKey }?.isYes
+
+                            // Create a VotingPoll object and update the UI
+                            val votingPoll = VotingPollHelper.createVotingPoll(
+                                correspondingRequest, // Pass the actual request
+                                latestVotableSolution,
+                                votes,
+                                totalMembers,
+                                votingThreshold,
+                                hasUserVoted = hasUserVoted,
+                                userVote = userVote
+                            )
+                            Log.d("DaoDetailsFragment", "loadRecentVotingPoll: Created voting poll for UI. Active: ${votingPoll.isActive}, Voted: ${votingPoll.hasUserVoted}, Approved: ${votingPoll.isApproved}")
+
+
+                            updateVotingCardUI(votingPoll)
+
+                            // Set click listeners based on membership and voting status
+                            if (isUserMember) { // Only members can interact with the voting card
+                                binding.votingCard.setOnClickListener {
+                                    navigateToVotingFragment(daoBlock.blockId, latestVotableSolution.solutionId)
+                                }
+                                // Show vote button only if active, member, and hasn't voted
+                                if (votingPoll.isActive && !hasUserVoted) {
+                                    binding.btnVote.visibility = View.VISIBLE
+                                    binding.btnVote.setOnClickListener {
+                                        navigateToVotingFragment(daoBlock.blockId, latestVotableSolution.solutionId)
+                                    }
+                                } else {
+                                    binding.btnVote.visibility = View.GONE
+                                }
+
+                                binding.votingCard.isClickable = true
+                                binding.votingCard.alpha = 1.0f
+
+                            } else {
+                                // If not a member, make card non-interactive and hide vote button
+                                binding.votingCard.setOnClickListener(null)
+                                binding.btnVote.setOnClickListener(null)
+                                binding.btnVote.visibility = View.GONE
+                                binding.votingCard.isClickable = false
+                                binding.votingCard.alpha = 0.5f // Gray out
+                            }
+                            // Always enable "See All" votes if the card is visible
+                            binding.btnSeeAllVotes.isEnabled = true
+                            binding.btnSeeAllVotes.alpha = 1.0f
+
+                            // Success, break out of retry loop
+                            return@launch
+
+                        } else {
+                            Log.e("DaoDetailsFragment", "loadRecentVotingPoll: Found votable solution but corresponding open feature request not found. Solution ID: ${latestVotableSolution.solutionId} in DAO ${daoUniqueId}")
+                            binding.votingCard.visibility = View.GONE
+                            binding.btnVote.visibility = View.GONE
+                            binding.btnSeeAllVotes.isEnabled = false
+                            binding.btnSeeAllVotes.alpha = 0.5f
+                        }
+
+                    } else {
+                        // No open feature request has a submitted solution to vote on
+                        Log.d("DaoDetailsFragment", "loadRecentVotingPoll (Attempt ${retry + 1}): No latest votable solution found for DAO $daoUniqueId.")
+                        binding.votingCard.visibility = View.GONE
+                        binding.btnVote.visibility = View.GONE
+                        binding.btnSeeAllVotes.isEnabled = false // Disable "See All" if no polls
+                        binding.btnSeeAllVotes.alpha = 0.5f
+
+                        // If no votable solution is found, we might need to wait for sync.
+                        if (retry < maxRetries) {
+                            Log.d("DaoDetailsFragment", "loadRecentVotingPoll: Retrying in ${retryDelayMillis}ms...")
+                        }
+                    }
+
+                } catch (e: Exception) {
+                    Log.e("DaoDetailsFragment", "loadRecentVotingPoll (Attempt ${retry + 1}): Error loading recent voting poll: ${e.message}")
+                    if (retry < maxRetries) {
+                        Log.e("DaoDetailsFragment", "loadRecentVotingPoll: Retrying in ${retryDelayMillis}ms due to error...")
+                    } else {
+                        // exhausted retries, show error UI
+                        binding.votingCard.visibility = View.GONE
+                        binding.btnVote.visibility = View.GONE
+                        binding.btnSeeAllVotes.isEnabled = false
+                        binding.btnSeeAllVotes.alpha = 0.5f
+                    }
+                }
+            }
+        }
+    }
+
+
+    private fun loadLatestPendingFeatureRequest() {
+        lifecycleScope.launch {
+            val maxRetries = 3
+            val retryDelayMillis = 1000L // 1 second delay
+
+            for (retry in 0..maxRetries) {
+                try {
+                    val daoUniqueId = daoData.SW_UNIQUE_ID
+
+                    val latestPendingRequest = withContext(Dispatchers.IO) {
+                        p2playStore.fetchLatestPendingRequestBlock(daoUniqueId)
+                    }
+
+
+                    if (latestPendingRequest != null) {
+                        Log.d("DaoDetailsFragment", "loadLatestPendingFeatureRequest: Latest pending request found: ${latestPendingRequest.featureId} for DAO $daoUniqueId")
+                        binding.latestFeatureRequestPreviewCard.visibility = View.VISIBLE
+                        binding.tvNoPendingFeatureRequests.visibility = View.GONE
+
+                        binding.tvLatestFeatureTitle.text = latestPendingRequest.title
+                        binding.tvLatestFeatureDescription.text = latestPendingRequest.description
+                        binding.tvLatestFeatureReward.text = "Reward: ${latestPendingRequest.reward} sats"
+
+                        // Still show 0 solutions count for clarity
+                        binding.tvLatestFeatureSolutionCount.text = "0 solution(s)"
+
+
+                        binding.latestFeatureRequestPreviewCard.setOnClickListener {
+                            // Navigate to the submit solution fragment for this request
+                            navigateToSubmitSolution(latestPendingRequest)
+                        }
+                        binding.latestFeatureRequestPreviewCard.isClickable = true
+                        binding.latestFeatureRequestPreviewCard.alpha = 1.0f
+
+                        // Success, break out of retry loop
+                        return@launch
+
+                    } else {
+                        // No pending feature requests without solutions
+                        Log.d("DaoDetailsFragment", "loadLatestPendingFeatureRequest (Attempt ${retry + 1}): No latest pending request found for DAO $daoUniqueId.")
+                        binding.latestFeatureRequestPreviewCard.visibility = View.GONE
+                        binding.tvNoPendingFeatureRequests.visibility = View.VISIBLE
+                        binding.latestFeatureRequestPreviewCard.setOnClickListener(null)
+                        binding.latestFeatureRequestPreviewCard.isClickable = false
+                        binding.latestFeatureRequestPreviewCard.alpha = 0.5f
+
+                    }
+
+                } catch (e: Exception) {
+                    Log.e("DaoDetailsFragment", "loadLatestPendingFeatureRequest (Attempt ${retry + 1}): Error loading latest pending feature request: ${e.message}")
+                    if (retry < maxRetries) {
+                        Log.e("DaoDetailsFragment", "loadLatestPendingFeatureRequest: Retrying in ${retryDelayMillis}ms due to error...")
+                    } else {
+                        // exhausted retries, show error UI
+                        binding.latestFeatureRequestPreviewCard.visibility = View.GONE
+                        binding.tvNoPendingFeatureRequests.visibility = View.VISIBLE
+                        binding.latestFeatureRequestPreviewCard.setOnClickListener(null)
+                        binding.latestFeatureRequestPreviewCard.isClickable = false
+                        binding.latestFeatureRequestPreviewCard.alpha = 0.5f
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateVotingCardUI(poll: nl.tudelft.trustchain.p2playstore.blockdata.VotingPoll) {
+        binding.updateTitle.text = poll.title
+        binding.votesRequiredText.visibility = View.VISIBLE
+        binding.totalVotes.visibility = View.VISIBLE
+
+        binding.yesPercentage.text = "${poll.yesPercentage}%"
+        binding.noPercentage.text = "${poll.noPercentage}%"
+        binding.pendingPercentage.text = "${poll.pendingPercentage}%"
+
+        binding.votesRequiredText.text = "${poll.yesVotes} of ${poll.votesNeeded} votes needed"
+        binding.totalVotes.text =
+                "${poll.yesVotes + poll.noVotes} of ${poll.totalMembers} members voted"
+
+        updateVotingProgressBars(poll.yesPercentage, poll.noPercentage, poll.pendingPercentage)
+
+        updateVotingState(poll)
+    }
+
+    private fun updateVotingState(poll: nl.tudelft.trustchain.p2playstore.blockdata.VotingPoll) {
+        binding.btnVote.visibility = View.GONE
+        binding.votingStatus.visibility = View.GONE
+
+        when {
+            !poll.isActive && poll.isApproved -> { // Voting closed and approved
+                binding.votingStatus.text = "Approved"
+                binding.votingStatus.setTextColor(
+                        resources.getColor(android.R.color.holo_green_dark, null)
+                )
+                binding.votingStatus.visibility = View.VISIBLE
+                binding.votingCard.isClickable =
+                        false // Make card non-clickable after status is final
+                binding.votingCard.alpha = 0.5f // Gray out after status is final
+            }
+            !poll.isActive -> { // Voting closed and not approved
+                binding.votingStatus.text = "Voting Closed"
+                binding.votingStatus.setTextColor(
+                        resources.getColor(android.R.color.darker_gray, null)
+                )
+                binding.votingStatus.visibility = View.VISIBLE
+                binding.votingCard.isClickable =
+                        false // Make card non-clickable after status is final
+                binding.votingCard.alpha = 0.5f // Gray out after status is final
+            }
+            poll.hasUserVoted -> { // Voting active, user has voted
+                binding.btnVote.isEnabled = false // Disable vote button if already voted
+                binding.votingCard.alpha = 1.0f // Full alpha if active/voted
+            }
+            isUserMember -> { // Voting active, user is member, user has NOT voted
+                binding.btnVote.visibility = View.VISIBLE
+                binding.btnVote.isEnabled = true // Enable vote button
+                binding.votingCard.alpha = 1.0f // Full alpha if active/can vote
+            }
+            else -> {
+                binding.votingCard.alpha = 0.5f // Gray out if not member
+            }
+        }
+    }
+
+    private fun setupClickListeners() {
+        binding.btnJoinDao.setOnClickListener { joinDao() }
+
+        // btnFeatureRequest click listener is correct for navigating to FeatureListFragment
+        binding.btnFeatureRequest.setOnClickListener {
+            if (isUserMember) {
+                val bundle =
+                        Bundle().apply {
+                            putString("blockId", daoBlock.blockId) // Pass DAO block ID
+                            putString("daoUniqueId", daoData.SW_UNIQUE_ID) // Pass DAO unique ID")
+                        }
+                findNavController()
+                        .navigate(
+                                // TODO: verify that these actions work
+                                R.id.action_daoDetailsFragment_to_featureListFragment,
+                                bundle
+                        )
+            }
+        }
+
+        // btnSeeAllVotes click listener (Existing) - Navigate to AllVotingPollsFragment
+        binding.btnSeeAllVotes.setOnClickListener {
+            if (isUserMember) {
+                // Navigate to all voting polls
+                val bundle =
+                        Bundle().apply {
+                            putString("blockId", daoBlock.blockId)
+                             putString("daoUniqueId", daoData.SW_UNIQUE_ID)
+                        }
+                findNavController()
+                        .navigate(R.id.action_daoDetailsFragment_to_allVotingPollsFragment, bundle)
+            }
+        }
+
+        binding.btnSeeAllFeatures.setOnClickListener { // Use the original ID from XML
+            // Navigate to the FeatureListFragment
+            val bundle =
+                    Bundle().apply {
+                        putString("blockId", daoBlock.blockId)
+                        putString("daoUniqueId", daoData.SW_UNIQUE_ID)
+                        // putString("daoId", daoData.SW_UNIQUE_ID)
+                    }
+            findNavController()
+                    .navigate(R.id.action_daoDetailsFragment_to_featureListFragment, bundle)
+        }
+        // The click listener for latest_feature_request_preview_card is set dynamically in
+        // loadLatestPendingFeatureRequest
+    }
+
+    /**
+     * Join a shared bitcoin wallet.
+     */
+    private fun joinSharedWalletClicked(block: TrustChainBlock) {
+        val mostRecentSWBlock =
+            getP2pStoreCommunity().fetchLatestSharedWalletBlock(block.calculateHash())
+                ?: block
+        // Add a proposal to trust chain to join a shared wallet
+        val proposeBlockData =
+            try {
+                getP2pStoreCommunity().proposeJoinWallet(
+                    mostRecentSWBlock
+                ).getData()
+            } catch (t: Throwable) {
+                Log.e("P2P", "Join wallet proposal failed. ${t.message ?: "No further information"}.")
+//                setAlertText(t.message ?: "Unexpected error occurred. Try again")
+                return
+            }
+
+        val context = requireContext()
+        // Wait and collect signatures
+        var signatures: List<SWResponseSignatureBlockTD>? = null
+        while (signatures == null) {
+            Thread.sleep(1000)
+            signatures = collectJoinWalletResponses(proposeBlockData)
+        }
+
+        // Create a new shared wallet using the signatures of the others.
+        // Broadcast the new shared bitcoin wallet on trust chain.
+        try {
+            getP2pStoreCommunity().joinBitcoinWallet(
+                mostRecentSWBlock.transaction,
+                proposeBlockData,
+                signatures,
+                context
+            )
+            // Add new nonceKey after joining a DAO
+            WalletManagerAndroid.getInstance()
+                .addNewNonceKey(proposeBlockData.SW_UNIQUE_ID, context)
+        } catch (t: Throwable) {
+            Log.e("Coin", "Joining failed. ${t.message ?: "No further information"}.")
+//            setAlertText(t.message ?: "Unexpected error occurred. Try again")
+        }
+
+    }
+
+    /**
+     * Collect the signatures of a join proposal
+     */
+    private fun collectJoinWalletResponses(blockData: SWSignatureAskBlockTD): List<SWResponseSignatureBlockTD>? {
+        val responses =
+            getP2pStoreCommunity().fetchProposalResponses(
+                blockData.SW_UNIQUE_ID,
+                blockData.SW_UNIQUE_PROPOSAL_ID
+            )
+        Log.i(
+            "P2P",
+            "Waiting for signatures. ${responses.size}/${blockData.SW_SIGNATURES_REQUIRED} received!"
+        )
+
+        if (responses.size >= blockData.SW_SIGNATURES_REQUIRED) {
+            return responses
+        }
+        return null
+    }
+
+    // Helper function to navigate to FeatureVotingFragment
+    private fun navigateToVotingFragment(daoBlockId: String, solutionId: String) {
+        val bundle =
+                Bundle().apply {
+                    putString("blockId", daoBlockId)
+                    putString("solutionId", solutionId)
+                    putString("daoUniqueId", daoData.SW_UNIQUE_ID)
+                }
+        findNavController()
+                .navigate(R.id.action_daoDetailsFragment_to_featureVotingFragment, bundle)
+    }
+
+
+    // Helper function to navigate to FeatureSolutionFragment
+    private fun navigateToSubmitSolution(featureRequest: FeatureRequestTD) {
+        val bundle =
+                Bundle().apply {
+                    putString("featureId", featureRequest.featureId)
+//                    putString("daoId", daoBlock.blockId) // Pass DAO unique ID
+                    putString("daoUniqueId", featureRequest.daoId) // Pass DAO block ID
+                    putString("featureTitle", featureRequest.title)
+                    putString("featureDescription", featureRequest.description)
+                }
+
+        findNavController().navigate(R.id.action_daoDetailsFragment_to_featureSolutionFragment, bundle)
+    }
+
+    private fun joinDao() {
+        try {
+            joinSharedWalletClicked(daoBlock)
+            Log.d("DaoDetailsFragment", "Join proposal sent")
+            lifecycleScope.launch {
+                checkMembership()
+                updateUIBasedOnMembership()
+                loadRecentVotingPoll()
+                loadLatestPendingFeatureRequest()
+                loadLatestApprovedUpdate()
+            }
+        } catch (e: Exception) {
+            Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
+            // Show an error message
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }
