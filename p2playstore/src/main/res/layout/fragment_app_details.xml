@@ -187,33 +187,6 @@
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
-
-        <!-- Join DAO Button (for non-members) -->
-        <Button
-            android:id="@+id/btn_join_dao"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
-            android:backgroundTint="#1E88E5"
-            android:text="Join DAO - 0.001 BTC"
-            android:textColor="@android:color/white"
-            android:visibility="visible" />
-
-        <!-- Install/Update Button (for members) -->
-        <Button
-            android:id="@+id/btn_install_update"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
-            android:backgroundTint="#1E88E5"
-            android:text="Open app"
-            android:textColor="@android:color/white"
-            android:visibility="visible" />
-
         <!-- Feature Request Button -->
         <Button
             android:id="@+id/btn_feature_request"
