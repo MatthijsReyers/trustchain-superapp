@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.annotation.RequiresApi
 import androidx.navigation.fragment.findNavController
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
@@ -29,11 +30,13 @@ import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
-import org.bitcoinj.core.Coin
 import nl.tudelft.trustchain.p2playstore.P2PlayStoreMainActivity
+import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 
 class AppDetails : BaseFragment() {
+    private lateinit var torrentManager: TorrentManager
+
     private var _binding: FragmentAppDetailsBinding? = null
     private val binding
         get() = _binding!!
@@ -46,13 +49,13 @@ class AppDetails : BaseFragment() {
      * Integer between 0-100, this indicates how far along the torrent download for this apps
      * APK file is.
      */
-    private var downloadProgress: Int = 0;
+    private var downloadProgress: Int? = null;
 
     /**
      * Has the torrent with the APK file for this app finished downloading yet?
      */
     private fun downloadFinished(): Boolean {
-        return this.downloadProgress >= 100
+        return this.downloadProgress != null && this.downloadProgress as Int >= 100
     }
 
     override fun onCreate(bundle: Bundle?) {
@@ -67,6 +70,8 @@ class AppDetails : BaseFragment() {
         val community = this.getTrustChainCommunity()
         this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
         this.daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
+
+        torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
 
         this.setupTorrentDownloadStatus()
     }
@@ -96,10 +101,8 @@ class AppDetails : BaseFragment() {
 
     private fun setupTorrentDownloadStatus() {
         val magnetLink = MagnetUtils.parseMagnet(this.daoBlock.transaction["magnetLink"] as String)
-        val torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
-        if (torrentManager.finishedDownloading(this.daoBlock)) {
-            this.downloadProgress = 100;
-        } else {
+        this.downloadProgress = torrentManager.downloadProgress(this.daoBlock);
+        if (!this.downloadFinished()) {
             lifecycleScope.launch {
                 torrentManager.onStarted.collect { link ->
                     if (link.infoHash == magnetLink.infoHash) {
@@ -190,14 +193,10 @@ class AppDetails : BaseFragment() {
 
     private fun updateUIBasedOnMembership() {
         if (isUserMember) {
-            binding.btnJoinDao.visibility = View.GONE
-            binding.btnInstallUpdate.visibility = View.VISIBLE
             binding.btnFeatureRequest.isEnabled = true
             binding.btnFeatureRequest.alpha = 1.0f
             // Voting card clickability/alpha handled in loadRecentVotingPoll
         } else {
-            binding.btnJoinDao.visibility = View.VISIBLE
-            binding.btnInstallUpdate.visibility = View.GONE
             binding.btnFeatureRequest.isEnabled = false
             binding.btnFeatureRequest.alpha = 0.5f
             // Voting card clickability/alpha handled in loadRecentVotingPoll
@@ -273,22 +272,16 @@ class AppDetails : BaseFragment() {
                         // Update UI with latest approved version info
                         binding.daoVersion.text = "v${block.sequenceNumber}" // Use block sequence number as a simple version
                         // Set click listener for update button
-                        binding.btnInstallUpdate.setOnClickListener {
-                            downloadAndInstallUpdate(solution.apkMagnetLink)
-                        }
-                        binding.btnInstallUpdate.visibility = View.VISIBLE // Make sure update button is visible if user is member (handled by updateUIBasedOnMembership)
                         // Success, break out of retry loop
                         return@launch
 
                     } else {
                         Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): No approved solutions found for DAO $daoUniqueId.")
                         binding.daoVersion.text = "No updates"
-                        binding.btnInstallUpdate.visibility = View.GONE // Hide update button if no approved updates
                     }
                 } catch (e: Exception) {
                     Log.e("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Error loading latest approved update: ${e.message}")
                     binding.daoVersion.text = "Error loading update info"
-                    binding.btnInstallUpdate.visibility = View.GONE
                 }
                 if (retry < maxRetries) {
                     Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Retrying in ${retryDelayMillis}ms...")
@@ -534,6 +527,16 @@ class AppDetails : BaseFragment() {
             .show()
     }
 
+    private fun onRestartDownload() {
+        lifecycleScope.launch {
+            downloadProgress = 0
+            updateDownloadButton()
+            torrentManager.downloadApp(daoBlock)
+            downloadProgress = torrentManager.downloadProgress(daoBlock)
+            updateDownloadButton()
+        }
+    }
+
     /**
      * Called when the user presses the "open" button, which is only shown when the user is a member
      * of the app's DAO and has finished downloading the
@@ -570,7 +573,12 @@ class AppDetails : BaseFragment() {
             if (this.downloadFinished()) {
                 this.binding.installOpenBtn.isEnabled = true
                 this.binding.installOpenBtn.text = "Open"
-            } else {
+            }
+            else if (this.downloadProgress == null) {
+                this.binding.installOpenBtn.isEnabled = true
+                this.binding.installOpenBtn.text = "Download"
+            }
+            else {
                 this.binding.installOpenBtn.isEnabled = false
                 this.binding.installOpenBtn.text = "${this.downloadProgress}%"
             }
@@ -642,7 +650,10 @@ class AppDetails : BaseFragment() {
     private fun setupClickListeners() {
         binding.installOpenBtn.setOnClickListener {
             if (this.isUserMember) {
-                if (this.downloadFinished()) {
+                if (this.downloadProgress == null) {
+                    this.onRestartDownload();
+                }
+                else if (this.downloadFinished()) {
                     this.onOpenApp()
                 }
             } else {
