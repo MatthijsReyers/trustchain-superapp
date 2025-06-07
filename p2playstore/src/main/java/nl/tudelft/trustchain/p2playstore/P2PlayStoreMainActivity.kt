@@ -3,22 +3,18 @@ package nl.tudelft.trustchain.p2playstore
 import android.os.Bundle
 import android.util.Log
 import androidx.core.app.NavUtils
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 import nl.tudelft.ipv8.IPv8
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.trustchain.common.BaseActivity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
-import java.io.File
 
 class P2PlayStoreMainActivity() : BaseActivity() {
 
