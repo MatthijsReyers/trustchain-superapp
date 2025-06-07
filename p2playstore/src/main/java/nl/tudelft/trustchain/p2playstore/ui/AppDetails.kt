@@ -1,7 +1,6 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
 import android.app.AlertDialog
-import kotlinx.coroutines.launch
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -11,17 +10,20 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.lifecycle.lifecycleScope
 import androidx.annotation.RequiresApi
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTD
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
+import nl.tudelft.trustchain.p2playstore.P2PlayStoreMainActivity
 import nl.tudelft.trustchain.p2playstore.R
+import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTD
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTransactionData
 import nl.tudelft.trustchain.p2playstore.blockdata.VotingPollHelper
@@ -29,10 +31,8 @@ import nl.tudelft.trustchain.p2playstore.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
-import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
-import nl.tudelft.trustchain.p2playstore.P2PlayStoreMainActivity
-import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
+import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 
 class AppDetails : BaseFragment() {
     private lateinit var torrentManager: TorrentManager
@@ -44,6 +44,11 @@ class AppDetails : BaseFragment() {
     private lateinit var daoBlock: TrustChainBlock
     private lateinit var daoData: SWJoinBlockTD
     private var isUserMember = false
+
+    /**
+     * Are we waiting for other users to vote on wheter we are allowed to join the DOA?
+     */
+    private var waitingForVote: Boolean = false;
 
     /**
      * Integer between 0-100, this indicates how far along the torrent download for this apps
@@ -72,6 +77,7 @@ class AppDetails : BaseFragment() {
         this.daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
 
         torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
+        this.downloadProgress = torrentManager.downloadProgress(this.daoBlock);
 
         this.setupTorrentDownloadStatus()
     }
@@ -517,8 +523,8 @@ class AppDetails : BaseFragment() {
             .setTitle("Are you sure?")
             .setMessage(msg)
             .setPositiveButton("Join DAO") { dialog, _ ->
-                onJoinDoa()
                 dialog.dismiss()
+                onJoinDoa()
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
@@ -550,18 +556,21 @@ class AppDetails : BaseFragment() {
      */
     private fun onJoinDoa() {
         try {
-            joinSharedWalletClicked(daoBlock)
-            Log.d("DaoDetailsFragment", "Join proposal sent")
+            this.waitingForVote = true;
+            updateDownloadButton();
             lifecycleScope.launch {
+                joinSharedWalletClicked(daoBlock)
                 checkMembership()
                 updateUIBasedOnMembership()
                 loadRecentVotingPoll()
                 loadLatestPendingFeatureRequest()
                 loadLatestApprovedUpdate()
+                updateDownloadButton()
             }
         } catch (e: Exception) {
             Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
             // Show an error message
+            this.waitingForVote = false;
         }
     }
 
@@ -582,6 +591,10 @@ class AppDetails : BaseFragment() {
                 this.binding.installOpenBtn.isEnabled = false
                 this.binding.installOpenBtn.text = "${this.downloadProgress}%"
             }
+        }
+        else if (this.waitingForVote) {
+            this.binding.installOpenBtn.isEnabled = false
+            this.binding.installOpenBtn.text = "Collecting votes"
         }
         else {
             this.binding.installOpenBtn.isEnabled = true
@@ -710,7 +723,7 @@ class AppDetails : BaseFragment() {
     /**
      * Join a shared bitcoin wallet.
      */
-    private fun joinSharedWalletClicked(block: TrustChainBlock) {
+    private suspend fun joinSharedWalletClicked(block: TrustChainBlock) {
         val mostRecentSWBlock =
             getP2pStoreCommunity().fetchLatestSharedWalletBlock(block.calculateHash())
                 ?: block
@@ -730,7 +743,7 @@ class AppDetails : BaseFragment() {
         // Wait and collect signatures
         var signatures: List<SWResponseSignatureBlockTD>? = null
         while (signatures == null) {
-            Thread.sleep(1000)
+            delay(10_000)
             signatures = collectJoinWalletResponses(proposeBlockData)
         }
 
@@ -755,7 +768,7 @@ class AppDetails : BaseFragment() {
     /**
      * Collect the signatures of a join proposal
      */
-    private fun collectJoinWalletResponses(blockData: SWSignatureAskBlockTD): List<SWResponseSignatureBlockTD>? {
+    private suspend fun collectJoinWalletResponses(blockData: SWSignatureAskBlockTD): List<SWResponseSignatureBlockTD>? {
         val responses =
             getP2pStoreCommunity().fetchProposalResponses(
                 blockData.SW_UNIQUE_ID,
