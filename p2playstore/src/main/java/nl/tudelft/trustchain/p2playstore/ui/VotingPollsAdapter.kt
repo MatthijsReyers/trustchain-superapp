@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import nl.tudelft.trustchain.p2playstore.databinding.ItemVotingPollBinding
 import nl.tudelft.trustchain.p2playstore.blockdata.VotingPoll
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 
 class VotingPollsAdapter(
     private val onPollClick: (VotingPoll) -> Unit
@@ -33,7 +34,6 @@ class VotingPollsAdapter(
         fun bind(poll: VotingPoll) {
             binding.updateTitle.text = poll.title
             binding.votingQuestion.text = poll.question
-            // Use votesNeeded from the poll data class
             binding.votesRequiredText.text = "${poll.yesVotes} of ${poll.votesNeeded} votes needed"
 
             binding.yesPercentage.text = "${poll.yesPercentage}%"
@@ -42,8 +42,16 @@ class VotingPollsAdapter(
 
             binding.totalVotes.text = "${poll.yesVotes + poll.noVotes} of ${poll.totalMembers} members voted"
 
-            // Update progress bars
-            updateProgressBars(poll)
+            AppUtils.updateProgressBars(
+                binding.root,
+                binding.yesProgressBar,
+                binding.noProgressBar,
+                binding.pendingProgressBar,
+                poll.yesPercentage,
+                poll.noPercentage,
+                poll.pendingPercentage
+            )
+
 
             // Set status
             when {
@@ -65,33 +73,10 @@ class VotingPollsAdapter(
                 }
             }
 
-            // Set click listener
             binding.root.setOnClickListener {
                 onPollClick(poll)
             }
         }
-
-//        TODO: needs heavy fixing for width and flow
-        private fun updateProgressBars(poll: VotingPoll) {
-            binding.root.post {
-                val containerWidth = binding.root.width
-                if (containerWidth > 0) {
-                    val availableWidth = containerWidth - binding.root.context.resources.getDimensionPixelSize(nl.tudelft.trustchain.p2playstore.R.dimen.progress_bar_margin_horizontal) * 2
-
-
-                    val yesWidth = maxOf(1, (availableWidth * poll.yesPercentage / 100))
-                    val noWidth = maxOf(1, (availableWidth * poll.noPercentage / 100))
-                    val pendingWidth = maxOf(1, (availableWidth * poll.pendingPercentage / 100))
-
-                    binding.yesProgressBar.layoutParams.width = yesWidth
-                    binding.noProgressBar.layoutParams.width = noWidth
-                    binding.pendingProgressBar.layoutParams.width = pendingWidth
-
-                    binding.yesProgressBar.requestLayout()
-                    binding.noProgressBar.requestLayout()
-                    binding.pendingProgressBar.requestLayout()
-                }
-            }
-        }
     }
 }
+
