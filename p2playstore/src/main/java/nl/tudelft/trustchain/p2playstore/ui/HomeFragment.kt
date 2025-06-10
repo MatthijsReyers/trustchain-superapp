@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 
 import kotlinx.coroutines.Dispatchers
@@ -15,11 +14,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
-import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
@@ -49,7 +46,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         setupRecyclerViews()
 
         if (WalletManagerAndroid.isInitialized()) {
-            loadDaoData()
+            updateAppsLists()
         } else {
             Log.w("P2PlayStore", "WalletManager is not initialized.")
         }
@@ -224,7 +221,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                     android.widget.Toast.LENGTH_SHORT
                 ).show()
                 // Reload the DAO data
-                loadDaoData()
+                updateAppsLists()
             } catch (e: Exception) {
                 Log.e("P2PlayStore", "Error creating DAO: ${e.message}")
                 withContext(Dispatchers.Main) {
@@ -238,43 +235,30 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         }
     }
 
-    private fun loadDaoData() {
-        if (!isAdded) return
-
+    /**
+     * Updates the UI to display all the apps the application knows about.
+     */
+    private fun updateAppsLists() {
         lifecycleScope.launch {
             try {
-                val allDaos = withContext(Dispatchers.IO) {
+                val allApps = withContext(Dispatchers.IO) {
                     getP2pStoreCommunity().discoverAllApps()
                 }
 
-                val myDaos = withContext(Dispatchers.IO) {
-                    getP2pStoreCommunity().discoverMyApps()
-                }
+                binding.allApps.text = "All apps (${allApps.size})"
+                allDaoAdapter = DaoAdapter(allApps)
+                binding.rvTopApps.adapter = allDaoAdapter
 
-                if (isAdded) {
-                    updateAllDaoList(allDaos)
-                    updateMyDaoList(myDaos)
-                }
-            } catch (e: Exception) {
+                val myApps = allApps.filter { app -> app.isDaoMember() }
+
+                binding.installedApps.text = "Installed apps (${myApps.size})"
+                myDaoAdapter = DaoAdapter(myApps)
+                binding.rvRecommended.adapter = myDaoAdapter
+            }
+            catch (e: Exception) {
                 Log.e("P2PlayStore", "Error loading DAO data: ${e.message}")
             }
         }
-    }
-
-    private fun updateAllDaoList(daoList: List<P2playApp>) {
-        if (!isAdded) return
-        binding.allApps.text = "All apps (${daoList.size})"
-        Log.d("P2PlayStore", "Updating All DAOs list with ${daoList.size} items.")
-        allDaoAdapter = DaoAdapter(daoList)
-        binding.rvTopApps.adapter = allDaoAdapter
-    }
-
-    private fun updateMyDaoList(daoList: List<P2playApp>) {
-        if (!isAdded) return
-        binding.installedApps.text = "Installed apps (${daoList.size})"
-        Log.d("P2PlayStore", "Updating My DAOs list with ${daoList.size} items.")
-        myDaoAdapter = DaoAdapter(daoList)
-        binding.rvRecommended.adapter = myDaoAdapter
     }
 
     /**
@@ -307,7 +291,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                     "Crawling failed for: ${peer.publicKey}. $err."
                 )
             }
-            this.loadDaoData();
+            this.updateAppsLists();
         }
     }
 
