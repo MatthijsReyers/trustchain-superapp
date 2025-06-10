@@ -20,11 +20,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+import nl.tudelft.ipv8.attestation.trustchain.BlockListener
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTD
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTD
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTransactionData
 import nl.tudelft.trustchain.p2playstore.blockdata.VotingPollHelper
@@ -33,11 +35,12 @@ import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.P2PlayStoreMainActivity
 import nl.tudelft.trustchain.p2playstore.R
+import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
-import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.utils.DebugUtils.printToast
+import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
@@ -54,12 +57,8 @@ class AppDetails : BaseFragment() {
 
     private lateinit var daoBlock: TrustChainBlock
     private lateinit var daoData: SWJoinBlockTD
-    private var isUserMember = false
 
-    /**
-     * Are we waiting for other users to vote on wheter we are allowed to join the DOA?
-     */
-    private var waitingForVote: Boolean = false;
+    private lateinit var app: P2playApp
 
     /**
      * Integer between 0-100, this indicates how far along the torrent download for this apps
@@ -86,6 +85,8 @@ class AppDetails : BaseFragment() {
         val community = this.getTrustChainCommunity()
         this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
         this.daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
+
+        this.app = P2playApp(this.daoBlock)
 
         torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
         this.downloadProgress = torrentManager.downloadProgress(this.daoBlock);
@@ -120,13 +121,24 @@ class AppDetails : BaseFragment() {
 
     private fun loadDaoDetails() {
         setupDaoDetailsUI()
-        checkMembership()
         updateUIBasedOnMembership()
         updateDownloadButton()
         loadRecentVotingPoll()
         loadLatestPendingFeatureRequest()
         loadLatestApprovedUpdate()
         setupClickListeners()
+        this.setupChainListeners()
+    }
+
+    /**
+     * Called whenever new blocks with the DAO ID for this app are detected, practically this means
+     * we want to update the whole UI since votes/version updates might have changed.
+     */
+    fun onChainUpdated(block: TrustChainBlock) {
+        Log.d("P2pStore", "Chain update ${block.type}")
+
+        this.updateDownloadButton();
+        this.updateUIBasedOnMembership();
     }
 
     private fun setupTorrentDownloadStatus() {
@@ -175,19 +187,8 @@ class AppDetails : BaseFragment() {
         binding.daoIcon.setImageResource(iconFromIconId(this.daoBlock.transaction["iconIndex"]))
     }
 
-    private fun checkMembership() {
-        try {
-            val daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
-            val myPublicKey = getP2pStoreCommunity().myPeer.publicKey.keyToBin().toHex()
-            isUserMember = daoData.SW_TRUSTCHAIN_PKS.contains(myPublicKey)
-        } catch (e: Exception) {
-            Log.e("DaoDetailsFragment", "Error checking membership: ${e.message}")
-            isUserMember = false
-        }
-    }
-
     private fun updateUIBasedOnMembership() {
-        if (isUserMember) {
+        if (this.app.isDaoMember()) {
             binding.btnFeatureRequest.isEnabled = true
             binding.btnFeatureRequest.alpha = 1.0f
             // Voting card clickability/alpha handled in loadRecentVotingPoll
@@ -285,24 +286,6 @@ class AppDetails : BaseFragment() {
         }
     }
 
-    private fun downloadAndInstallUpdate(magnetLink: String) {
-        if (magnetLink.isNotEmpty()) {
-            Log.d("DaoDetailsFragment", "Attempting to download/install from magnet link: $magnetLink")
-            // TODO: Implement actual download/install logic.
-            Toast.makeText(context, "Downloading update from $magnetLink (simulated)", Toast.LENGTH_LONG).show()
-            try {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(magnetLink))
-                startActivity(intent)
-            } catch (e: Exception) {
-                Log.e("DaoDetailsFragment", "Failed to open magnet link: ${e.message}")
-                Toast.makeText(context, "Could not open magnet link. Please ensure you have a torrent client installed.", Toast.LENGTH_LONG).show()
-            }
-        } else {
-            Log.w("DaoDetailsFragment", "No magnet link available for the latest approved update.")
-            Toast.makeText(context, "No download link available for this update.", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     private fun loadRecentVotingPoll() {
         lifecycleScope.launch {
             val maxRetries = 3
@@ -363,7 +346,7 @@ class AppDetails : BaseFragment() {
                             updateVotingCardUI(votingPoll)
 
                             // Set click listeners based on membership and voting status
-                            if (isUserMember) { // Only members can interact with the voting card
+                            if (app.isDaoMember()) { // Only members can interact with the voting card
                                 binding.votingCard.setOnClickListener {
                                     navigateToVotingFragment(daoBlock.blockId, latestVotableSolution.solutionId)
                                 }
@@ -587,29 +570,24 @@ class AppDetails : BaseFragment() {
      */
     private fun onJoinDoa() {
         try {
-            this.waitingForVote = true;
-            updateDownloadButton();
             lifecycleScope.launch {
                 joinSharedWalletClicked(daoBlock)
-                checkMembership()
                 updateUIBasedOnMembership()
                 loadRecentVotingPoll()
                 loadLatestPendingFeatureRequest()
                 loadLatestApprovedUpdate()
-                updateDownloadButton()
+                updateDownloadButton();
             }
         } catch (e: Exception) {
             Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
-            // Show an error message
-            this.waitingForVote = false;
         }
     }
 
     /**
-     *
+     * Updates the download/open button based on the state of DOA and the app download
      */
     private fun updateDownloadButton() {
-        if (this.isUserMember) {
+        if (this.app.isDaoMember()) {
             if (this.downloadFinished()) {
                 this.binding.installOpenBtn.isEnabled = true
                 this.binding.installOpenBtn.text = "Open"
@@ -623,7 +601,7 @@ class AppDetails : BaseFragment() {
                 this.binding.installOpenBtn.text = "${this.downloadProgress}%"
             }
         }
-        else if (this.waitingForVote) {
+        else if (this.app.isWaitingToJoin()) {
             this.binding.installOpenBtn.isEnabled = false
             this.binding.installOpenBtn.text = "Collecting votes"
         }
@@ -687,7 +665,7 @@ class AppDetails : BaseFragment() {
                 binding.btnVote.isEnabled = false // Disable vote button if already voted
                 binding.votingCard.alpha = 1.0f // Full alpha if active/voted
             }
-            isUserMember -> { // Voting active, user is member, user has NOT voted
+            app.isDaoMember() -> { // Voting active, user is member, user has NOT voted
                 binding.btnVote.visibility = View.VISIBLE
                 binding.btnVote.isEnabled = true // Enable vote button
                 binding.votingCard.alpha = 1.0f // Full alpha if active/can vote
@@ -700,7 +678,7 @@ class AppDetails : BaseFragment() {
 
     private fun setupClickListeners() {
         binding.installOpenBtn.setOnClickListener {
-            if (this.isUserMember) {
+            if (this.app.isDaoMember()) {
                 if (this.downloadProgress == null) {
                     this.onRestartDownload();
                 }
@@ -714,7 +692,7 @@ class AppDetails : BaseFragment() {
 
         // btnFeatureRequest click listener is correct for navigating to FeatureListFragment
         binding.btnFeatureRequest.setOnClickListener {
-            if (isUserMember) {
+            if (this.app.isDaoMember()) {
                 val bundle =
                     Bundle().apply {
                         putString("blockId", daoBlock.blockId) // Pass DAO block ID
@@ -731,7 +709,7 @@ class AppDetails : BaseFragment() {
 
         // btnSeeAllVotes click listener (Existing) - Navigate to AllVotingPollsFragment
         binding.btnSeeAllVotes.setOnClickListener {
-            if (isUserMember) {
+            if (app.isDaoMember()) {
                 // Navigate to all voting polls
                 val bundle =
                     Bundle().apply {
@@ -759,6 +737,32 @@ class AppDetails : BaseFragment() {
     }
 
     /**
+     * This function attaches a bunch of event listeners to the trustchain so we can detect new
+     * blocks when they are created and update the UI accordingly
+     */
+    private fun setupChainListeners() {
+        val listener: BlockListener = object: BlockListener {
+            override fun onBlockReceived(block: TrustChainBlock) {
+                // TODO: Replace with BaseTransactionData class for better type safety, since there
+                // is really no guarantee that it will be this kind of block.
+                val data = SWJoinBlockTransactionData(block.transaction).getData()
+                // Is the new block relevant for this app?
+                if (data.SW_UNIQUE_ID == app.daoId) {
+                    onChainUpdated(block)
+                }
+
+            }
+        }
+        val trustChain = getTrustChainCommunity()
+        trustChain.addListener(P2pStoreCommunity.JOIN_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.SIGNATURE_ASK_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.SIGNATURE_AGREEMENT_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.SIGNATURE_AGREEMENT_NEGATIVE_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.FEATURE_SOLUTION_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.FEATURE_REQUEST_BLOCK, listener);
+    }
+
+    /**
      * Join a shared bitcoin wallet.
      */
     private suspend fun joinSharedWalletClicked(block: TrustChainBlock) {
@@ -768,9 +772,7 @@ class AppDetails : BaseFragment() {
         // Add a proposal to trust chain to join a shared wallet
         val proposeBlockData =
             try {
-                getP2pStoreCommunity().proposeJoinWallet(
-                    mostRecentSWBlock
-                ).getData()
+                getP2pStoreCommunity().proposeJoinWallet(mostRecentSWBlock).getData()
             } catch (t: Throwable) {
                 Log.e("P2P", "Join wallet proposal failed. ${t.message ?: "No further information"}.")
 //                setAlertText(t.message ?: "Unexpected error occurred. Try again")
