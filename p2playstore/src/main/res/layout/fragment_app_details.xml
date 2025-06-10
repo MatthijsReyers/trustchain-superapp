@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/white">
@@ -9,6 +10,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
+
+
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -20,32 +23,49 @@
                 android:id="@+id/dao_icon"
                 android:layout_width="64dp"
                 android:layout_height="64dp"
-                android:contentDescription="DAO Icon"
-                android:src="@drawable/ic_bitcoin" />
+                android:contentDescription="DAO Icon" />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:orientation="vertical">
+                android:layout_height="match_parent"
+                android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/app_name"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="DAO Name"
-                    android:textColor="@android:color/black"
-                    android:textSize="24sp"
-                    android:textStyle="bold" />
+                    android:layout_marginStart="16dp"
+                    android:layout_weight="2"
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/dao_developer"
+                    <TextView
+                        android:id="@+id/app_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="DAO Name"
+                        android:textColor="@android:color/black"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/dao_developer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Creator ID"
+                        android:textColor="@android:color/darker_gray"
+                        android:textSize="14sp" />
+
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/installOpenBtn"
+                    style="@style/Widget.AppCompat.Button.Colored"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Creator ID"
-                    android:textColor="@android:color/darker_gray"
-                    android:textSize="14sp" />
+                    android:layout_weight="1"
+                    android:text="Install"
+                    tools:visibility="visible" />
             </LinearLayout>
+
         </LinearLayout>
 
         <LinearLayout
@@ -100,7 +120,7 @@
                     android:textSize="12sp" />
 
                 <TextView
-                    android:id="@+id/app_category"
+                    android:id="@+id/dao_category"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Democracy"
@@ -167,33 +187,6 @@
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
-
-        <!-- Join DAO Button (for non-members) -->
-        <Button
-            android:id="@+id/btn_join_dao"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
-            android:backgroundTint="#1E88E5"
-            android:text="Join DAO - 0.001 BTC"
-            android:textColor="@android:color/white"
-            android:visibility="visible" />
-
-        <!-- Install/Update Button (for members) -->
-        <Button
-            android:id="@+id/btn_install_update"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
-            android:backgroundTint="#1E88E5"
-            android:text="Update"
-            android:textColor="@android:color/white"
-            android:visibility="visible" />
-
         <!-- Feature Request Button -->
         <Button
             android:id="@+id/btn_feature_request"
@@ -269,7 +262,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
-                android:text="About this application"
+                android:text="About this DAO"
                 android:textColor="@android:color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -284,7 +277,7 @@
         </RelativeLayout>
 
         <TextView
-            android:id="@+id/app_description"
+            android:id="@+id/dao_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -360,7 +353,15 @@
                     android:textColor="@android:color/black"
                     android:textSize="14sp"
                     android:layout_marginBottom="16dp" />
-
+                <TextView
+                    android:id="@+id/votes_required_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="X of Y votes needed"
+                    android:textColor="@android:color/darker_gray"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="16dp"
+                    android:gravity="center_horizontal" />
                 <!-- Yes Vote Progress -->
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -542,6 +543,7 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+
         <!-- Pending Feature Requests -->
         <RelativeLayout
             android:layout_width="match_parent"
@@ -570,21 +572,82 @@
                 android:textColor="#1E88E5" />
         </RelativeLayout>
 
-        <!-- Feature Request List -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/feature_requests_list"
+        <!-- Latest Feature Request Preview Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/latest_feature_request_preview_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="16dp"
-            android:nestedScrollingEnabled="false" />
+            android:layout_marginTop="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?android:attr/selectableItemBackground">
 
-        <!-- Placeholder for empty list -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_latest_feature_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Feature Title"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tv_latest_feature_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Feature description..."
+                    android:textColor="@android:color/black"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="8dp"
+                    android:maxLines="2"
+                    android:ellipsize="end" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tv_latest_feature_reward"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Reward: 1000 sats"
+                        android:textColor="#1E88E5"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_latest_feature_solution_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0 solution(s)"
+                        android:textColor="@android:color/darker_gray"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- No Pending Feature Requests Message -->
         <TextView
-            android:id="@+id/empty_feature_requests"
+            android:id="@+id/tv_no_pending_feature_requests"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginBottom="16dp"
             android:gravity="center"
             android:padding="16dp"

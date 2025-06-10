@@ -8,6 +8,8 @@ import com.frostwire.jlibtorrent.alerts.AlertType
 import com.frostwire.jlibtorrent.alerts.BlockFinishedAlert
 import com.frostwire.jlibtorrent.alerts.TorrentFinishedAlert
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.TORRENT_EXTENSION
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
@@ -18,6 +20,18 @@ import java.util.*
 
 class TorrentManager(cacheDir: File) {
     private val scope = CoroutineScope(Dispatchers.IO)
+
+    private val _onStarted = MutableSharedFlow<MagnetLink>()
+    private val _onProgress = MutableSharedFlow<Pair<MagnetLink, Int>>()
+    private val _onFinished = MutableSharedFlow<MagnetLink>()
+
+    val onStarted = _onStarted.asSharedFlow()
+    val onProgress = _onProgress.asSharedFlow()
+
+    /**
+     * Flow that emits an event when a torrent finishes downloading.
+     */
+    val onFinished = _onFinished.asSharedFlow()
 
     /**
      * JlibTorrent session manager, this manages the state/downloading of the torrents/magnet links
@@ -55,10 +69,26 @@ class TorrentManager(cacheDir: File) {
         this.sessionManager.start(params)
 
         scope.launch {
-            seedTorrents()
+            resumeTorrents()
         }
-        scope.launch {
-            downloadTorrents()
+    }
+
+    /**
+     * Checks if the torrent for the magnetlink of this app version has finished downloading.
+     */
+    fun downloadProgress(app: TrustChainBlock): Int? {
+        val magnetLink = MagnetUtils.parseMagnet(app.transaction["magnetLink"] as String)
+        val info = this.findTorrentInfo(magnetLink)
+        try {
+            val tmp = this.sessionManager.find(info?.infoHash())
+            if (tmp.status().isFinished) {
+                return 100;
+            }
+            return (tmp.status().progress() * 100).toInt();
+        }
+        catch (err: Throwable) {
+            Log.e("P2P.TorrentManager", "Failed to find torrent handle: $err")
+            return null;
         }
     }
 
@@ -70,6 +100,7 @@ class TorrentManager(cacheDir: File) {
         appsDirectory.listFiles()?.forEachIndexed { _, file ->
             if (file.name.endsWith(TORRENT_EXTENSION)) {
                 TorrentInfo(file).let { torrentInfo ->
+                    Log.d("P2P.TorrentManager", "Found ${torrentInfo.infoHash()} torrent")
                     if (torrentInfo.isValid) {
                         if (!torrentInfos.any { it.infoHash() == torrentInfo.infoHash() }) {
                             torrentInfos.add(torrentInfo)
@@ -109,17 +140,30 @@ class TorrentManager(cacheDir: File) {
                     when (alert.type()) {
                         AlertType.ADD_TORRENT -> {
                             Log.d("P2P.TorrentManager", "Added torrent $alert")
-                            (alert as AddTorrentAlert).handle().resume()
+                            val a = (alert as AddTorrentAlert)
+                            val link = MagnetUtils.parseMagnet(a.handle().makeMagnetUri())
+                            a.handle().resume()
+                            scope.launch {
+                                _onStarted.emit(link)
+                            }
                         }
                         AlertType.BLOCK_FINISHED -> {
                             Log.d("P2P.TorrentManager", "Block finished $alert")
                             val a = alert as BlockFinishedAlert
                             val p = (a.handle().status().progress() * 100).toInt()
+                            val link = MagnetUtils.parseMagnet(a.handle().makeMagnetUri())
                             Log.d("P2P.TorrentManager", "Progress $p for ${a.torrentName()}")
+                            scope.launch {
+                                _onProgress.emit(Pair(link, p))
+                            }
                         }
                         AlertType.TORRENT_FINISHED -> {
                             val a = alert as TorrentFinishedAlert
                             Log.d("P2P.TorrentManager", "Download finished for ${a.torrentName()}")
+                            val link = MagnetUtils.parseMagnet(a.handle().makeMagnetUri())
+                            scope.launch {
+                                _onFinished.emit(link);
+                            }
                         }
                         else -> {
                         }
@@ -130,33 +174,24 @@ class TorrentManager(cacheDir: File) {
     }
 
     /**
-     * Resumes seeding previously downloaded apps to
+     * Resumes downloading/seeding previously downloaded/started app downloads.
      */
-    private suspend fun seedTorrents() {
+    private suspend fun resumeTorrents() {
         while (scope.isActive) {
-            try {
-                // TODO: Actually implement this function
+            for (info in this.torrentInfos) {
+                try {
+                    val hash = info.infoHash()
+                    val handle: TorrentHandle? = this.sessionManager.find(hash)
+                    if (handle == null) {
+                        val destDir = File(this.appsDirectory, hash.toString())
+                        this.sessionManager.download(info, destDir)
+                    }
+                }
+                catch (e: Exception) {
+                    Log.e("P2P.TorrentManager", "Exception while seeding apps")
+                }
+                delay(10_000)
             }
-            catch (e: Exception) {
-                Log.e("P2P.TorrentManager", "Exception while seeding apps")
-            }
-            delay(30_000)
-        }
-    }
-
-    /**
-     * Resumes downloading any unfinished torrents from previous sessions.
-     */
-    private suspend fun downloadTorrents() {
-        Log.d("P2P.TorrentManager", "Downloading torrents")
-        while (scope.isActive) {
-            try {
-                // TODO: Actually implement this function
-            }
-            catch (e: Exception) {
-                Log.e("P2P.TorrentManager", "Exception while downloading apps")
-            }
-            delay(30_000)
         }
     }
 
@@ -166,6 +201,8 @@ class TorrentManager(cacheDir: File) {
     fun downloadApp(block: TrustChainBlock) {
         val magnetLink = MagnetUtils.parseMagnet(block.transaction["magnetLink"] as String)
 
+        Log.d("P2P.TorrentManager", "Downloading app: ${magnetLink.infoHash}")
+
         // Have we already downloaded this app?
         var torrentInfo = this.findTorrentInfo(magnetLink);
         if (torrentInfo != null) {
@@ -174,7 +211,7 @@ class TorrentManager(cacheDir: File) {
             return;
         }
 
-        this.waitFor10Nodes();
+        this.waitFor100Nodes();
 
         torrentInfo = this.downloadTorrentInfo(magnetLink)
         this.torrentInfos.add(torrentInfo)
@@ -200,7 +237,8 @@ class TorrentManager(cacheDir: File) {
             val data: ByteArray = sessionManager.fetchMagnet(link.raw, 30)
             return TorrentInfo.bdecode(data)
         }
-        catch (_err: Throwable) {
+        catch (err: Throwable) {
+            Log.e("P2P.TorrentManager", "Failed to download torrent info: $err")
             throw Exception("Failed to download torrent info");
         }
     }
@@ -209,14 +247,14 @@ class TorrentManager(cacheDir: File) {
      * Blocks until the DHT to contain at least 10 nodes, this is taken from FOC, presumably so we
      * can be relatively certain that we can at least find the info we want,
      */
-    private fun waitFor10Nodes() {
+    private fun waitFor100Nodes() {
         val timer = Timer()
         timer.schedule(
             object : TimerTask() {
                 override fun run() {
                     val nodes = sessionManager.stats().dhtNodes()
                     // wait for at least 10 nodes in the DHT.
-                    if (nodes >= 10) {
+                    if (nodes >= 100) {
                         Log.i("P2P.TorrentManager", "DHT contains $nodes nodes")
                         // signal.countDown();
                         timer.cancel()

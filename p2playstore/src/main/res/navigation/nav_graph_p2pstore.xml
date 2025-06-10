@@ -37,6 +37,11 @@
         android:label="Welcome"
         tools:layout="@layout/fragment_home">
         <action
+            android:id="@+id/action_homeFragment_to_daoDetailsFragment"
+            app:destination="@+id/daoDetailsFragment"
+            app:popUpTo="@+id/homeFragment"
+            app:popUpToInclusive="false" />
+        <action
             android:id="@+id/action_homeFragment_to_joinDaoFragment"
             app:destination="@+id/joinDaoFragment"
             app:popUpToInclusive="true"
@@ -44,24 +49,152 @@
         <action
             android:id="@+id/action_homeFragment_to_appDetails"
             app:destination="@id/appDetails" />
+        <action
+            android:id="@+id/action_homeFragment_to_createDaoFragment"
+            app:destination="@id/joinDaoFragment" />
     </fragment>
 
-    <fragment
-        android:id="@+id/joinDaoFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.ui.JoinDaoFragment"
-        android:label="Join"
-        tools:layout="@layout/fragment_join_dao">
-        <action
-            android:id="@+id/action_joinDaoFragment_to_proposalFragment"
-            app:destination="@+id/proposalsFragment"
-            app:popUpToInclusive="true"
-            app:popUpTo="@+id/joinDaoFragment" />
-    </fragment>
     <fragment
         android:id="@+id/appDetails"
         android:name="nl.tudelft.trustchain.p2playstore.ui.AppDetails"
         android:label="App details"
         tools:layout="@layout/fragment_app_details" />
+
+    <fragment
+        android:id="@+id/daoDetailsFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.AppDetails"
+        android:label="DAO Details"
+        tools:layout="@layout/fragment_app_details">
+        <argument
+            android:name="blockId"
+            app:argType="string"
+            />
+        <action
+            android:id="@+id/action_daoDetailsFragment_to_featureListFragment"
+            app:destination="@id/featureListFragment" />
+        <action
+            android:id="@+id/action_daoDetailsFragment_to_featureVotingFragment"
+            app:destination="@id/featureVotingFragment" />
+        <action
+            android:id="@+id/action_daoDetailsFragment_to_joinDaoFragment"
+            app:destination="@id/joinDaoFragment" />
+<!--        <action-->
+<!--            android:id="@+id/action_daoDetailsFragment_to_allVotesFragment"-->
+<!--            app:destination="@id/allVotesFragment" />-->
+        <action
+            android:id="@+id/action_daoDetailsFragment_to_allVotingPollsFragment"
+            app:destination="@id/allVotingPollsFragment" />
+        <action android:id="@+id/action_daoDetailsFragment_to_featureSolutionFragment"
+            app:destination="@id/featureSolutionFragment"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/featureListFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.FeatureListFragment"
+        android:label="Feature Requests"
+        tools:layout="@layout/fragment_feature_list">
+        <argument
+            android:name="blockId"
+            app:argType="string" />
+        <argument
+            android:name="daoUniqueId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_featureListFragment_to_featureRequestFragment"
+            app:destination="@id/featureRequestFragment" />
+        <action
+            android:id="@+id/action_featureListFragment_to_featureSolutionFragment"
+            app:destination="@id/featureSolutionFragment" />
+        <action
+            android:id="@+id/action_featureListFragment_to_featureVotingFragment"
+            app:destination="@id/featureVotingFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/featureRequestFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.FeatureRequestFragment"
+        android:label="Request Feature"
+        tools:layout="@layout/fragment_feature_request">
+        <argument
+            android:name="blockId"
+            app:argType="string" />
+        <argument
+            android:name="daoUniqueId"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/featureSolutionFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.FeatureSolutionFragment"
+        android:label="Submit Solution"
+        tools:layout="@layout/fragment_feature_solution">
+        <argument
+            android:name="featureId"
+            app:argType="string" />
+<!--        <argument-->
+<!--            android:name="daoId"-->
+<!--            app:argType="string" /> -->
+        <argument
+            android:name="daoUniqueId"
+            app:argType="string" />
+        <argument
+            android:name="featureTitle"
+            app:argType="string" />
+        <argument
+            android:name="featureDescription"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/featureVotingFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.FeatureVotingFragment"
+        android:label="Vote on Feature"
+        tools:layout="@layout/fragment_feature_voting">
+        <argument
+            android:name="blockId"
+            app:argType="string" />
+        <argument
+            android:name="solutionId"
+            app:argType="string" />
+        <argument
+            android:name="daoUniqueId"
+            app:argType="string" />
+    </fragment>
+
+<!--    <fragment-->
+<!--        android:id="@+id/allVotesFragment"-->
+<!--        android:name="nl.tudelft.trustchain.p2playstore.ui.AllVotesFragment"-->
+<!--        android:label="All Votes"-->
+<!--        tools:layout="@layout/fragment_all_votes">-->
+<!--        <action-->
+<!--            android:id="@+id/action_allVotesFragment_to_featureVotingFragment"-->
+<!--            app:destination="@id/featureVotingFragment" />-->
+<!--    </fragment>-->
+
+    <fragment
+        android:id="@+id/proposalsFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.ProposalsFragment"
+        android:label="Proposals"
+        tools:layout="@layout/fragment_proposals">
+    </fragment>
+
+    <fragment
+        android:id="@+id/allVotingPollsFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.AllVotingPollsFragment"
+        android:label="All Voting Polls"
+        tools:layout="@layout/fragment_all_voting_polls">
+        <argument
+            android:name="blockId"
+            app:argType="string" />
+        <argument
+            android:name="daoUniqueId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_allVotingPollsFragment_to_featureVotingFragment"
+            app:destination="@id/featureVotingFragment" />
+    </fragment>
+
+
     <!--<navigation xmlns:android="http://schemas.android.com/apk/res/android"-->
 <!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
 <!--    xmlns:tools="http://schemas.android.com/tools"-->

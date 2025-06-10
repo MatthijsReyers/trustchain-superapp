@@ -12,14 +12,30 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <androidx.appcompat.widget.SearchView
-            android:id="@+id/searchView"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/search_p2p_background"
-            app:iconifiedByDefault="false"
-            app:queryHint="Search for DAOs &amp; apps" />
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <androidx.appcompat.widget.SearchView
+                android:id="@+id/searchView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/search_p2p_background"
+                app:iconifiedByDefault="false"
+                app:queryHint="Search for DAOs &amp; apps" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnCreateDao"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:contentDescription="Create DAO"
+                app:srcCompat="@drawable/ic_add_black_24dp"
+                app:fabSize="mini" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -37,12 +53,6 @@
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/seeAllTopApps"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="See all"
-                android:textColor="@color/colorPrimary" />
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
@@ -73,13 +83,6 @@
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/seeAllRecommended"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="See all"
-                android:textColor="@color/colorPrimary" />
-
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
@@ -94,22 +97,5 @@
             tools:listitem="@layout/item_app" >
 
         </androidx.recyclerview.widget.RecyclerView>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="8dp"
-            android:text="Categories"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:textStyle="bold" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvCategories"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            tools:itemCount="5"
-            tools:listitem="@layout/item_category" />
-
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
