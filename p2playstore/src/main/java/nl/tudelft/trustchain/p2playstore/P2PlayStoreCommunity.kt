@@ -629,7 +629,7 @@ class P2pStoreCommunity : Community() {
     }
 
 
-    fun getVotesForSolution(
+    suspend fun getVotesForSolution(
             daoId: String,
             solutionId: String? = null
     ): List<FeatureVoteTD> {
