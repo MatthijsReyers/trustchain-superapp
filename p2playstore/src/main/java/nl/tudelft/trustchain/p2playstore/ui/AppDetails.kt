@@ -89,7 +89,7 @@ class AppDetails : BaseFragment() {
         this.app = P2playApp(this.daoBlock)
 
         torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
-        this.downloadProgress = torrentManager.downloadProgress(this.daoBlock);
+        this.downloadProgress = torrentManager.downloadProgress(this.app);
 
         this.setupTorrentDownloadStatus()
     }
@@ -143,7 +143,7 @@ class AppDetails : BaseFragment() {
 
     private fun setupTorrentDownloadStatus() {
         val magnetLink = MagnetUtils.parseMagnet(this.daoBlock.transaction["magnetLink"] as String)
-        this.downloadProgress = torrentManager.downloadProgress(this.daoBlock);
+        this.downloadProgress = torrentManager.downloadProgress(this.app);
         if (!this.downloadFinished()) {
             lifecycleScope.launch {
                 torrentManager.onStarted.collect { link ->
@@ -502,8 +502,8 @@ class AppDetails : BaseFragment() {
         lifecycleScope.launch {
             downloadProgress = 0
             updateDownloadButton()
-            torrentManager.downloadApp(daoBlock)
-            downloadProgress = torrentManager.downloadProgress(daoBlock)
+            torrentManager.downloadApp(app)
+            downloadProgress = torrentManager.downloadProgress(app)
             updateDownloadButton()
         }
     }

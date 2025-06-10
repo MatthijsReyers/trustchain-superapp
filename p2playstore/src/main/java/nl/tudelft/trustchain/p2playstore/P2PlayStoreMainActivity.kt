@@ -140,20 +140,10 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         // whole app will block.
         val scope = CoroutineScope(Dispatchers.IO);
         scope.launch {
-            val wallets = p2playStore.fetchLatestJoinedSharedWalletBlocks()
-            println("apps: ${wallets.size}")
-            println("====================================")
-            for (wallet in wallets) {
-                val name = wallet.transaction["name"]
-                val magnetLink: String? = wallet.transaction["magnetLink"] as? String;
-
-                println("block: $wallet ${wallet.blockId}")
-                println(" - name: $name")
-                println(" - description: ${wallet.transaction["description"]}")
-                println(" - magnetLink: $magnetLink")
-
+            val apps = p2playStore.discoverMyApps()
+            for (app in apps) {
                 try {
-                    torrentManager.downloadApp(wallet);
+                    torrentManager.downloadApp(app);
                 }
                 catch (err: Throwable) {
                     Log.e("P2PlayStore", "App download failed: $err")

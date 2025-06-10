@@ -16,6 +16,7 @@ import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTD
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTransactionData
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureVoteTD
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureVoteTransactionData
+import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTD
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseNegativeSignatureBlockTD
@@ -175,14 +176,37 @@ class P2pStoreCommunity : Community() {
     }
 
     /**
-     * Discover shared wallets that you can join, return the latest blocks that the user knows of.
+     * Searches all known parts of the trust chain for P2PlayStore apps, always returning the
+     * latest version of each app inside this user's database.
      */
-    fun discoverSharedWallets(): List<TrustChainBlock> {
-        val swBlocks = getTrustChainCommunity().database.getBlocksWithType(JOIN_BLOCK)
-        return swBlocks
-                .distinctBy { SWJoinBlockTransactionData(it.transaction).getData().SW_UNIQUE_ID }
-                .map { fetchLatestSharedWalletBlock(it, swBlocks) ?: it }
+    fun discoverAllApps(): List<P2playApp> {
+        val joinBlocks = getTrustChainCommunity().database.getBlocksWithType(JOIN_BLOCK)
+        val updateBlocks = getTrustChainCommunity().database.getBlocksWithType(TRANSFER_FINAL_BLOCK)
+        val blocks = joinBlocks + updateBlocks
+
+        // Get a unique list of the shared wallet IDs of the app DAO's that we know about.
+        val appIds = blocks
+            .map { b -> SWJoinBlockTransactionData(b.transaction).getData().SW_UNIQUE_ID }
+            .distinctBy { id -> id }
+
+        val latestBlocks = appIds
+            .map { id ->
+                blocks
+                    // Get all blocks with this app ID
+                    .filter { b ->
+                        SWJoinBlockTransactionData(b.transaction).getData().SW_UNIQUE_ID == id
+                    }
+                    // Find the newest block
+                    .maxByOrNull { b -> b.insertTime!! }
+            }
+
+        return latestBlocks.map { b -> P2playApp(b!!) }
     }
+
+    fun discoverMyApps(): List<P2playApp> {
+        return this.discoverAllApps().filter { app -> app.isDaoMember() }
+    }
+
 
     /**
      * Discover shared wallets that you can join, return the latest (known) blocks Fetch the latest
@@ -214,15 +238,6 @@ class P2pStoreCommunity : Community() {
                     SWJoinBlockTransactionData(it.transaction).getData().SW_UNIQUE_ID == walletId
                 }
                 .maxByOrNull { it.timestamp.time }
-    }
-
-    /** Fetch the shared wallet blocks that you are part of, based on your trustchain PK. */
-    fun fetchLatestJoinedSharedWalletBlocks(): List<TrustChainBlock> {
-        return discoverSharedWallets().filter {
-            val blockData = SWJoinBlockTransactionData(it.transaction).getData()
-            val userTrustchainPks = blockData.SW_TRUSTCHAIN_PKS
-            userTrustchainPks.contains(myPeer.publicKey.keyToBin().toHex())
-        }
     }
 
     /**
@@ -483,30 +498,6 @@ class P2pStoreCommunity : Community() {
                 "P2PlayStore",
                 "Created Feature Vote block for Solution $solutionId (Feature $featureId) in DAO $daoId. Vote: $isYes"
         )
-    }
-
-    /**
-     * Check if the number of required votes are more than the number of possible votes minus the
-     * negative votes.
-     */
-    fun canWinJoinRequest(data: SWSignatureAskBlockTD): Boolean {
-        val sw =
-                discoverSharedWallets().filter { b ->
-                    SWJoinBlockTransactionData(b.transaction).getData().SW_UNIQUE_ID ==
-                            data.SW_UNIQUE_ID
-                }[0]
-        val swData = SWJoinBlockTransactionData(sw.transaction).getData()
-        val againstSignatures =
-                ArrayList(
-                        fetchNegativeProposalResponses(
-                                data.SW_UNIQUE_ID,
-                                data.SW_UNIQUE_PROPOSAL_ID
-                        )
-                )
-        val totalVoters = swData.SW_BITCOIN_PKS
-        val requiredVotes = data.SW_SIGNATURES_REQUIRED
-
-        return requiredVotes <= totalVoters.size - againstSignatures.size
     }
 
     /**

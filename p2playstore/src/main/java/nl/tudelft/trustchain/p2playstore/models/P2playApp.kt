@@ -11,10 +11,10 @@ import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 
-class P2playApp(private val block: TrustChainBlock) {
+class P2playApp(val block: TrustChainBlock) {
     private val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
 
-    private val daoData = SWJoinBlockTransactionData(block.transaction).getData()
+    val daoData = SWJoinBlockTransactionData(block.transaction).getData()
 
     /**
      * Unique identifier for the DAO that belongs to this app, this ID should remain consistent
@@ -42,12 +42,18 @@ class P2playApp(private val block: TrustChainBlock) {
         return block.hashNumber
     }
 
-
     /**
      * Returns the amount of members the DAO for this app has.
      */
     fun getDoaMemberCount(): Int {
         return daoData.SW_TRUSTCHAIN_PKS.size
+    }
+
+    /**
+     * Returns the amount of members the DAO for this app has.
+     */
+    fun getEntranceFee(): Long {
+        return daoData.SW_ENTRANCE_FEE
     }
 
 
