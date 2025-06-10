@@ -9,10 +9,10 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.currencyii.CoinCommunity.Companion.SIGNATURE_AGREEMENT_BLOCK
-import nl.tudelft.trustchain.currencyii.CoinCommunity.Companion.SIGNATURE_ASK_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.SIGNATURE_AGREEMENT_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.SIGNATURE_ASK_BLOCK
 import nl.tudelft.trustchain.currencyii.TrustChainHelper
-import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
+import nl.tudelft.trustchain.p2playstore.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.sharedWallet.*
 import nl.tudelft.trustchain.currencyii.util.taproot.CTransaction
 import nl.tudelft.trustchain.currencyii.util.taproot.MuSig
