@@ -9,6 +9,7 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskTransactionData
+import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 
 class P2playApp(private val block: TrustChainBlock) {
     private val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
@@ -20,6 +21,31 @@ class P2playApp(private val block: TrustChainBlock) {
      * across different versions/updates of the app.
      */
     val daoId = daoData.SW_UNIQUE_ID
+
+    fun getName(): String? {
+        return block.transaction["name"] as? String
+    }
+
+    fun getDescription(): String {
+        return (block.transaction["description"] as? String) ?: ""
+    }
+
+    fun getCategory(): String? {
+        return block.transaction["category"] as? String
+    }
+
+    fun getIcon(): Int {
+        return iconFromIconId(block.transaction["iconIndex"])
+    }
+
+    /**
+     * Returns the amount of members the DAO for this app has.
+     */
+    fun getDoaMemberCount(): Int {
+        return daoData.SW_TRUSTCHAIN_PKS.size
+    }
+
+
 
     /**
      * Returns a list of all requests to join this app's DOA, including ones for which voting has
