@@ -267,28 +267,19 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
      */
     private suspend fun discoverNewApps() {
         val trustChain = getTrustChainCommunity();
-        Log.d("P2PlayStore", "I am peer ${trustChain.myPeer.publicKey}")
         val peers = trustChain.getPeers()
-        Log.d("P2PlayStore", "Found ${peers.size} peers")
+        Log.d("P2PlayStore", "Discovering new apps, found ${peers.size} peers")
         for (peer in peers) {
             try {
-                Log.d(
-                    "P2PlayStore",
-                    "Crawling peer ${peer.publicKey}"
-                )
                 trustChain.crawlChain(peer)
                 val crawlResult = trustChain.database.getMutualBlocks(
                     peer.publicKey.keyToBin(), 1000
-                )
-                Log.d(
-                    "P2PlayStore",
-                    "Found ${crawlResult.size} new blocks"
                 )
             }
             catch (err: Throwable) {
                 Log.e(
                     "P2PlayStore",
-                    "Crawling failed for: ${peer.publicKey}. $err."
+                    "Crawling peer failed for: ${peer.publicKey}. $err."
                 )
             }
             this.updateAppsLists();
