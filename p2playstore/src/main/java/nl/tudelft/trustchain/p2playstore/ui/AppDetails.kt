@@ -103,7 +103,6 @@ class AppDetails : BaseFragment() {
         return binding.root
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         try {
@@ -120,7 +119,7 @@ class AppDetails : BaseFragment() {
     }
 
     private fun loadDaoDetails() {
-        setupDaoDetailsUI()
+        updateAppMetaData()
         updateUIBasedOnMembership()
         updateDownloadButton()
         loadRecentVotingPoll()
@@ -137,6 +136,7 @@ class AppDetails : BaseFragment() {
     fun onChainUpdated(block: TrustChainBlock) {
         Log.d("P2pStore", "Chain update ${block.type}")
 
+        this.updateAppMetaData()
         this.updateDownloadButton();
         this.updateUIBasedOnMembership();
     }
@@ -173,18 +173,14 @@ class AppDetails : BaseFragment() {
             }
         }
     }
-
-//    @RequiresApi(Build.VERSION_CODES.S)
-    private fun setupDaoDetailsUI() {
-        // Set DAO basic info from the block data
-        binding.appName.text = daoBlock.transaction["name"]?.toString() ?: "Unknown DAO"
-        binding.daoCategory.text = daoBlock.transaction["category"]?.toString() ?: "General"
-        binding.daoMembersCount.text = daoData.SW_TRUSTCHAIN_PKS.size.toString()
-        binding.daoDownloads.text = "0" // TODO: Implement download tracking
-        binding.daoDeveloper.text = daoBlock.publicKey.toHex().take(8) + "..."
-        binding.daoDescription.text =
-                daoBlock.transaction["description"]?.toString() ?: "No description available"
-        binding.daoIcon.setImageResource(iconFromIconId(this.daoBlock.transaction["iconIndex"]))
+    
+    private fun updateAppMetaData() {
+        binding.appName.text = this.app.getName() ?: "[Unknown]"
+        binding.daoCategory.text = this.app.getCategory() ?: "General"
+        binding.daoMembersCount.text = this.app.getDoaMemberCount().toString()
+        binding.daoDeveloper.text = "developer"
+        binding.daoDescription.text = this.app.getDescription()
+        binding.daoIcon.setImageResource(this.app.getIcon())
     }
 
     private fun updateUIBasedOnMembership() {
