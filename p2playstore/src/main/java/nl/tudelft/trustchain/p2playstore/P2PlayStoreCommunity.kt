@@ -439,7 +439,6 @@ class P2pStoreCommunity : Community() {
                 )
 
         val transaction = featureSolutionData.getTransactionData()
-//        TODO: not sure if it is a proposal block but dont see anyother block option
         getTrustChainCommunity()
                 .createProposalBlock(
                         featureSolutionData.blockType,
@@ -630,7 +629,7 @@ class P2pStoreCommunity : Community() {
     }
 
 
-    suspend fun getVotesForSolution(
+    fun getVotesForSolution(
             daoId: String,
             solutionId: String? = null
     ): List<FeatureVoteTD> {

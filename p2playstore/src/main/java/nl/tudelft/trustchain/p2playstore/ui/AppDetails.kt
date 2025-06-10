@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
+import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTD
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
@@ -35,6 +36,7 @@ import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
 import nl.tudelft.trustchain.p2playstore.TorrentManager
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.utils.DebugUtils.printToast
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
@@ -72,29 +74,10 @@ class AppDetails : BaseFragment() {
         return this.downloadProgress != null && this.downloadProgress as Int >= 100
     }
 
-    override fun onCreate(bundle: Bundle?) {
-        super.onCreate(bundle)
-
-        // The previous fragment (home) tells us which block/app/version to show
-        val args = this.requireArguments();
-        val publicKey = args.getByteArray("publicKey")!!
-        val sequenceNumber = args.getInt("sequenceNumber").toUInt()
-
-        // Actually retrieve the block
-        val community = this.getTrustChainCommunity()
-        this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
-        this.daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
-
-        torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
-        this.downloadProgress = torrentManager.downloadProgress(this.daoBlock);
-
-        this.setupTorrentDownloadStatus()
-    }
-
     override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View {
         _binding = FragmentAppDetailsBinding.inflate(inflater, container, false)
         return binding.root
@@ -104,16 +87,54 @@ class AppDetails : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setupDaoDetailsUI()
-        checkMembership()
-        updateUIBasedOnMembership()
-        updateDownloadButton()
-        loadRecentVotingPoll()
-        loadLatestPendingFeatureRequest()
-        loadLatestApprovedUpdate()
-        setupClickListeners()
+        val blockId = arguments?.getString("blockId")
+        if (blockId != null) {
+            loadDaoDetails(blockId)
+            setupClickListeners()
+        } else {
+            Log.e("DaoDetailsFragment", "No block ID provided in arguments")
+            Toast.makeText(context, "Error: Missing DAO information.", Toast.LENGTH_SHORT).show()
+            findNavController().navigateUp()
+        }
     }
 
+
+    private fun loadDaoDetails(blockId: String) {
+        lifecycleScope.launch {
+            try {
+                val block = withContext(Dispatchers.IO) {
+                    val parts = blockId.split(".")
+                    if (parts.size != 2) throw IllegalArgumentException("Invalid block ID format: $blockId")
+                    val publicKey = parts[0].hexToBytes()
+                    val sequenceNumber = parts[1].toUInt()
+                    getTrustChainCommunity().database.get(publicKey, sequenceNumber)
+                }
+                if (block != null) {
+                    daoBlock = block
+                    daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
+                    torrentManager = (requireActivity() as P2PlayStoreMainActivity).torrentManager
+                    downloadProgress = torrentManager.downloadProgress(daoBlock)
+                    setupTorrentDownloadStatus()
+                    setupDaoDetailsUI()
+                    checkMembership()
+                    updateUIBasedOnMembership()
+                    updateDownloadButton()
+                    loadRecentVotingPoll()
+                    loadLatestPendingFeatureRequest()
+                    loadLatestApprovedUpdate()
+                    setupClickListeners()
+                } else {
+                    Log.e("DaoDetailsFragment", "DAO block not found for ID: $blockId")
+                    Toast.makeText(context, "Error: DAO information not found.", Toast.LENGTH_SHORT).show()
+                    findNavController().navigateUp()
+                }
+            } catch (e: Exception) {
+                Log.e("DaoDetailsFragment", "Error loading DAO details: ${e.message}")
+                Toast.makeText(context, "Error loading DAO details.", Toast.LENGTH_SHORT).show()
+                findNavController().navigateUp()
+            }
+        }
+    }
     private fun setupTorrentDownloadStatus() {
         val magnetLink = MagnetUtils.parseMagnet(this.daoBlock.transaction["magnetLink"] as String)
         this.downloadProgress = torrentManager.downloadProgress(this.daoBlock);
@@ -147,7 +168,7 @@ class AppDetails : BaseFragment() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
+//    @RequiresApi(Build.VERSION_CODES.S)
     private fun setupDaoDetailsUI() {
         // Set DAO basic info from the block data
         binding.appName.text = daoBlock.transaction["name"]?.toString() ?: "Unknown DAO"
@@ -158,41 +179,6 @@ class AppDetails : BaseFragment() {
         binding.daoDescription.text =
                 daoBlock.transaction["description"]?.toString() ?: "No description available"
         binding.daoIcon.setImageResource(iconFromIconId(this.daoBlock.transaction["iconIndex"]))
-    }
-
-//    TODO: make functional
-    private fun updateVotingProgressBars(yesPercent: Int, noPercent: Int, pendingPercent: Int) {
-        binding.root.post {
-            val containerWidth = binding.votingCard.width
-
-            if (containerWidth > 0) {
-                val horizontalPaddingAndMargins =
-                        resources.getDimensionPixelSize(R.dimen.padding_normal) *
-                                2 +
-                        resources.getDimensionPixelSize(R.dimen.progress_bar_margin_horizontal) *
-                                        2
-                val availableWidth = containerWidth - horizontalPaddingAndMargins
-
-                if (availableWidth > 0) {
-                    val yesWidth = maxOf(1, (availableWidth * yesPercent / 100))
-                    val noWidth = maxOf(1, (availableWidth * noPercent / 100))
-                    val pendingWidth = maxOf(1, (availableWidth * pendingPercent / 100))
-
-                    binding.yesProgressBar.layoutParams.width = yesWidth
-                    binding.noProgressBar.layoutParams.width = noWidth
-                    binding.pendingProgressBar.layoutParams.width = pendingWidth
-
-                    binding.yesProgressBar.requestLayout()
-                    binding.noProgressBar.requestLayout()
-                    binding.pendingProgressBar.requestLayout()
-                } else {
-                    Log.w(
-                            "DaoDetailsFragment",
-                            "Insufficient width for progress bars."
-                    )
-                }
-            }
-        }
     }
 
     private fun checkMembership() {
@@ -664,10 +650,17 @@ class AppDetails : BaseFragment() {
 
         binding.votesRequiredText.text = "${poll.yesVotes} of ${poll.votesNeeded} votes needed"
         binding.totalVotes.text =
-                "${poll.yesVotes + poll.noVotes} of ${poll.totalMembers} members voted"
+            "${poll.yesVotes + poll.noVotes} of ${poll.totalMembers} members voted"
 
-        updateVotingProgressBars(poll.yesPercentage, poll.noPercentage, poll.pendingPercentage)
-
+        AppUtils.updateProgressBars(
+            binding.root,
+            binding.yesProgressBar,
+            binding.noProgressBar,
+            binding.pendingProgressBar,
+            poll.yesPercentage,
+            poll.noPercentage,
+            poll.pendingPercentage
+        )
         updateVotingState(poll)
     }
 
@@ -679,21 +672,21 @@ class AppDetails : BaseFragment() {
             !poll.isActive && poll.isApproved -> { // Voting closed and approved
                 binding.votingStatus.text = "Approved"
                 binding.votingStatus.setTextColor(
-                        resources.getColor(android.R.color.holo_green_dark, null)
+                    resources.getColor(android.R.color.holo_green_dark, null)
                 )
                 binding.votingStatus.visibility = View.VISIBLE
                 binding.votingCard.isClickable =
-                        false // Make card non-clickable after status is final
+                    false // Make card non-clickable after status is final
                 binding.votingCard.alpha = 0.5f // Gray out after status is final
             }
             !poll.isActive -> { // Voting closed and not approved
                 binding.votingStatus.text = "Voting Closed"
                 binding.votingStatus.setTextColor(
-                        resources.getColor(android.R.color.darker_gray, null)
+                    resources.getColor(android.R.color.darker_gray, null)
                 )
                 binding.votingStatus.visibility = View.VISIBLE
                 binding.votingCard.isClickable =
-                        false // Make card non-clickable after status is final
+                    false // Make card non-clickable after status is final
                 binding.votingCard.alpha = 0.5f // Gray out after status is final
             }
             poll.hasUserVoted -> { // Voting active, user has voted
@@ -729,16 +722,16 @@ class AppDetails : BaseFragment() {
         binding.btnFeatureRequest.setOnClickListener {
             if (isUserMember) {
                 val bundle =
-                        Bundle().apply {
-                            putString("blockId", daoBlock.blockId) // Pass DAO block ID
-                            putString("daoUniqueId", daoData.SW_UNIQUE_ID) // Pass DAO unique ID")
-                        }
+                    Bundle().apply {
+                        putString("blockId", daoBlock.blockId) // Pass DAO block ID
+                        putString("daoUniqueId", daoData.SW_UNIQUE_ID) // Pass DAO unique ID")
+                    }
                 findNavController()
-                        .navigate(
-                                // TODO: verify that these actions work
-                                R.id.action_daoDetailsFragment_to_featureListFragment,
-                                bundle
-                        )
+                    .navigate(
+                        // TODO: verify that these actions work
+                        R.id.action_appDetailsFragment_to_featureListFragment,
+                        bundle
+                    )
             }
         }
 
@@ -747,25 +740,25 @@ class AppDetails : BaseFragment() {
             if (isUserMember) {
                 // Navigate to all voting polls
                 val bundle =
-                        Bundle().apply {
-                            putString("blockId", daoBlock.blockId)
-                             putString("daoUniqueId", daoData.SW_UNIQUE_ID)
-                        }
+                    Bundle().apply {
+                        putString("blockId", daoBlock.blockId)
+                        putString("daoUniqueId", daoData.SW_UNIQUE_ID)
+                    }
                 findNavController()
-                        .navigate(R.id.action_daoDetailsFragment_to_allVotingPollsFragment, bundle)
+                    .navigate(R.id.action_appDetailsFragment_to_allVotingPollsFragment, bundle)
             }
         }
 
         binding.btnSeeAllFeatures.setOnClickListener { // Use the original ID from XML
             // Navigate to the FeatureListFragment
             val bundle =
-                    Bundle().apply {
-                        putString("blockId", daoBlock.blockId)
-                        putString("daoUniqueId", daoData.SW_UNIQUE_ID)
-                        // putString("daoId", daoData.SW_UNIQUE_ID)
-                    }
+                Bundle().apply {
+                    putString("blockId", daoBlock.blockId)
+                    putString("daoUniqueId", daoData.SW_UNIQUE_ID)
+                    // putString("daoId", daoData.SW_UNIQUE_ID)
+                }
             findNavController()
-                    .navigate(R.id.action_daoDetailsFragment_to_featureListFragment, bundle)
+                .navigate(R.id.action_appDetailsFragment_to_featureListFragment, bundle)
         }
         // The click listener for latest_feature_request_preview_card is set dynamically in
         // loadLatestPendingFeatureRequest
@@ -814,6 +807,7 @@ class AppDetails : BaseFragment() {
             Log.e("Coin", "Joining failed. ${t.message ?: "No further information"}.")
 //            setAlertText(t.message ?: "Unexpected error occurred. Try again")
         }
+
     }
 
     /**
@@ -839,27 +833,27 @@ class AppDetails : BaseFragment() {
     // Helper function to navigate to FeatureVotingFragment
     private fun navigateToVotingFragment(daoBlockId: String, solutionId: String) {
         val bundle =
-                Bundle().apply {
-                    putString("blockId", daoBlockId)
-                    putString("solutionId", solutionId)
-                    putString("daoUniqueId", daoData.SW_UNIQUE_ID)
-                }
+            Bundle().apply {
+                putString("blockId", daoBlockId)
+                putString("solutionId", solutionId)
+                putString("daoUniqueId", daoData.SW_UNIQUE_ID)
+            }
         findNavController()
-                .navigate(R.id.action_daoDetailsFragment_to_featureVotingFragment, bundle)
+            .navigate(R.id.action_appDetailsFragment_to_featureVotingFragment, bundle)
     }
 
     // Helper function to navigate to FeatureSolutionFragment
     private fun navigateToSubmitSolution(featureRequest: FeatureRequestTD) {
         val bundle =
-                Bundle().apply {
-                    putString("featureId", featureRequest.featureId)
+            Bundle().apply {
+                putString("featureId", featureRequest.featureId)
 //                    putString("daoId", daoBlock.blockId) // Pass DAO unique ID
-                    putString("daoUniqueId", featureRequest.daoId) // Pass DAO block ID
-                    putString("featureTitle", featureRequest.title)
-                    putString("featureDescription", featureRequest.description)
-                }
+                putString("daoUniqueId", featureRequest.daoId) // Pass DAO block ID
+                putString("featureTitle", featureRequest.title)
+                putString("featureDescription", featureRequest.description)
+            }
 
-        findNavController().navigate(R.id.action_daoDetailsFragment_to_featureSolutionFragment, bundle)
+        findNavController().navigate(R.id.action_appDetailsFragment_to_featureSolutionFragment, bundle)
     }
 
     override fun onDestroyView() {

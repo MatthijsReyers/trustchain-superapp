@@ -2,6 +2,7 @@ package nl.tudelft.trustchain.p2playstore.blockdata
 
 data class VotingPoll(
         val id: String,
+        val daoId: String,
         val title: String,
         val question: String,
         val yesVotes: Int,
@@ -50,6 +51,7 @@ object VotingPollHelper {
 
         return VotingPoll(
                 id = solution.solutionId,
+                daoId = solution.daoId,
                 title = "Vote on \"${request.title}\"",
                 question =
                         "Should we approve the implementation: \"${solution.title}\"?\n${solution.description}", // Use solution title and description

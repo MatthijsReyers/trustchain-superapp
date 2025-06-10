@@ -20,6 +20,7 @@ import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
+import nl.tudelft.ipv8.util.toHex
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private var _binding: FragmentHomeBinding? = null
@@ -47,6 +48,10 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
 
         setupRecyclerViews()
 
+        binding.btnCreateDao.setOnClickListener {
+            showCreateDaoDialog()
+        }
+//        Todo: is this not already done by login/download fragments?
         if (WalletManagerAndroid.isInitialized()) {
             loadDaoData()
         } else {
@@ -270,17 +275,11 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             daoList,
             object : DaoAdapter.OnItemClickListener {
                 override fun onItemClick(daoBlock: TrustChainBlock) {
-                    Log.d("P2PlayStore", "Navigating to joinDaoFragment from All DAOs")
-                    try {
-                        val bundle = Bundle()
-                        bundle.apply {
-                            putByteArray("publicKey", daoBlock.publicKey);
-                            putInt("sequenceNumber", daoBlock.sequenceNumber.toInt());
-                        }
-                        findNavController().navigate(R.id.appDetails, bundle)
-                    } catch (e: Exception) {
-                        Log.e("P2PlayStore", "Navigation error: ${e.message}")
-                    }
+                    Log.d("HomeFragment", "DAO clicked in All DAOs: handling navigation.")
+                    val blockId = "${daoBlock.publicKey.toHex()}.${daoBlock.sequenceNumber}"
+                    val action = HomeFragmentDirections
+                        .actionHomeFragmentToAppDetails(blockId)
+                    findNavController().navigate(action)
                 }
             }
         )
@@ -297,17 +296,11 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             daoList,
             object : DaoAdapter.OnItemClickListener {
                 override fun onItemClick(daoBlock: TrustChainBlock) {
-                    Log.d("P2PlayStore", "Navigating to joinDaoFragment from My DAOs")
-                    try {
-                        val bundle = Bundle()
-                        bundle.apply {
-                            putByteArray("publicKey", daoBlock.publicKey);
-                            putInt("sequenceNumber", daoBlock.sequenceNumber.toInt());
-                        }
-                        findNavController().navigate(R.id.appDetails, bundle)
-                    } catch (e: Exception) {
-                        Log.e("P2PlayStore", "Navigation error: ${e.message}")
-                    }
+                    Log.d("HomeFragment", "DAO clicked in My DAOs: handling navigation.")
+                    val blockId = "${daoBlock.publicKey.toHex()}.${daoBlock.sequenceNumber}"
+                    val action = HomeFragmentDirections
+                        .actionHomeFragmentToAppDetails(blockId)
+                    findNavController().navigate(action)
                 }
             }
         )
