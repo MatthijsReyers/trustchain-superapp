@@ -5,7 +5,7 @@ import nl.tudelft.ipv8.Peer
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
+import nl.tudelft.trustchain.p2playstore.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.currencyii.util.taproot.TaprootUtil
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
 import org.bitcoinj.core.Coin
