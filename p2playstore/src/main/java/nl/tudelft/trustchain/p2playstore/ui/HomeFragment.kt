@@ -19,6 +19,7 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
+import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
@@ -243,11 +244,11 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         lifecycleScope.launch {
             try {
                 val allDaos = withContext(Dispatchers.IO) {
-                    getP2pStoreCommunity().discoverSharedWallets()
+                    getP2pStoreCommunity().discoverAllApps()
                 }
 
                 val myDaos = withContext(Dispatchers.IO) {
-                    getP2pStoreCommunity().fetchLatestJoinedSharedWalletBlocks()
+                    getP2pStoreCommunity().discoverMyApps()
                 }
 
                 if (isAdded) {
@@ -260,57 +261,19 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         }
     }
 
-    private fun updateAllDaoList(daoList: List<TrustChainBlock>) {
+    private fun updateAllDaoList(daoList: List<P2playApp>) {
         if (!isAdded) return
-
         binding.allApps.text = "All apps (${daoList.size})"
-
         Log.d("P2PlayStore", "Updating All DAOs list with ${daoList.size} items.")
-        allDaoAdapter = DaoAdapter(
-            daoList,
-            object : DaoAdapter.OnItemClickListener {
-                override fun onItemClick(daoBlock: TrustChainBlock) {
-                    Log.d("P2PlayStore", "Navigating to joinDaoFragment from All DAOs")
-                    try {
-                        val bundle = Bundle()
-                        bundle.apply {
-                            putByteArray("publicKey", daoBlock.publicKey);
-                            putInt("sequenceNumber", daoBlock.sequenceNumber.toInt());
-                        }
-                        findNavController().navigate(R.id.appDetails, bundle)
-                    } catch (e: Exception) {
-                        Log.e("P2PlayStore", "Navigation error: ${e.message}")
-                    }
-                }
-            }
-        )
+        allDaoAdapter = DaoAdapter(daoList)
         binding.rvTopApps.adapter = allDaoAdapter
     }
 
-    private fun updateMyDaoList(daoList: List<TrustChainBlock>) {
+    private fun updateMyDaoList(daoList: List<P2playApp>) {
         if (!isAdded) return
-
         binding.installedApps.text = "Installed apps (${daoList.size})"
-
         Log.d("P2PlayStore", "Updating My DAOs list with ${daoList.size} items.")
-        myDaoAdapter = DaoAdapter(
-            daoList,
-            object : DaoAdapter.OnItemClickListener {
-                override fun onItemClick(daoBlock: TrustChainBlock) {
-                    Log.d("P2PlayStore", "Navigating to joinDaoFragment from My DAOs")
-                    try {
-                        val bundle = Bundle()
-                        bundle.apply {
-                            putByteArray("publicKey", daoBlock.publicKey);
-                            putInt("sequenceNumber", daoBlock.sequenceNumber.toInt());
-                        }
-                        findNavController().navigate(R.id.appDetails, bundle)
-                    } catch (e: Exception) {
-                        Log.e("P2PlayStore", "Navigation error: ${e.message}")
-                    }
-                }
-            }
-        )
+        myDaoAdapter = DaoAdapter(daoList)
         binding.rvRecommended.adapter = myDaoAdapter
     }
 
