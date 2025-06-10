@@ -125,8 +125,6 @@ class AppDetails : BaseFragment() {
         loadRecentVotingPoll()
         loadLatestPendingFeatureRequest()
         loadLatestApprovedUpdate()
-        setupClickListeners()
-        this.setupChainListeners()
     }
 
     /**
@@ -138,7 +136,6 @@ class AppDetails : BaseFragment() {
 
         this.updateAppMetaData()
         this.updateDownloadButton();
-        this.updateUIBasedOnMembership();
     }
 
     private fun setupTorrentDownloadStatus() {
@@ -173,7 +170,7 @@ class AppDetails : BaseFragment() {
             }
         }
     }
-    
+
     private fun updateAppMetaData() {
         binding.appName.text = this.app.getName() ?: "[Unknown]"
         binding.appCategory.text = this.app.getCategory() ?: "General"
@@ -565,7 +562,6 @@ class AppDetails : BaseFragment() {
         try {
             lifecycleScope.launch {
                 joinSharedWalletClicked(daoBlock)
-                updateUIBasedOnMembership()
                 loadRecentVotingPoll()
                 loadLatestPendingFeatureRequest()
                 loadLatestApprovedUpdate()

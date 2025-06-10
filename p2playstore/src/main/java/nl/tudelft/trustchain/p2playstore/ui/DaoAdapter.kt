@@ -35,7 +35,7 @@ class DaoAdapter(private val daoList: List<P2playApp>)
                     putByteArray("publicKey", app.block.publicKey)
                     putInt("sequenceNumber", app.block.sequenceNumber.toInt())
                 }
-                itemView.findNavController().navigate(R.id.action_homeFragment_to_daoDetailsFragment, bundle)
+                itemView.findNavController().navigate(R.id.action_homeFragment_to_appDetails, bundle)
             }
             itemView.isClickable = true
             itemView.isFocusable = true
