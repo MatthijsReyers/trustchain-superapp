@@ -176,10 +176,10 @@ class AppDetails : BaseFragment() {
     
     private fun updateAppMetaData() {
         binding.appName.text = this.app.getName() ?: "[Unknown]"
-        binding.daoCategory.text = this.app.getCategory() ?: "General"
+        binding.appCategory.text = this.app.getCategory() ?: "General"
         binding.daoMembersCount.text = this.app.getDoaMemberCount().toString()
-        binding.daoDeveloper.text = "developer"
-        binding.daoDescription.text = this.app.getDescription()
+        binding.appLatestVersion.text = this.app.getVersion().toString()
+        binding.appDescription.text = this.app.getDescription()
         binding.daoIcon.setImageResource(this.app.getIcon())
     }
 
@@ -262,18 +262,15 @@ class AppDetails : BaseFragment() {
                         val (block, solution) = latestApprovedSolutionWithBlock
                         Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Latest approved solution found: ${solution.solutionId} (Feature ${solution.featureId}), Block Timestamp: ${block.timestamp.time}")
                         // Update UI with latest approved version info
-                        binding.daoVersion.text = "v${block.sequenceNumber}" // Use block sequence number as a simple version
                         // Set click listener for update button
                         // Success, break out of retry loop
                         return@launch
 
                     } else {
                         Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): No approved solutions found for DAO $daoUniqueId.")
-                        binding.daoVersion.text = "No updates"
                     }
                 } catch (e: Exception) {
                     Log.e("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Error loading latest approved update: ${e.message}")
-                    binding.daoVersion.text = "Error loading update info"
                 }
                 if (retry < maxRetries) {
                     Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Retrying in ${retryDelayMillis}ms...")

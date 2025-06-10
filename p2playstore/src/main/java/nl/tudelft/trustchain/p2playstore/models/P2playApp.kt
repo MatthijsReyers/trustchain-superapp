@@ -38,6 +38,11 @@ class P2playApp(private val block: TrustChainBlock) {
         return iconFromIconId(block.transaction["iconIndex"])
     }
 
+    fun getVersion(): Int {
+        return block.hashNumber
+    }
+
+
     /**
      * Returns the amount of members the DAO for this app has.
      */
