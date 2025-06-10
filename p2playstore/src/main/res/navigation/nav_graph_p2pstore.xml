@@ -37,54 +37,30 @@
         android:label="Welcome"
         tools:layout="@layout/fragment_home">
         <action
-            android:id="@+id/action_homeFragment_to_daoDetailsFragment"
-            app:destination="@+id/daoDetailsFragment"
-            app:popUpTo="@+id/homeFragment"
-            app:popUpToInclusive="false" />
-        <action
-            android:id="@+id/action_homeFragment_to_joinDaoFragment"
-            app:destination="@+id/joinDaoFragment"
-            app:popUpToInclusive="true"
-            app:popUpTo="@+id/homeFragment" />
-        <action
             android:id="@+id/action_homeFragment_to_appDetails"
             app:destination="@id/appDetails" />
-        <action
-            android:id="@+id/action_homeFragment_to_createDaoFragment"
-            app:destination="@id/joinDaoFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/appDetails"
         android:name="nl.tudelft.trustchain.p2playstore.ui.AppDetails"
         android:label="App details"
-        tools:layout="@layout/fragment_app_details" />
-
-    <fragment
-        android:id="@+id/daoDetailsFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.ui.AppDetails"
-        android:label="DAO Details"
         tools:layout="@layout/fragment_app_details">
         <argument
             android:name="blockId"
             app:argType="string"
             />
         <action
-            android:id="@+id/action_daoDetailsFragment_to_featureListFragment"
+            android:id="@+id/action_appDetailsFragment_to_featureListFragment"
             app:destination="@id/featureListFragment" />
         <action
-            android:id="@+id/action_daoDetailsFragment_to_featureVotingFragment"
+            android:id="@+id/action_appDetailsFragment_to_featureVotingFragment"
             app:destination="@id/featureVotingFragment" />
+
         <action
-            android:id="@+id/action_daoDetailsFragment_to_joinDaoFragment"
-            app:destination="@id/joinDaoFragment" />
-<!--        <action-->
-<!--            android:id="@+id/action_daoDetailsFragment_to_allVotesFragment"-->
-<!--            app:destination="@id/allVotesFragment" />-->
-        <action
-            android:id="@+id/action_daoDetailsFragment_to_allVotingPollsFragment"
+            android:id="@+id/action_appDetailsFragment_to_allVotingPollsFragment"
             app:destination="@id/allVotingPollsFragment" />
-        <action android:id="@+id/action_daoDetailsFragment_to_featureSolutionFragment"
+        <action android:id="@+id/action_appDetailsFragment_to_featureSolutionFragment"
             app:destination="@id/featureSolutionFragment"/>
     </fragment>
 
@@ -171,12 +147,12 @@
 <!--            app:destination="@id/featureVotingFragment" />-->
 <!--    </fragment>-->
 
-    <fragment
-        android:id="@+id/proposalsFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.ui.ProposalsFragment"
-        android:label="Proposals"
-        tools:layout="@layout/fragment_proposals">
-    </fragment>
+<!--    <fragment-->
+<!--        android:id="@+id/proposalsFragment"-->
+<!--        android:name="nl.tudelft.trustchain.p2playstore.ui.ProposalsFragment"-->
+<!--        android:label="Proposals"-->
+<!--        tools:layout="@layout/fragment_proposals">-->
+<!--    </fragment>-->
 
     <fragment
         android:id="@+id/allVotingPollsFragment"
