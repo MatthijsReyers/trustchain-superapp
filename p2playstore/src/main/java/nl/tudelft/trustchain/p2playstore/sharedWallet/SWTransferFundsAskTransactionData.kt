@@ -19,7 +19,7 @@ data class SWTransferFundsAskBlockTD(
 
 class SWTransferFundsAskTransactionData(data: JsonObject) : SWBlockTransactionData(
     data,
-    P2pStoreCommunity.TRANSFER_FUNDS_ASK_BLOCK
+    P2pStoreCommunity.PROPOSE_UPDATE_BLOCK
 ) {
     fun getData(): SWTransferFundsAskBlockTD {
         return Gson().fromJson(getJsonString(), SWTransferFundsAskBlockTD::class.java)

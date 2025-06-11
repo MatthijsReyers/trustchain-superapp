@@ -33,7 +33,7 @@ class DaoJoinRequest(private val block: TrustChainBlock) {
      * Gets a list of all positive/agreement votes for this join request.
      */
     fun getUpVotes(): List<TrustChainBlock> {
-        val votes = trustChain.database.getBlocksWithType(P2pStoreCommunity.SIGNATURE_AGREEMENT_BLOCK)
+        val votes = trustChain.database.getBlocksWithType(P2pStoreCommunity.VOTE_YES_BLOCK)
         return votes.filter { vote ->
             val data = SWResponseSignatureTransactionData(vote.transaction).getData()
             data.SW_UNIQUE_PROPOSAL_ID == proposalId
@@ -44,7 +44,7 @@ class DaoJoinRequest(private val block: TrustChainBlock) {
      * Gets a list of all negative/deny votes for this join request.
      */
     fun getDownVotes(): List<TrustChainBlock> {
-        val votes = trustChain.database.getBlocksWithType(P2pStoreCommunity.SIGNATURE_AGREEMENT_NEGATIVE_BLOCK)
+        val votes = trustChain.database.getBlocksWithType(P2pStoreCommunity.VOTE_NO_BLOCK)
         return votes.filter { vote ->
             val data = SWResponseNegativeSignatureTransactionData(vote.transaction).getData()
             data.SW_UNIQUE_PROPOSAL_ID == proposalId

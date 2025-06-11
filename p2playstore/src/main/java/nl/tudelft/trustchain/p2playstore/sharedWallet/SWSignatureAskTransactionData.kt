@@ -16,7 +16,7 @@ data class SWSignatureAskBlockTD(
 
 open class SWSignatureAskTransactionData(data: JsonObject) : SWBlockTransactionData(
     data,
-    P2pStoreCommunity.SIGNATURE_ASK_BLOCK
+    P2pStoreCommunity.JOIN_REQUEST_BLOCK
 ) {
     fun getData(): SWSignatureAskBlockTD {
         return Gson().fromJson(getJsonString(), SWSignatureAskBlockTD::class.java)

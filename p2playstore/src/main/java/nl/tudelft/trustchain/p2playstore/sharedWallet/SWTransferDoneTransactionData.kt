@@ -18,7 +18,7 @@ data class SWTransferDoneBlockTD(
 
 class SWTransferDoneTransactionData(data: JsonObject) : SWBlockTransactionData(
     data,
-    P2pStoreCommunity.TRANSFER_FINAL_BLOCK
+    P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK
 ) {
     fun getData(): SWTransferDoneBlockTD {
         return Gson().fromJson(getJsonString(), SWTransferDoneBlockTD::class.java)

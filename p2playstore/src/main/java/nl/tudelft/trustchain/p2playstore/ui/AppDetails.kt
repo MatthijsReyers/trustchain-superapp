@@ -3,15 +3,12 @@ package nl.tudelft.trustchain.p2playstore.ui
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 
@@ -22,7 +19,6 @@ import kotlinx.coroutines.withContext
 
 import nl.tudelft.ipv8.attestation.trustchain.BlockListener
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
-import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTD
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
@@ -41,7 +37,6 @@ import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.utils.DebugUtils.printToast
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
-import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
@@ -744,10 +739,11 @@ class AppDetails : BaseFragment() {
         }
         val trustChain = getTrustChainCommunity()
         trustChain.addListener(P2pStoreCommunity.JOIN_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.SIGNATURE_ASK_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.SIGNATURE_AGREEMENT_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.SIGNATURE_AGREEMENT_NEGATIVE_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.FEATURE_SOLUTION_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.JOIN_REQUEST_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.VOTE_YES_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.VOTE_NO_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.PROPOSE_UPDATE_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK, listener);
         trustChain.addListener(P2pStoreCommunity.FEATURE_REQUEST_BLOCK, listener);
     }
 
