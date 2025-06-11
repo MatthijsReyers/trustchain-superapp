@@ -1,11 +1,12 @@
-package nl.tudelft.trustchain.p2playstore.sharedWallet
+package nl.tudelft.trustchain.p2playstore.transactionData
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
-data class SWTransferFundsAskBlockTD(
+data class ProposeUpdateData(
     var SW_UNIQUE_ID: String,
     var SW_UNIQUE_PROPOSAL_ID: String,
     var SW_PREVIOUS_BLOCK_HASH: String,
@@ -17,12 +18,12 @@ data class SWTransferFundsAskBlockTD(
     var SW_TRANSACTION_SERIALIZED: String
 )
 
-class SWTransferFundsAskTransactionData(data: JsonObject) : SWBlockTransactionData(
+class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
     data,
     P2pStoreCommunity.PROPOSE_UPDATE_BLOCK
 ) {
-    fun getData(): SWTransferFundsAskBlockTD {
-        return Gson().fromJson(getJsonString(), SWTransferFundsAskBlockTD::class.java)
+    fun getData(): ProposeUpdateData {
+        return Gson().fromJson(getJsonString(), ProposeUpdateData::class.java)
     }
 
     constructor(
@@ -36,8 +37,8 @@ class SWTransferFundsAskTransactionData(data: JsonObject) : SWBlockTransactionDa
         uniqueProposalId: String,
         transactionSerialized: String
     ) : this(
-        SWUtil.objectToJsonObject(
-            SWTransferFundsAskBlockTD(
+        BlockUtils.objectToJsonObject(
+            ProposeUpdateData(
                 uniqueId,
                 uniqueProposalId,
                 previousWalletBlockHash,
@@ -51,5 +52,5 @@ class SWTransferFundsAskTransactionData(data: JsonObject) : SWBlockTransactionDa
         )
     )
 
-    constructor(transaction: TrustChainTransaction) : this(SWUtil.parseTransaction(transaction))
+    constructor(transaction: TrustChainTransaction) : this(BlockUtils.parseTransaction(transaction))
 }

@@ -5,14 +5,14 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseNegativeSignatureTransactionData
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureTransactionData
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
 
 class DaoJoinRequest(private val block: TrustChainBlock) {
     private val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
 
-    private val daoData = SWSignatureAskTransactionData(block.transaction).getData()
+    private val daoData = JoinRequestTransactionData(block.transaction).getData()
 
     /**
      * Unique identifier for this specific join request, this ID is also present in all the
@@ -35,7 +35,7 @@ class DaoJoinRequest(private val block: TrustChainBlock) {
     fun getUpVotes(): List<TrustChainBlock> {
         val votes = trustChain.database.getBlocksWithType(P2pStoreCommunity.VOTE_YES_BLOCK)
         return votes.filter { vote ->
-            val data = SWResponseSignatureTransactionData(vote.transaction).getData()
+            val data = VoteYesTransactionData(vote.transaction).getData()
             data.SW_UNIQUE_PROPOSAL_ID == proposalId
         }
     }
@@ -46,7 +46,7 @@ class DaoJoinRequest(private val block: TrustChainBlock) {
     fun getDownVotes(): List<TrustChainBlock> {
         val votes = trustChain.database.getBlocksWithType(P2pStoreCommunity.VOTE_NO_BLOCK)
         return votes.filter { vote ->
-            val data = SWResponseNegativeSignatureTransactionData(vote.transaction).getData()
+            val data = VoteNoTransactionData(vote.transaction).getData()
             data.SW_UNIQUE_PROPOSAL_ID == proposalId
         }
     }

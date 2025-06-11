@@ -1,18 +1,13 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
-import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.ItemAppBinding
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
-import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
-import org.bitcoinj.core.Coin
 
 class DaoAdapter(private val daoList: List<P2playApp>)
     : RecyclerView.Adapter<DaoAdapter.DaoViewHolder>()

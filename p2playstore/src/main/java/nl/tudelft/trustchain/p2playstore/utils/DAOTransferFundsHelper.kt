@@ -14,7 +14,7 @@ import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.TrustChainHelper
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.currencyii.util.taproot.MuSig
-import nl.tudelft.trustchain.p2playstore.sharedWallet.*
+import nl.tudelft.trustchain.p2playstore.transactionData.*
 import org.bitcoinj.core.Address
 import org.bitcoinj.core.ECKey
 import java.math.BigInteger
@@ -41,19 +41,19 @@ class DAOTransferFundsHelper {
         mostRecentWalletBlock: TrustChainBlock,
         receiverAddressSerialized: String,
         satoshiAmount: Long
-    ): SWTransferFundsAskTransactionData {
+    ): ProposeUpdateTransactionData {
         val mostRecentBlockHash = mostRecentWalletBlock.calculateHash().toHex()
-        val blockData = SWJoinBlockTransactionData(mostRecentWalletBlock.transaction).getData()
+        val blockData = JoinDaoTransactionData(mostRecentWalletBlock.transaction).getData()
 
         val total = blockData.SW_BITCOIN_PKS.size
         val requiredSignatures =
-            SWUtil.percentageToIntThreshold(total, blockData.SW_VOTING_THRESHOLD)
+            BlockUtils.percentageToIntThreshold(total, blockData.SW_VOTING_THRESHOLD)
 
 
-        val proposalID = SWUtil.randomUUID()
+        val proposalID = BlockUtils.randomUUID()
 
         var askSignatureBlockData =
-            SWTransferFundsAskTransactionData(
+            ProposeUpdateTransactionData(
                 blockData.SW_UNIQUE_ID,
                 mostRecentBlockHash,
                 requiredSignatures,
@@ -71,7 +71,7 @@ class DAOTransferFundsHelper {
                 "Sending TRANSFER proposal (total: ${blockData.SW_TRUSTCHAIN_PKS.size}) to $swParticipantPk"
             )
             askSignatureBlockData =
-                SWTransferFundsAskTransactionData(
+                ProposeUpdateTransactionData(
                     blockData.SW_UNIQUE_ID,
                     mostRecentBlockHash,
                     requiredSignatures,
@@ -98,16 +98,16 @@ class DAOTransferFundsHelper {
      */
     fun transferFunds(
         myPeer: Peer,
-        walletData: SWJoinBlockTD,
+        walletData: JoinDoaData,
         walletBlockData: TrustChainTransaction,
-        blockData: SWTransferFundsAskBlockTD,
-        responses: List<SWResponseSignatureBlockTD>,
+        blockData: ProposeUpdateData,
+        responses: List<VoteYesData>,
         receiverAddress: String,
         paymentAmount: Long,
         context: Context,
         activity: Activity
     ) {
-        val oldWalletBlockData = SWTransferDoneTransactionData(walletBlockData)
+        val oldWalletBlockData = UpdateAcceptedTransactionData(walletBlockData)
         val oldTransactionSerialized = blockData.SW_TRANSACTION_SERIALIZED
 
         val walletManager = WalletManagerAndroid.getInstance()
@@ -158,15 +158,15 @@ class DAOTransferFundsHelper {
      */
     private fun broadcastTransferFundSuccessful(
         myPeer: Peer,
-        walletData: SWJoinBlockTD,
-        oldBlockData: SWTransferDoneTransactionData,
+        walletData: JoinDoaData,
+        oldBlockData: UpdateAcceptedTransactionData,
         serializedTransaction: String
     ) {
-        val newData = SWTransferDoneTransactionData(oldBlockData.jsonData)
+        val newData = UpdateAcceptedTransactionData(oldBlockData.jsonData)
         newData.setTransactionSerialized(serializedTransaction)
 
         val refreshDaoBlock =
-            SWJoinBlockTransactionData(
+            JoinDaoTransactionData(
                 walletData.SW_ENTRANCE_FEE,
                 serializedTransaction,
                 walletData.SW_VOTING_THRESHOLD,
@@ -191,13 +191,13 @@ class DAOTransferFundsHelper {
         fun transferFundsBlockReceived(
             oldTransactionSerialized: String,
             block: TrustChainBlock,
-            transferBlock: SWTransferDoneBlockTD,
+            transferBlock: UpdateAcceptedData,
             myPublicKey: ByteArray,
             votedInFavor: Boolean,
             context: Context
         ) {
             val trustchain = TrustChainHelper(IPv8Android.getInstance().getOverlay() ?: return)
-            val blockData = SWTransferFundsAskTransactionData(block.transaction).getData()
+            val blockData = ProposeUpdateTransactionData(block.transaction).getData()
 
             Log.i("Coin", "Signature request for transfer funds: ${blockData.SW_RECEIVER_PK}, me: ${myPublicKey.toHex()}")
 
@@ -227,7 +227,7 @@ class DAOTransferFundsHelper {
 
             if (votedInFavor) {
                 val agreementData =
-                    SWResponseSignatureTransactionData(
+                    VoteYesTransactionData(
                         blockData.SW_UNIQUE_ID,
                         blockData.SW_UNIQUE_PROPOSAL_ID,
                         signatureSerialized,
@@ -242,7 +242,7 @@ class DAOTransferFundsHelper {
                 )
             } else {
                 val negativeResponseData =
-                    SWResponseNegativeSignatureTransactionData(
+                    VoteNoTransactionData(
                         blockData.SW_UNIQUE_ID,
                         blockData.SW_UNIQUE_PROPOSAL_ID,
                         signatureSerialized,

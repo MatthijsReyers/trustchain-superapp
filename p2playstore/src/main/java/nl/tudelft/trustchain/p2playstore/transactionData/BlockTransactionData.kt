@@ -1,9 +1,9 @@
-package nl.tudelft.trustchain.p2playstore.sharedWallet
+package nl.tudelft.trustchain.p2playstore.transactionData
 
 import com.google.gson.JsonObject
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 
-abstract class SWBlockTransactionData(var jsonData: JsonObject, val blockType: String) {
+abstract class BlockTransactionData(var jsonData: JsonObject, val blockType: String) {
     fun getJsonString(): String {
         return jsonData.toString()
     }
