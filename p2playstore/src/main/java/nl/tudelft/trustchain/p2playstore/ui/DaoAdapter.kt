@@ -46,8 +46,14 @@ class DaoAdapter(
                 binding.appIcon.setImageResource(iconFromIconId(daoBlock.transaction["iconIndex"]))
 
                 itemView.setOnClickListener {
-                    Log.d("DaoAdapter", "ItemView clicked: Triggering listener.onItemClick")
-                    listener?.onItemClick(daoBlock)
+                    android.util.Log.d("DaoAdapter", "DAO clicked: ${data.SW_UNIQUE_ID}")
+
+                    // Navigate to DAO details with block ID
+                    val bundle = Bundle().apply {
+                        putByteArray("publicKey", daoBlock.publicKey)
+                        putInt("sequenceNumber", daoBlock.sequenceNumber.toInt())
+                    }
+                    itemView.findNavController().navigate(R.id.action_homeFragment_to_daoDetailsFragment, bundle)
                 }
 
                 itemView.isClickable = true
