@@ -1,10 +1,13 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
+import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
+import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.ItemAppBinding
 import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
@@ -53,7 +56,7 @@ class DaoAdapter(
                         putByteArray("publicKey", daoBlock.publicKey)
                         putInt("sequenceNumber", daoBlock.sequenceNumber.toInt())
                     }
-                    itemView.findNavController().navigate(R.id.action_homeFragment_to_daoDetailsFragment, bundle)
+                    itemView.findNavController().navigate(R.id.action_homeFragment_to_appDetails, bundle)
                 }
 
                 itemView.isClickable = true
