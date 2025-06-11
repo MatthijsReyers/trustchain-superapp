@@ -97,6 +97,5 @@
             tools:listitem="@layout/item_app" >
 
         </androidx.recyclerview.widget.RecyclerView>
-
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

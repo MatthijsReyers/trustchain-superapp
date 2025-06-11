@@ -3,6 +3,7 @@ package nl.tudelft.trustchain.p2playstore
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 /**
@@ -10,7 +11,7 @@ import org.junit.Test
  */
 class MagnetUtilsTest {
     @Test
-    fun parseMagnet_isCorrect() {
+    fun parseMagnet_real_link() {
         val magnetUri = "magnet:?xt=urn:btih:9f65cf30a02d654151bd26108a6fe91f7c000409" +
             "&dn=test-app.apk" +
             "&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce" +
@@ -52,11 +53,74 @@ class MagnetUtilsTest {
 
         val magnet = MagnetUtils.parseMagnet(magnetUri)
 
+        assertEquals(magnetUri, magnet.raw)
         assertEquals("9f65cf30a02d654151bd26108a6fe91f7c000409", magnet.infoHash)
         assertEquals("test-app.apk", magnet.displayName)
         assertEquals(36, magnet.trackers.size) // Validate total number of trackers
         assertEquals("udp://tracker.opentrackr.org:1337/announce", magnet.trackers[0])
         assertEquals("http://tracker.opentrackr.org:1337/announce", magnet.trackers[1])
+    }
+
+    @Test
+    fun parseMagnet_mock_link() {
+        val magnetUri = "magnet:?xt=urn:btih:1234567890abcdef1234567890abcdef12345678" +
+            "&dn=mock-app.apk" +
+            "&xl=987654321" +
+            "&tr=udp%3A%2F%2Ftracker.mock.com%3A1337%2Fannounce" +
+            "&ws=https%3A%2F%2Fexample.com%2Ffile.apk" +
+            "&as=https%3A%2F%2Ffallback.example.com%2Ffile.apk" +
+            "&xs=http%3A%2F%2Fclient.mock.net%3A1234%2Furi-res%2FN2R%3Furn%3Asha1%3AFILEHASH123" +
+            "&kt=example+search+keywords" +
+            "&mt=http%3A%2F%2Fexample.org%2Fmanifest.rss" +
+            "&so=1,3,5-7,9" +
+            "&x.pe=192.168.1.10%3A6881"
+
+        val magnet = MagnetUtils.parseMagnet(magnetUri)
+
+        assertEquals(magnetUri, magnet.raw)
+        assertEquals("1234567890abcdef1234567890abcdef12345678", magnet.infoHash)
+        assertEquals("mock-app.apk", magnet.displayName)
+        assertEquals(987654321L, magnet.fileSize)
+
+        assertEquals(1, magnet.trackers.size)
+        assertEquals("udp://tracker.mock.com:1337/announce", magnet.trackers[0])
+
+        assertEquals(1, magnet.webSeeds.size)
+        assertEquals("https://example.com/file.apk", magnet.webSeeds[0])
+
+        assertEquals(1, magnet.acceptableSources.size)
+        assertEquals("https://fallback.example.com/file.apk", magnet.acceptableSources[0])
+
+        assertEquals(1, magnet.exactSources.size)
+        assertEquals("http://client.mock.net:1234/uri-res/N2R?urn:sha1:FILEHASH123", magnet.exactSources[0])
+
+        assertEquals(3, magnet.keywordTopic.size)
+        assertEquals("example", magnet.keywordTopic[0])
+
+        assertEquals("http://example.org/manifest.rss", magnet.manifestTopic)
+
+        assertEquals(listOf(1..1, 3..3, 5..7, 9..9), magnet.selectOnly)
+
+        assertEquals(1, magnet.peerEndpoints.size)
+        assertEquals("192.168.1.10:6881", magnet.peerEndpoints[0])
+    }
+
+    @Test
+    fun parseMagnet_malformed_link() {
+        val malformedMagnetUri = "magnet:?dn=no_xt_parameter"
+
+        assertThrows(IllegalArgumentException::class.java) {
+            MagnetUtils.parseMagnet(malformedMagnetUri)
+        }
+    }
+
+    @Test
+    fun parseMagnet_invalid_scheme() {
+        val invalidSchemeUri = "http://example.com/?xt=urn:btih:1234567890abcdef1234567890abcdef12345678"
+
+        assertThrows(IllegalArgumentException::class.java) {
+            MagnetUtils.parseMagnet(invalidSchemeUri)
+        }
     }
 }
 
