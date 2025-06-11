@@ -222,7 +222,7 @@ class TrustChainApplication : Application() {
         )
 
         trustchain.addListener(
-            P2pStoreCommunity.SIGNATURE_ASK_BLOCK,
+            P2pStoreCommunity.JOIN_REQUEST_BLOCK,
             object : BlockListener {
                 override fun onBlockReceived(block: TrustChainBlock) {
                     Log.d(

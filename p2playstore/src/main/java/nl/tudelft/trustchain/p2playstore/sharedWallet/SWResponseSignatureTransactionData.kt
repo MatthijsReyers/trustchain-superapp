@@ -15,7 +15,7 @@ data class SWResponseSignatureBlockTD(
 
 class SWResponseSignatureTransactionData(data: JsonObject) : SWBlockTransactionData(
     data,
-    P2pStoreCommunity.SIGNATURE_AGREEMENT_BLOCK
+    P2pStoreCommunity.VOTE_YES_BLOCK
 ) {
     fun getData(): SWResponseSignatureBlockTD {
         return Gson().fromJson(getJsonString(), SWResponseSignatureBlockTD::class.java)

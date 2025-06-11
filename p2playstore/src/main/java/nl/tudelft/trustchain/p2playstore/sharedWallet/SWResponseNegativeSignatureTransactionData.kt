@@ -15,7 +15,7 @@ data class SWResponseNegativeSignatureBlockTD(
 
 class SWResponseNegativeSignatureTransactionData(data: JsonObject) : SWBlockTransactionData(
     data,
-    P2pStoreCommunity.SIGNATURE_AGREEMENT_NEGATIVE_BLOCK
+    P2pStoreCommunity.VOTE_NO_BLOCK
 ) {
     fun getData(): SWResponseNegativeSignatureBlockTD {
         return Gson().fromJson(getJsonString(), SWResponseNegativeSignatureBlockTD::class.java)

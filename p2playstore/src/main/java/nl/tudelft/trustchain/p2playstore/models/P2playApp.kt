@@ -63,7 +63,7 @@ class P2playApp(val block: TrustChainBlock) {
      * already finished.
      */
     fun getDaoJoinRequests(): List<DaoJoinRequest> {
-        val blocks = trustChain.database.getBlocksWithType(P2pStoreCommunity.SIGNATURE_ASK_BLOCK)
+        val blocks = trustChain.database.getBlocksWithType(P2pStoreCommunity.JOIN_REQUEST_BLOCK)
         return blocks
             .filter { b ->
                 val data = SWSignatureAskTransactionData(b.transaction).getData()
