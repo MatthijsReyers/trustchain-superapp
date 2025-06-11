@@ -28,7 +28,7 @@ import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTD
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTransactionData
 import nl.tudelft.trustchain.p2playstore.blockdata.VotingPollHelper
-import nl.tudelft.trustchain.p2playstore.coin.WalletManagerAndroid
+import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.P2PlayStoreMainActivity
