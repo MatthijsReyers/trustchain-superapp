@@ -74,6 +74,25 @@ class AppDetails : BaseFragment() {
         return this.downloadProgress != null && this.downloadProgress as Int >= 100
     }
 
+    override fun onCreate(bundle: Bundle?) {
+        super.onCreate(bundle)
+
+        // The previous fragment (home) tells us which block/app/version to show
+        val args = this.requireArguments();
+        val publicKey = args.getByteArray("publicKey")!!
+        val sequenceNumber = args.getInt("sequenceNumber").toUInt()
+
+        // Actually retrieve the block
+        val community = this.getTrustChainCommunity()
+        this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
+        this.daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
+
+        torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
+        this.downloadProgress = torrentManager.downloadProgress(this.daoBlock);
+
+        this.setupTorrentDownloadStatus()
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -86,55 +105,30 @@ class AppDetails : BaseFragment() {
     @RequiresApi(Build.VERSION_CODES.S)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        val blockId = arguments?.getString("blockId")
-        if (blockId != null) {
-            loadDaoDetails(blockId)
+        try {
+            lifecycleScope.launch {
+                loadDaoDetails()
+            }
             setupClickListeners()
-        } else {
-            Log.e("DaoDetailsFragment", "No block ID provided in arguments")
-            Toast.makeText(context, "Error: Missing DAO information.", Toast.LENGTH_SHORT).show()
+        }
+        catch (e: Throwable) {
+            Log.e("DaoDetailsFragment", "Error loading DAO details: ${e.message}")
+            Toast.makeText(context, "Error loading DAO details.", Toast.LENGTH_SHORT).show()
             findNavController().navigateUp()
         }
     }
 
-
-    private fun loadDaoDetails(blockId: String) {
-        lifecycleScope.launch {
-            try {
-                val block = withContext(Dispatchers.IO) {
-                    val parts = blockId.split(".")
-                    if (parts.size != 2) throw IllegalArgumentException("Invalid block ID format: $blockId")
-                    val publicKey = parts[0].hexToBytes()
-                    val sequenceNumber = parts[1].toUInt()
-                    getTrustChainCommunity().database.get(publicKey, sequenceNumber)
-                }
-                if (block != null) {
-                    daoBlock = block
-                    daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
-                    torrentManager = (requireActivity() as P2PlayStoreMainActivity).torrentManager
-                    downloadProgress = torrentManager.downloadProgress(daoBlock)
-                    setupTorrentDownloadStatus()
-                    setupDaoDetailsUI()
-                    checkMembership()
-                    updateUIBasedOnMembership()
-                    updateDownloadButton()
-                    loadRecentVotingPoll()
-                    loadLatestPendingFeatureRequest()
-                    loadLatestApprovedUpdate()
-                    setupClickListeners()
-                } else {
-                    Log.e("DaoDetailsFragment", "DAO block not found for ID: $blockId")
-                    Toast.makeText(context, "Error: DAO information not found.", Toast.LENGTH_SHORT).show()
-                    findNavController().navigateUp()
-                }
-            } catch (e: Exception) {
-                Log.e("DaoDetailsFragment", "Error loading DAO details: ${e.message}")
-                Toast.makeText(context, "Error loading DAO details.", Toast.LENGTH_SHORT).show()
-                findNavController().navigateUp()
-            }
-        }
+    private fun loadDaoDetails() {
+        setupDaoDetailsUI()
+        checkMembership()
+        updateUIBasedOnMembership()
+        updateDownloadButton()
+        loadRecentVotingPoll()
+        loadLatestPendingFeatureRequest()
+        loadLatestApprovedUpdate()
+        setupClickListeners()
     }
+
     private fun setupTorrentDownloadStatus() {
         val magnetLink = MagnetUtils.parseMagnet(this.daoBlock.transaction["magnetLink"] as String)
         this.downloadProgress = torrentManager.downloadProgress(this.daoBlock);
