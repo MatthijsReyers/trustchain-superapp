@@ -720,17 +720,14 @@ class P2pStoreCommunity : Community() {
 
 
     companion object {
-        // Default maximum wait timeout for bitcoin transaction broadcasts in seconds
-        const val DEFAULT_BITCOIN_MAX_TIMEOUT: Long = 10
-
         // Block type for join DAO blocks
-        const val JOIN_BLOCK = "P2P_v1DAO_JOIN"
-
-        // Block type for transfer funds (from a DAO)
-        const val TRANSFER_FINAL_BLOCK = "P2P_v1DAO_TRANSFER_FINAL"
+        const val JOIN_BLOCK = "P2PLAYSTORE_JOIN_DAO"
 
         // Block type for basic signature requests
         const val SIGNATURE_ASK_BLOCK = "P2P_v1DAO_ASK_SIGNATURE"
+
+        // Block type for transfer funds (from a DAO)
+        const val TRANSFER_FINAL_BLOCK = "P2P_v1DAO_TRANSFER_FINAL"
 
         // Block type for transfer funds signature requests
         const val TRANSFER_FUNDS_ASK_BLOCK = "P2P_v1DAO_TRANSFER_ASK_SIGNATURE"
@@ -742,9 +739,5 @@ class P2pStoreCommunity : Community() {
         const val SIGNATURE_AGREEMENT_NEGATIVE_BLOCK = "P2P_v1DAO_SIGNATURE_AGREEMENT_NEGATIVE"
 
         const val FEATURE_REQUEST_BLOCK = "feature_request"
-
-        const val FEATURE_SOLUTION_BLOCK = "feature_solution"
-
-        const val FEATURE_VOTE_BLOCK = "feature_vote"
     }
 }
