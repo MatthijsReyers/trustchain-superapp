@@ -11,7 +11,7 @@ import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 
-class P2playApp(val block: TrustChainBlock) {
+class P2PlayStoreApp(val block: TrustChainBlock) {
     private val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
 
     val daoData = JoinDaoTransactionData(block.transaction).getData()

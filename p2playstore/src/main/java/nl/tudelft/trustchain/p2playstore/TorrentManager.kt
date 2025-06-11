@@ -10,9 +10,8 @@ import com.frostwire.jlibtorrent.alerts.TorrentFinishedAlert
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.TORRENT_EXTENSION
-import nl.tudelft.trustchain.p2playstore.models.P2playApp
+import nl.tudelft.trustchain.p2playstore.models.P2PlayStoreApp
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import java.io.File
@@ -77,7 +76,7 @@ class TorrentManager(cacheDir: File) {
     /**
      * Checks if the torrent for the magnetlink of this app version has finished downloading.
      */
-    fun downloadProgress(app: P2playApp): Int? {
+    fun downloadProgress(app: P2PlayStoreApp): Int? {
         val magnetLink = MagnetUtils.parseMagnet(app.block.transaction["magnetLink"] as String)
         val info = this.findTorrentInfo(magnetLink)
         try {
@@ -199,7 +198,7 @@ class TorrentManager(cacheDir: File) {
     /**
      * Downloads the specific version of the app described by the given block.
      */
-    fun downloadApp(app: P2playApp) {
+    fun downloadApp(app: P2PlayStoreApp) {
         val magnetLink = MagnetUtils.parseMagnet(app.block.transaction["magnetLink"] as String)
 
         Log.d("P2P.TorrentManager", "Downloading app: ${magnetLink.infoHash}")

@@ -16,7 +16,7 @@ import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTD
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTransactionData
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureVoteTD
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureVoteTransactionData
-import nl.tudelft.trustchain.p2playstore.models.P2playApp
+import nl.tudelft.trustchain.p2playstore.models.P2PlayStoreApp
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
@@ -179,7 +179,7 @@ class P2pStoreCommunity : Community() {
      * Searches all known parts of the trust chain for P2PlayStore apps, always returning the
      * latest version of each app inside this user's database.
      */
-    fun discoverAllApps(): List<P2playApp> {
+    fun discoverAllApps(): List<P2PlayStoreApp> {
         val joinBlocks = getTrustChainCommunity().database.getBlocksWithType(JOIN_BLOCK)
         val updateBlocks = getTrustChainCommunity().database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
         val blocks = joinBlocks + updateBlocks
@@ -200,10 +200,10 @@ class P2pStoreCommunity : Community() {
                     .maxByOrNull { b -> b.insertTime!! }
             }
 
-        return latestBlocks.map { b -> P2playApp(b!!) }
+        return latestBlocks.map { b -> P2PlayStoreApp(b!!) }
     }
 
-    fun discoverMyApps(): List<P2playApp> {
+    fun discoverMyApps(): List<P2PlayStoreApp> {
         return this.discoverAllApps().filter { app -> app.isDaoMember() }
     }
 

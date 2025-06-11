@@ -7,19 +7,19 @@ import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.ItemAppBinding
-import nl.tudelft.trustchain.p2playstore.models.P2playApp
+import nl.tudelft.trustchain.p2playstore.models.P2PlayStoreApp
 
-class DaoAdapter(private val daoList: List<P2playApp>)
+class DaoAdapter(private val daoList: List<P2PlayStoreApp>)
     : RecyclerView.Adapter<DaoAdapter.DaoViewHolder>()
 {
     interface OnItemClickListener {
-        fun onItemClick(app: P2playApp)
+        fun onItemClick(app: P2PlayStoreApp)
     }
 
     class DaoViewHolder(private val binding: ItemAppBinding)
         : RecyclerView.ViewHolder(binding.root)
     {
-        fun bind(app: P2playApp) {
+        fun bind(app: P2PlayStoreApp) {
             binding.appName.text = app.getName()
             binding.appDeveloper.text = "${app.getDoaMemberCount()} members"
             binding.appEntranceFee.text = "Fee: ${app.getEntranceFee()}"

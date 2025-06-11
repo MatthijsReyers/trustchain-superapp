@@ -36,7 +36,7 @@ import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestData
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.utils.DebugUtils.printToast
-import nl.tudelft.trustchain.p2playstore.models.P2playApp
+import nl.tudelft.trustchain.p2playstore.models.P2PlayStoreApp
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
@@ -53,7 +53,7 @@ class AppDetails : BaseFragment() {
     private lateinit var daoBlock: TrustChainBlock
     private lateinit var daoData: SWJoinBlockTD
 
-    private lateinit var app: P2playApp
+    private lateinit var app: P2PlayStoreApp
 
     /**
      * Integer between 0-100, this indicates how far along the torrent download for this apps
@@ -81,7 +81,7 @@ class AppDetails : BaseFragment() {
         this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
         this.daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
 
-        this.app = P2playApp(this.daoBlock)
+        this.app = P2PlayStoreApp(this.daoBlock)
 
         torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
         this.downloadProgress = torrentManager.downloadProgress(this.app);
