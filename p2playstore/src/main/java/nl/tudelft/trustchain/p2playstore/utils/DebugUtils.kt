@@ -2,7 +2,6 @@ package nl.tudelft.trustchain.p2playstore.utils
 
 import android.content.Context
 import android.util.Log
-import android.widget.Toast
 import java.io.File
 
 object DebugUtils {
@@ -38,12 +37,5 @@ object DebugUtils {
                 Log.d("P2P", "File: $file")
             }
         }
-    }
-
-    /**
-     * Display a short message on the screen (mainly for debugging purposes).
-     */
-    fun printToast(applicationContext: Context, s: String) {
-        Toast.makeText(applicationContext, s, Toast.LENGTH_LONG).show()
     }
 }
