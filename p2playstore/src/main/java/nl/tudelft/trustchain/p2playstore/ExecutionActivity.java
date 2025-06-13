@@ -1,5 +1,6 @@
 package nl.tudelft.trustchain.p2playstore;
 
+import static nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast;
 import static nl.tudelft.trustchain.p2playstore.utils.ExtensionUtils.DATA_DOT_EXTENSION;
 import static nl.tudelft.trustchain.p2playstore.utils.ExtensionUtils.DEX_EXTENSION;
 
@@ -11,7 +12,6 @@ import android.os.Parcelable;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -62,7 +62,7 @@ public class ExecutionActivity extends AppCompatActivity {
             this.apkName = this.getIntent().getStringExtra(FILE_NAME);
             assert this.apkName != null;
         } else {
-            this.printToast("No APK name supplied");
+            printToast(this.getApplicationContext(), "No APK name supplied");
             return;
         }
 
@@ -96,7 +96,7 @@ public class ExecutionActivity extends AppCompatActivity {
         try {
             String mainFragmentClass = getMainFragmentClass(this.apkName);
             if (mainFragmentClass == null) {
-                printToast("MainFragment not found in APK.");
+                printToast(this.getApplicationContext(), "MainFragment not found in APK.");
                 return;
             }
 
@@ -117,7 +117,7 @@ public class ExecutionActivity extends AppCompatActivity {
 
             binding.llcontainer.addView(tmpLayout);
         } catch (Exception e) {
-            this.printToast(e.toString());
+            printToast(this.getApplicationContext(), e.toString());
             Log.i("personal", "Something went wrong");
         }
     }
@@ -147,7 +147,7 @@ public class ExecutionActivity extends AppCompatActivity {
             stream.close();
             p.recycle();
         } catch (IOException e) {
-            this.printToast(e.toString());
+            printToast(this.getApplicationContext(), e.toString());
         }
     }
 
@@ -198,12 +198,5 @@ public class ExecutionActivity extends AppCompatActivity {
             Log.w("personal", "Error opening " + path, e);
         }
         return null;
-    }
-
-    /**
-     * Display a short message on the screen (mainly for debugging purposes).
-     */
-    private void printToast(String s) {
-        Toast.makeText(this.getApplicationContext(), s, Toast.LENGTH_LONG).show();
     }
 }

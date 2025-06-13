@@ -35,8 +35,8 @@ import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestData
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
-import nl.tudelft.trustchain.p2playstore.utils.DebugUtils.printToast
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
