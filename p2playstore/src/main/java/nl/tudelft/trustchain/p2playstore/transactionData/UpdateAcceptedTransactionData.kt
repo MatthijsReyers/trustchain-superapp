@@ -7,15 +7,20 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 data class UpdateAcceptedData(
-    var SW_UNIQUE_ID: String,
+    override var DAO_ID: String,
     var SW_UNIQUE_PROPOSAL_ID: String,
     var SW_TRANSACTION_SERIALIZED: String,
     var SW_TRUSTCHAIN_PKS: ArrayList<String>,
     var SW_BITCOIN_PKS: ArrayList<String>,
     var SW_NONCE_PKS: ArrayList<String>,
     var SW_TRANSFER_FUNDS_AMOUNT: Long,
-    var SW_TRANSFER_FUNDS_TARGET_SERIALIZED: String
-)
+    var SW_TRANSFER_FUNDS_TARGET_SERIALIZED: String,
+    override var APP_NAME: String,
+    override var APP_DESCRIPTION: String,
+    override var APP_CATEGORY: String,
+    override var APP_ICON: Int,
+    override var APP_MAGNET_LINK: String
+) : AppMetaData
 
 class UpdateAcceptedTransactionData(data: JsonObject) : BlockTransactionData(
     data,
@@ -57,7 +62,12 @@ class UpdateAcceptedTransactionData(data: JsonObject) : BlockTransactionData(
         bitcoinPks: ArrayList<String>,
         noncePks: ArrayList<String>,
         transferFundsAddressSerialized: String,
-        uniqueProposalId: String = BlockUtils.randomUUID()
+        uniqueProposalId: String = BlockUtils.randomUUID(),
+        name: String,
+        description: String,
+        category: String,
+        icon: Int,
+        magnetLink: String,
     ) : this(
         BlockUtils.objectToJsonObject(
             UpdateAcceptedData(
@@ -68,7 +78,12 @@ class UpdateAcceptedTransactionData(data: JsonObject) : BlockTransactionData(
                 bitcoinPks,
                 noncePks,
                 satoshiAmount,
-                transferFundsAddressSerialized
+                transferFundsAddressSerialized,
+                name,
+                description,
+                category,
+                icon,
+                magnetLink,
             )
         )
     )

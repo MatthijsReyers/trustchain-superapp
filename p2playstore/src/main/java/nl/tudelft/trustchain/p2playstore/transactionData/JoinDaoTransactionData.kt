@@ -7,14 +7,19 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 data class JoinDoaData(
-    var SW_UNIQUE_ID: String,
+    override var DAO_ID: String,
     var SW_ENTRANCE_FEE: Long,
     var SW_TRANSACTION_SERIALIZED: String,
     var SW_VOTING_THRESHOLD: Int,
     var SW_TRUSTCHAIN_PKS: ArrayList<String>,
     var SW_BITCOIN_PKS: ArrayList<String>,
-    var SW_NONCE_PKS: ArrayList<String>
-)
+    var SW_NONCE_PKS: ArrayList<String>,
+    override var APP_NAME: String,
+    override var APP_DESCRIPTION: String,
+    override var APP_CATEGORY: String,
+    override var APP_ICON: Int,
+    override var APP_MAGNET_LINK: String
+) : AppMetaData
 
 class JoinDaoTransactionData(
     data: JsonObject,
@@ -56,6 +61,11 @@ class JoinDaoTransactionData(
         bitcoinPks: ArrayList<String>,
         noncePks: ArrayList<String>,
         uniqueId: String = BlockUtils.randomUUID(),
+        name: String,
+        description: String,
+        category: String,
+        icon: Int,
+        magnetLink: String,
     ) : this(
         BlockUtils.objectToJsonObject(
             JoinDoaData(
@@ -65,7 +75,12 @@ class JoinDaoTransactionData(
                 votingThreshold,
                 trustChainPks,
                 bitcoinPks,
-                noncePks
+                noncePks,
+                name,
+                description,
+                category,
+                icon,
+                magnetLink,
             )
         ),
     )

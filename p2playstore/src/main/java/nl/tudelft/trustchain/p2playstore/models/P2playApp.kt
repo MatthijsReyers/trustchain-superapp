@@ -7,56 +7,97 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.AppMetaData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateData
+import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
+import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
+import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 
 class P2playApp(val block: TrustChainBlock) {
     private val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
 
-    val daoData = JoinDaoTransactionData(block.transaction).getData()
+    val daoData: AppMetaData = when(block.type) {
+        P2pStoreCommunity.JOIN_BLOCK ->
+            JoinDaoTransactionData(block.transaction).getData()
+        P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK ->
+            UpdateAcceptedTransactionData(block.transaction).getData()
+        P2pStoreCommunity.PROPOSE_UPDATE_BLOCK ->
+            ProposeUpdateTransactionData(block.transaction).getData()
+        else -> throw Exception("P2playApp received wrong block type: $block.type")
+    }
 
     /**
-     * Unique identifier for the DAO that belongs to this app, this ID should remain consistent
-     * across different versions/updates of the app.
+     * Unique identifier for the DAO that belongs to this app, this ID remains the same across all
+     * different versions/updates of the app.
      */
-    val daoId = daoData.SW_UNIQUE_ID
+    val daoId = daoData.DAO_ID
 
-    fun getName(): String? {
-        return block.transaction["name"] as? String
+    val name: String get() = this.daoData.APP_NAME
+    val description: String get() = this.daoData.APP_DESCRIPTION
+    val category: String get() = this.daoData.APP_CATEGORY
+    val icon: Int get() = iconFromIconId(this.block.transaction["iconIndex"])
+    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(this.daoData.APP_MAGNET_LINK)
+
+    /**
+     * Unique number to identify a specific update/version of the app, note that these numbers are
+     * not incremental or anything so bigger does not mean newer.
+     */
+    val version: Int get() = this.block.hashNumber
+
+    private fun getSharedWalletPublicKeys(): ArrayList<String> {
+        if (block.type == P2pStoreCommunity.JOIN_BLOCK) {
+            return (daoData as JoinDoaData).SW_TRUSTCHAIN_PKS
+        }
+        if (block.type == P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK) {
+            return (daoData as JoinDoaData).SW_TRUSTCHAIN_PKS
+        }
+        val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
+        return data.SW_TRUSTCHAIN_PKS
     }
 
-    fun getDescription(): String {
-        return (block.transaction["description"] as? String) ?: ""
-    }
-
-    fun getCategory(): String? {
-        return block.transaction["category"] as? String
-    }
-
-    fun getIcon(): Int {
-        return iconFromIconId(block.transaction["iconIndex"])
-    }
-
-    fun getVersion(): Int {
-        return block.hashNumber
+    fun getDoaVoteThreshold(): Int {
+        if (block.type == P2pStoreCommunity.JOIN_BLOCK) {
+            return (daoData as JoinDoaData).SW_VOTING_THRESHOLD
+        }
+        val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
+        return data.SW_VOTING_THRESHOLD
     }
 
     /**
      * Returns the amount of members the DAO for this app has.
      */
     fun getDoaMemberCount(): Int {
-        return daoData.SW_TRUSTCHAIN_PKS.size
+        return this.getSharedWalletPublicKeys().size
     }
 
     /**
      * Returns the amount of members the DAO for this app has.
      */
     fun getEntranceFee(): Long {
-        return daoData.SW_ENTRANCE_FEE
+        if (block.type == P2pStoreCommunity.JOIN_BLOCK) {
+            return (daoData as JoinDoaData).SW_ENTRANCE_FEE
+        }
+        val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
+        return data.SW_ENTRANCE_FEE
     }
 
-
+    /**
+     * Gets the latest join block, this block should contain the latest update when it comes to the
+     * state of the shared bitcoin wallet.
+     */
+    private fun getLatestJoin(): TrustChainBlock {
+        return trustChain.database.getBlocksWithType(P2pStoreCommunity.JOIN_REQUEST_BLOCK)
+            .filter { b ->
+                val data = JoinRequestTransactionData(b.transaction).getData()
+                data.DAO_ID == this.daoId
+            }
+            .maxByOrNull { b -> b.insertTime!! }!!
+    }
 
     /**
      * Returns a list of all requests to join this app's DOA, including ones for which voting has
@@ -67,7 +108,7 @@ class P2playApp(val block: TrustChainBlock) {
         return blocks
             .filter { b ->
                 val data = JoinRequestTransactionData(b.transaction).getData()
-                data.SW_UNIQUE_ID == this.daoId
+                data.DAO_ID == this.daoId
             }
             .map { b -> DaoJoinRequest(b) }
     }
@@ -99,7 +140,7 @@ class P2playApp(val block: TrustChainBlock) {
      */
     fun isDaoMember(): Boolean {
         val myPublicKey = trustChain.myPeer.publicKey.keyToBin().toHex()
-        return daoData.SW_TRUSTCHAIN_PKS.contains(myPublicKey)
+        return this.getSharedWalletPublicKeys().contains(myPublicKey)
     }
 
     /**

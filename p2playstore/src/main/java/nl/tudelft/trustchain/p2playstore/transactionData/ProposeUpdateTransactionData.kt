@@ -5,9 +5,10 @@ import com.google.gson.JsonObject
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
+import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 
 data class ProposeUpdateData(
-    var SW_UNIQUE_ID: String,
+    override var DAO_ID: String,
     var SW_UNIQUE_PROPOSAL_ID: String,
     var SW_PREVIOUS_BLOCK_HASH: String,
     var SW_BITCOIN_PKS: List<String>,
@@ -15,8 +16,13 @@ data class ProposeUpdateData(
     var SW_TRANSFER_FUNDS_AMOUNT: Long,
     var SW_TRANSFER_FUNDS_TARGET_SERIALIZED: String,
     var SW_RECEIVER_PK: String,
-    var SW_TRANSACTION_SERIALIZED: String
-)
+    var SW_TRANSACTION_SERIALIZED: String,
+    override var APP_NAME: String,
+    override var APP_DESCRIPTION: String,
+    override var APP_CATEGORY: String,
+    override var APP_ICON: Int,
+    override var APP_MAGNET_LINK: String
+) : AppMetaData
 
 class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
     data,
@@ -35,7 +41,12 @@ class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
         transferFundsAddressSerialized: String,
         receiverPk: String,
         uniqueProposalId: String,
-        transactionSerialized: String
+        transactionSerialized: String,
+        name: String,
+        description: String,
+        category: String,
+        icon: Int,
+        magnetLink: String,
     ) : this(
         BlockUtils.objectToJsonObject(
             ProposeUpdateData(
@@ -47,7 +58,12 @@ class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
                 satoshiAmount,
                 transferFundsAddressSerialized,
                 receiverPk,
-                transactionSerialized
+                transactionSerialized,
+                name,
+                description,
+                category,
+                icon,
+                magnetLink,
             )
         )
     )

@@ -78,8 +78,7 @@ class TorrentManager(cacheDir: File) {
      * Checks if the torrent for the magnetlink of this app version has finished downloading.
      */
     fun downloadProgress(app: P2playApp): Int? {
-        val magnetLink = MagnetUtils.parseMagnet(app.block.transaction["magnetLink"] as String)
-        val info = this.findTorrentInfo(magnetLink)
+        val info = this.findTorrentInfo(app.magnetLink)
         try {
             val tmp = this.sessionManager.find(info?.infoHash())
             if (tmp.status().isFinished) {
@@ -200,12 +199,10 @@ class TorrentManager(cacheDir: File) {
      * Downloads the specific version of the app described by the given block.
      */
     fun downloadApp(app: P2playApp) {
-        val magnetLink = MagnetUtils.parseMagnet(app.block.transaction["magnetLink"] as String)
-
-        Log.d("P2P.TorrentManager", "Downloading app: ${magnetLink.infoHash}")
+        Log.d("P2P.TorrentManager", "Downloading app: ${app.magnetLink.infoHash}")
 
         // Have we already downloaded this app?
-        var torrentInfo = this.findTorrentInfo(magnetLink);
+        var torrentInfo = this.findTorrentInfo(app.magnetLink);
         if (torrentInfo != null) {
             Log.d("P2P.TorrentManager", "Magnet link was already known")
             // TODO: Maybe check if it was actually finished or restart if there was a failure?
@@ -214,17 +211,17 @@ class TorrentManager(cacheDir: File) {
 
         this.waitFor100Nodes();
 
-        torrentInfo = this.downloadTorrentInfo(magnetLink)
+        torrentInfo = this.downloadTorrentInfo(app.magnetLink)
         this.torrentInfos.add(torrentInfo)
 
         // Create a .torrent file for this torrent so we can resume downloading/seeding after
         // restarting the app without needing to download the torrent info from someone else first.
         val entry: Entry = torrentInfo.toEntry()
-        val torrentFile = File(this.appsDirectory, "${magnetLink.infoHash}.torrent")
+        val torrentFile = File(this.appsDirectory, "${app.magnetLink.infoHash}.torrent")
         FileOutputStream(torrentFile).use { fos -> fos.write(entry.bencode()) }
 
         // Now finally actually start the download process.
-        val destDir = File(this.appsDirectory, magnetLink.infoHash)
+        val destDir = File(this.appsDirectory, app.magnetLink.infoHash)
         this.sessionManager.download(torrentInfo, destDir)
     }
 

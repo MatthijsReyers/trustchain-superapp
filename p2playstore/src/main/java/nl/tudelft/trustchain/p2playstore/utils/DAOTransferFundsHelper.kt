@@ -54,7 +54,7 @@ class DAOTransferFundsHelper {
 
         var askSignatureBlockData =
             ProposeUpdateTransactionData(
-                blockData.SW_UNIQUE_ID,
+                blockData.DAO_ID,
                 mostRecentBlockHash,
                 requiredSignatures,
                 satoshiAmount,
@@ -62,7 +62,12 @@ class DAOTransferFundsHelper {
                 receiverAddressSerialized,
                 "",
                 proposalID,
-                blockData.SW_TRANSACTION_SERIALIZED
+                blockData.SW_TRANSACTION_SERIALIZED,
+                blockData.APP_NAME,
+                blockData.APP_DESCRIPTION,
+                blockData.APP_DESCRIPTION,
+                blockData.APP_ICON,
+                blockData.APP_MAGNET_LINK,
             )
 
         for (swParticipantPk in blockData.SW_TRUSTCHAIN_PKS) {
@@ -72,7 +77,7 @@ class DAOTransferFundsHelper {
             )
             askSignatureBlockData =
                 ProposeUpdateTransactionData(
-                    blockData.SW_UNIQUE_ID,
+                    blockData.DAO_ID,
                     mostRecentBlockHash,
                     requiredSignatures,
                     satoshiAmount,
@@ -80,7 +85,12 @@ class DAOTransferFundsHelper {
                     receiverAddressSerialized,
                     swParticipantPk,
                     proposalID,
-                    blockData.SW_TRANSACTION_SERIALIZED
+                    blockData.SW_TRANSACTION_SERIALIZED,
+                    blockData.APP_NAME,
+                    blockData.APP_DESCRIPTION,
+                    blockData.APP_DESCRIPTION,
+                    blockData.APP_ICON,
+                    blockData.APP_MAGNET_LINK,
                 )
 
             val transaction = mapOf("message" to askSignatureBlockData.getJsonString())
@@ -173,7 +183,12 @@ class DAOTransferFundsHelper {
                 walletData.SW_TRUSTCHAIN_PKS,
                 walletData.SW_BITCOIN_PKS,
                 walletData.SW_NONCE_PKS,
-                walletData.SW_UNIQUE_ID
+                walletData.DAO_ID,
+                walletData.APP_NAME,
+                walletData.APP_DESCRIPTION,
+                walletData.APP_DESCRIPTION,
+                walletData.APP_ICON,
+                walletData.APP_MAGNET_LINK,
             )
 
         val transaction = mapOf("message" to refreshDaoBlock.getJsonString())
@@ -217,18 +232,18 @@ class DAOTransferFundsHelper {
                     walletManager.protocolECKey(),
                     Address.fromString(walletManager.params, blockData.SW_TRANSFER_FUNDS_TARGET_SERIALIZED),
                     blockData.SW_TRANSFER_FUNDS_AMOUNT,
-                    blockData.SW_UNIQUE_ID,
+                    blockData.DAO_ID,
                     context
                 )
 
-            val nonce = walletManager.addNewNonceKey(transferBlock.SW_UNIQUE_ID, context)
+            val nonce = walletManager.addNewNonceKey(transferBlock.DAO_ID, context)
 
             val signatureSerialized = signature.toByteArray().toHex()
 
             if (votedInFavor) {
                 val agreementData =
                     VoteYesTransactionData(
-                        blockData.SW_UNIQUE_ID,
+                        blockData.DAO_ID,
                         blockData.SW_UNIQUE_PROPOSAL_ID,
                         signatureSerialized,
                         walletManager.protocolECKey().publicKeyAsHex,
@@ -243,7 +258,7 @@ class DAOTransferFundsHelper {
             } else {
                 val negativeResponseData =
                     VoteNoTransactionData(
-                        blockData.SW_UNIQUE_ID,
+                        blockData.DAO_ID,
                         blockData.SW_UNIQUE_PROPOSAL_ID,
                         signatureSerialized,
                         walletManager.protocolECKey().publicKeyAsHex,

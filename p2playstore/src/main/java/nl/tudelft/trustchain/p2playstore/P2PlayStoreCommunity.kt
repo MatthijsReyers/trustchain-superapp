@@ -186,7 +186,7 @@ class P2pStoreCommunity : Community() {
 
         // Get a unique list of the shared wallet IDs of the app DAO's that we know about.
         val appIds = blocks
-            .map { b -> JoinDaoTransactionData(b.transaction).getData().SW_UNIQUE_ID }
+            .map { b -> JoinDaoTransactionData(b.transaction).getData().DAO_ID }
             .distinctBy { id -> id }
 
         val latestBlocks = appIds
@@ -194,13 +194,21 @@ class P2pStoreCommunity : Community() {
                 blocks
                     // Get all blocks with this app ID
                     .filter { b ->
-                        JoinDaoTransactionData(b.transaction).getData().SW_UNIQUE_ID == id
+                        JoinDaoTransactionData(b.transaction).getData().DAO_ID == id
                     }
                     // Find the newest block
                     .maxByOrNull { b -> b.insertTime!! }
             }
 
-        return latestBlocks.map { b -> P2playApp(b!!) }
+        return latestBlocks
+            .map { b ->
+                try { P2playApp(b!!) }
+                catch (err: Throwable) {
+                    Log.e("P2PlayStore", "Found invalid app block: $err")
+                    null
+                }
+            }
+            .filterNotNull()
     }
 
     fun discoverMyApps(): List<P2playApp> {
@@ -230,12 +238,12 @@ class P2pStoreCommunity : Community() {
         if (block.type != JOIN_BLOCK) {
             return null
         }
-        val walletId = JoinDaoTransactionData(block.transaction).getData().SW_UNIQUE_ID
+        val walletId = JoinDaoTransactionData(block.transaction).getData().DAO_ID
 
         return fromBlocks
                 .filter { it.type == JOIN_BLOCK } // make sure the blocks have the correct type!
                 .filter {
-                    JoinDaoTransactionData(it.transaction).getData().SW_UNIQUE_ID == walletId
+                    JoinDaoTransactionData(it.transaction).getData().DAO_ID == walletId
                 }
                 .maxByOrNull { it.timestamp.time }
     }
@@ -388,13 +396,13 @@ class P2pStoreCommunity : Community() {
         if (block.type == JOIN_REQUEST_BLOCK) {
             val data = JoinRequestTransactionData(block.transaction).getData()
             val signatures =
-                    ArrayList(fetchProposalResponses(data.SW_UNIQUE_ID, data.SW_UNIQUE_PROPOSAL_ID))
+                    ArrayList(fetchProposalResponses(data.DAO_ID, data.SW_UNIQUE_PROPOSAL_ID))
             return data.SW_SIGNATURES_REQUIRED <= signatures.size
         }
         if (block.type == PROPOSE_UPDATE_BLOCK) {
             val data = ProposeUpdateTransactionData(block.transaction).getData()
             val signatures =
-                    ArrayList(fetchProposalResponses(data.SW_UNIQUE_ID, data.SW_UNIQUE_PROPOSAL_ID))
+                    ArrayList(fetchProposalResponses(data.DAO_ID, data.SW_UNIQUE_PROPOSAL_ID))
             return data.SW_SIGNATURES_REQUIRED <= signatures.size
         }
 
@@ -508,7 +516,7 @@ class P2pStoreCommunity : Community() {
         val againstSignatures =
                 ArrayList(
                         fetchNegativeProposalResponses(
-                                data.SW_UNIQUE_ID,
+                                data.DAO_ID,
                                 data.SW_UNIQUE_PROPOSAL_ID
                         )
                 )
@@ -698,8 +706,6 @@ class P2pStoreCommunity : Community() {
             .filter { it.daoId == daoId }
             .groupBy { it.featureId } // group by request
     }
-
-
 
     companion object {
         // Used as genesis block to create a new App DAO, or to indicate that someone has
