@@ -32,8 +32,8 @@ import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.P2PlayStoreMainActivity
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.TorrentManager
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWResponseSignatureBlockTD
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskBlockTD
+import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestData
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
@@ -739,10 +739,11 @@ class AppDetails : BaseFragment() {
         }
         val trustChain = getTrustChainCommunity()
         trustChain.addListener(P2pStoreCommunity.JOIN_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.SIGNATURE_ASK_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.SIGNATURE_AGREEMENT_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.SIGNATURE_AGREEMENT_NEGATIVE_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.FEATURE_SOLUTION_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.JOIN_REQUEST_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.VOTE_YES_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.VOTE_NO_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.PROPOSE_UPDATE_BLOCK, listener);
+        trustChain.addListener(P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK, listener);
         trustChain.addListener(P2pStoreCommunity.FEATURE_REQUEST_BLOCK, listener);
     }
 
@@ -765,7 +766,7 @@ class AppDetails : BaseFragment() {
 
         val context = requireContext()
         // Wait and collect signatures
-        var signatures: List<SWResponseSignatureBlockTD>? = null
+        var signatures: List<VoteYesData>? = null
         while (signatures == null) {
             delay(10_000)
             signatures = collectJoinWalletResponses(proposeBlockData)
@@ -793,7 +794,7 @@ class AppDetails : BaseFragment() {
     /**
      * Collect the signatures of a join proposal
      */
-    private suspend fun collectJoinWalletResponses(blockData: SWSignatureAskBlockTD): List<SWResponseSignatureBlockTD>? {
+    private suspend fun collectJoinWalletResponses(blockData: JoinRequestData): List<VoteYesData>? {
         val responses =
             getP2pStoreCommunity().fetchProposalResponses(
                 blockData.SW_UNIQUE_ID,

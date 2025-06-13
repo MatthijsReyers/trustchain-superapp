@@ -15,7 +15,7 @@ data class FeatureRequestTD(
     val reward: Long,
     val daoId: String,
     val requesterPublicKey: String,
-    val status: String // e.g., "OPEN", "COMPLETED"
+    val status: String
 )
 
 class FeatureRequestTransactionData(data: JsonObject) : SWBlockTransactionData(
@@ -64,7 +64,7 @@ data class FeatureSolutionTD(
 
 class FeatureSolutionTransactionData(data: JsonObject) : SWBlockTransactionData(
     data,
-    P2pStoreCommunity.FEATURE_SOLUTION_BLOCK
+    P2pStoreCommunity.PROPOSE_UPDATE_BLOCK
 ) {
     constructor(transaction: TrustChainTransaction) : this(SWUtil.parseTransaction(transaction))
 
@@ -107,7 +107,7 @@ data class FeatureVoteTD(
 
 class FeatureVoteTransactionData(data: JsonObject) : SWBlockTransactionData(
     data,
-    P2pStoreCommunity.FEATURE_VOTE_BLOCK
+    P2pStoreCommunity.PROPOSE_UPDATE_BLOCK
 ) {
     constructor(transaction: TrustChainTransaction) : this(SWUtil.parseTransaction(transaction))
 

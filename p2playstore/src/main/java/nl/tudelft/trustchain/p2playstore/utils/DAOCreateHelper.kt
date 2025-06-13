@@ -7,7 +7,7 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.currencyii.util.taproot.TaprootUtil
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import org.bitcoinj.core.Coin
 import org.bitcoinj.core.ECKey
 
@@ -37,7 +37,7 @@ class DAOCreateHelper {
         category: String,
         threshold: Int,
         context: Context
-    ): SWJoinBlockTransactionData {
+    ): JoinDaoTransactionData {
         val walletManager = WalletManagerAndroid.getInstance()
         val (_, serializedTransaction) =
             walletManager.safeCreationAndSendGenesisWallet(
@@ -74,7 +74,7 @@ class DAOCreateHelper {
         category: String,
         votingThreshold: Int,
         context: Context
-    ): SWJoinBlockTransactionData {
+    ): JoinDaoTransactionData {
         val walletManager = WalletManagerAndroid.getInstance()
         val bitcoinPublicKey = walletManager.networkPublicECKeyHex()
         val trustChainPk = myPeer.publicKey.keyToBin()
@@ -82,7 +82,7 @@ class DAOCreateHelper {
         val noncePoint = nonceKey.second.getEncoded(true).toHex()
 
         val blockData =
-            SWJoinBlockTransactionData(
+            JoinDaoTransactionData(
                 entranceFee,
                 transactionSerialized,
                 votingThreshold,

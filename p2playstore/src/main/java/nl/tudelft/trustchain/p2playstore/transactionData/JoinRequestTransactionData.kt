@@ -1,11 +1,12 @@
-package nl.tudelft.trustchain.p2playstore.sharedWallet
+package nl.tudelft.trustchain.p2playstore.transactionData
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
-data class SWSignatureAskBlockTD(
+data class JoinRequestData (
     var SW_UNIQUE_ID: String,
     var SW_UNIQUE_PROPOSAL_ID: String,
     var SW_TRANSACTION_SERIALIZED: String,
@@ -14,12 +15,12 @@ data class SWSignatureAskBlockTD(
     var SW_RECEIVER_PK: String
 )
 
-open class SWSignatureAskTransactionData(data: JsonObject) : SWBlockTransactionData(
+open class JoinRequestTransactionData(data: JsonObject) : BlockTransactionData(
     data,
-    P2pStoreCommunity.SIGNATURE_ASK_BLOCK
+    P2pStoreCommunity.JOIN_REQUEST_BLOCK
 ) {
-    fun getData(): SWSignatureAskBlockTD {
-        return Gson().fromJson(getJsonString(), SWSignatureAskBlockTD::class.java)
+    fun getData(): JoinRequestData {
+        return Gson().fromJson(getJsonString(), JoinRequestData::class.java)
     }
 
     constructor(
@@ -30,8 +31,8 @@ open class SWSignatureAskTransactionData(data: JsonObject) : SWBlockTransactionD
         receiverPk: String,
         uniqueProposalId: String
     ) : this(
-        SWUtil.objectToJsonObject(
-            SWSignatureAskBlockTD(
+        BlockUtils.objectToJsonObject(
+            JoinRequestData(
                 uniqueId,
                 uniqueProposalId,
                 transactionSerialized,
@@ -42,5 +43,5 @@ open class SWSignatureAskTransactionData(data: JsonObject) : SWBlockTransactionD
         )
     )
 
-    constructor(transaction: TrustChainTransaction) : this(SWUtil.parseTransaction(transaction))
+    constructor(transaction: TrustChainTransaction) : this(BlockUtils.parseTransaction(transaction))
 }

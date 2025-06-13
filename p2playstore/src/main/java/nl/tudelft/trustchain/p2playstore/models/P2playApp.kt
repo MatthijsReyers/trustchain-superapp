@@ -7,14 +7,14 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTransactionData
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWJoinBlockTransactionData
-import nl.tudelft.trustchain.p2playstore.sharedWallet.SWSignatureAskTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 
 class P2playApp(val block: TrustChainBlock) {
     private val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
 
-    val daoData = SWJoinBlockTransactionData(block.transaction).getData()
+    val daoData = JoinDaoTransactionData(block.transaction).getData()
 
     /**
      * Unique identifier for the DAO that belongs to this app, this ID should remain consistent
@@ -63,10 +63,10 @@ class P2playApp(val block: TrustChainBlock) {
      * already finished.
      */
     fun getDaoJoinRequests(): List<DaoJoinRequest> {
-        val blocks = trustChain.database.getBlocksWithType(P2pStoreCommunity.SIGNATURE_ASK_BLOCK)
+        val blocks = trustChain.database.getBlocksWithType(P2pStoreCommunity.JOIN_REQUEST_BLOCK)
         return blocks
             .filter { b ->
-                val data = SWSignatureAskTransactionData(b.transaction).getData()
+                val data = JoinRequestTransactionData(b.transaction).getData()
                 data.SW_UNIQUE_ID == this.daoId
             }
             .map { b -> DaoJoinRequest(b) }

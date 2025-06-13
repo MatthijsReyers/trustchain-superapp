@@ -1,11 +1,12 @@
-package nl.tudelft.trustchain.p2playstore.sharedWallet
+package nl.tudelft.trustchain.p2playstore.transactionData
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
-data class SWResponseSignatureBlockTD(
+data class VoteYesData(
     var SW_UNIQUE_ID: String,
     var SW_UNIQUE_PROPOSAL_ID: String,
     var SW_SIGNATURE_SERIALIZED: String,
@@ -13,12 +14,12 @@ data class SWResponseSignatureBlockTD(
     var SW_NONCE: String
 )
 
-class SWResponseSignatureTransactionData(data: JsonObject) : SWBlockTransactionData(
+class VoteYesTransactionData(data: JsonObject) : BlockTransactionData(
     data,
-    P2pStoreCommunity.SIGNATURE_AGREEMENT_BLOCK
+    P2pStoreCommunity.VOTE_YES_BLOCK
 ) {
-    fun getData(): SWResponseSignatureBlockTD {
-        return Gson().fromJson(getJsonString(), SWResponseSignatureBlockTD::class.java)
+    fun getData(): VoteYesData {
+        return Gson().fromJson(getJsonString(), VoteYesData::class.java)
     }
 
     fun matchesProposal(
@@ -36,8 +37,8 @@ class SWResponseSignatureTransactionData(data: JsonObject) : SWBlockTransactionD
         bitcoinPk: String,
         nonce: String
     ) : this(
-        SWUtil.objectToJsonObject(
-            SWResponseSignatureBlockTD(
+        BlockUtils.objectToJsonObject(
+            VoteYesData(
                 uniqueId,
                 uniqueProposalId,
                 signatureSerialized,
@@ -47,5 +48,5 @@ class SWResponseSignatureTransactionData(data: JsonObject) : SWBlockTransactionD
         )
     )
 
-    constructor(transaction: TrustChainTransaction) : this(SWUtil.parseTransaction(transaction))
+    constructor(transaction: TrustChainTransaction) : this(BlockUtils.parseTransaction(transaction))
 }

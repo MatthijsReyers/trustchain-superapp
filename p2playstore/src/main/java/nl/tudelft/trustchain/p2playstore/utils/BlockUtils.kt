@@ -1,4 +1,4 @@
-package nl.tudelft.trustchain.p2playstore.sharedWallet
+package nl.tudelft.trustchain.p2playstore.utils
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -8,7 +8,7 @@ import java.util.*
 import kotlin.math.ceil
 import kotlin.math.min
 
-object SWUtil {
+object BlockUtils {
     /**
      * The minimal tx amount defined for creating transactions to avoid dusty transactions
      */
