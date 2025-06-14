@@ -20,11 +20,9 @@ import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.BlockListener
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTD
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTD
-import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTransactionData
 import nl.tudelft.trustchain.p2playstore.blockdata.VotingPollHelper
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
@@ -37,9 +35,6 @@ import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestData
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
-import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
-import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
-import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
 
 import java.io.File
 
