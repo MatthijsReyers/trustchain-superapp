@@ -185,22 +185,8 @@ class AppDetails : BaseFragment() {
     private fun onOpenApp() {
         val applicationContext = requireContext()
 
-        val rawMagnetLink = this.daoBlock.transaction["magnetLink"] as? String
-        if (rawMagnetLink.isNullOrBlank()) {
-            Log.e("P2P", "No magnet link found in transaction.")
-            printToast(applicationContext, "No magnet link connected to this DAO.")
-            return
-        }
-
-        val magnet: MagnetLink = try {
-            parseMagnet(rawMagnetLink)
-        } catch (e: IllegalArgumentException) {
-            Log.e("P2P", "Malformed magnet link: ${e.message}")
-            printToast(applicationContext, "Malformed magnet link connected to this DAO.")
-            return
-        }
-
-        val apkPath = "${applicationContext.cacheDir}/p2p-apps/${magnet.infoHash}/${magnet.displayName}"
+        val apkPath = "${applicationContext.cacheDir}/p2p-apps/${app.magnetLink.infoHash}" +
+            "/${app.magnetLink.displayName}"
         val apkFile = File(apkPath)
 
         if (!apkFile.exists() || !apkFile.isFile) {
