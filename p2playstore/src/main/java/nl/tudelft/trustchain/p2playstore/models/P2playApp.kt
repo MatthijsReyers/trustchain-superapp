@@ -131,6 +131,13 @@ class P2playApp(val block: TrustChainBlock) {
     }
 
     /**
+     * Returns the join request for this user if one exists.
+     */
+    fun getMyDaoJoinRequest(): DaoJoinRequest? {
+
+    }
+
+    /**
      * Returns a list of all feature requests for this app, including the ones for which an
      * update/implementation has already been proposed and accepted.
      */

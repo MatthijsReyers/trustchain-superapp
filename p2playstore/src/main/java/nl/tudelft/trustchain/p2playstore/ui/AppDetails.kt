@@ -132,12 +132,27 @@ class AppDetails : BaseFragment() {
                 // Join block can indicate a change in membership
                 this.updateUIBasedOnMembership()
             }
-            // ALl the other possible blocks are essentially just updates for various polls,
+            // ALl the other possible blocks are essentially just updates for various polls, so
+            // we'll update only those UI elements.
             else -> {
                 this.loadRecentVotingPoll()
                 this.loadLatestPendingFeatureRequest()
             }
         }
+    }
+
+    /**
+     * This function is responsible for creating a JOIN_DAO block for this user if they have
+     * collected enough votes on
+     */
+    fun onVotingUpdated(block: TrustChainBlock) {
+        // User is already a member? Do nothing.
+        if (this.app.isDaoMember()) return;
+
+        // User has not requested to join the DAO? Do nothing.
+        if (!this.app.isWaitingToJoin()) return;
+
+
     }
 
     /**
