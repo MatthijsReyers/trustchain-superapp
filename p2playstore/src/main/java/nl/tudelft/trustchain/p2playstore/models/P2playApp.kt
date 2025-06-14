@@ -131,10 +131,12 @@ class P2playApp(val block: TrustChainBlock) {
     }
 
     /**
-     * Returns the join request for this user if one exists.
+     * Returns the (latest) join request for this user if one exists.
+     *
+     * Latest, because the user might have tried and been denied to join the DAO previously.
      */
     fun getMyDaoJoinRequest(): DaoJoinRequest? {
-
+        
     }
 
     /**
