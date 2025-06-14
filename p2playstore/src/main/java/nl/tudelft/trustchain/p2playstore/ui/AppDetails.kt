@@ -134,12 +134,11 @@ class AppDetails : BaseFragment() {
     }
 
     private fun setupTorrentDownloadStatus() {
-        val magnetLink = MagnetUtils.parseMagnet(this.daoBlock.transaction["magnetLink"] as String)
         this.downloadProgress = torrentManager.downloadProgress(this.app);
         if (!this.downloadFinished()) {
             lifecycleScope.launch {
                 torrentManager.onStarted.collect { link ->
-                    if (link.infoHash == magnetLink.infoHash) {
+                    if (link.infoHash == app.magnetLink.infoHash) {
                         downloadProgress = 0
                         updateDownloadButton()
                     }
@@ -149,7 +148,7 @@ class AppDetails : BaseFragment() {
                 torrentManager.onProgress.collect { data ->
                     val link = data.first
                     val progress = data.second
-                    if (link.infoHash == magnetLink.infoHash) {
+                    if (link.infoHash == app.magnetLink.infoHash) {
                         downloadProgress = progress
                         updateDownloadButton()
                     }
@@ -157,7 +156,7 @@ class AppDetails : BaseFragment() {
             }
             lifecycleScope.launch {
                 torrentManager.onFinished.collect { link ->
-                    if (link.infoHash == magnetLink.infoHash) {
+                    if (link.infoHash == app.magnetLink.infoHash) {
                         downloadProgress = 100
                         updateDownloadButton()
                     }
@@ -167,12 +166,12 @@ class AppDetails : BaseFragment() {
     }
 
     private fun updateAppMetaData() {
-        binding.appName.text = this.app.getName() ?: "[Unknown]"
-        binding.appCategory.text = this.app.getCategory() ?: "General"
+        binding.appName.text = this.app.name
+        binding.appCategory.text = this.app.category
         binding.daoMembersCount.text = this.app.getDoaMemberCount().toString()
-        binding.appLatestVersion.text = this.app.getVersion().toString()
-        binding.appDescription.text = this.app.getDescription()
-        binding.daoIcon.setImageResource(this.app.getIcon())
+        binding.appLatestVersion.text = this.app.version.toString()
+        binding.appDescription.text = this.app.description
+        binding.daoIcon.setImageResource(this.app.icon)
     }
 
     private fun updateUIBasedOnMembership() {
@@ -507,22 +506,8 @@ class AppDetails : BaseFragment() {
     private fun onOpenApp() {
         val applicationContext = requireContext()
 
-        val rawMagnetLink = this.daoBlock.transaction["magnetLink"] as? String
-        if (rawMagnetLink.isNullOrBlank()) {
-            Log.e("P2P", "No magnet link found in transaction.")
-            printToast(applicationContext, "No magnet link connected to this DAO.")
-            return
-        }
-
-        val magnet: MagnetLink = try {
-            parseMagnet(rawMagnetLink)
-        } catch (e: IllegalArgumentException) {
-            Log.e("P2P", "Malformed magnet link: ${e.message}")
-            printToast(applicationContext, "Malformed magnet link connected to this DAO.")
-            return
-        }
-
-        val apkPath = "${applicationContext.cacheDir}/p2p-apps/${magnet.infoHash}/${magnet.displayName}"
+        val apkPath = "${applicationContext.cacheDir}/p2p-apps/${app.magnetLink.infoHash}" +
+            "/${app.magnetLink.displayName}"
         val apkFile = File(apkPath)
 
         if (!apkFile.exists() || !apkFile.isFile) {
@@ -783,7 +768,7 @@ class AppDetails : BaseFragment() {
             )
             // Add new nonceKey after joining a DAO
             WalletManagerAndroid.getInstance()
-                .addNewNonceKey(proposeBlockData.SW_UNIQUE_ID, context)
+                .addNewNonceKey(proposeBlockData.DAO_ID, context)
         } catch (t: Throwable) {
             Log.e("Coin", "Joining failed. ${t.message ?: "No further information"}.")
 //            setAlertText(t.message ?: "Unexpected error occurred. Try again")
@@ -797,7 +782,7 @@ class AppDetails : BaseFragment() {
     private suspend fun collectJoinWalletResponses(blockData: JoinRequestData): List<VoteYesData>? {
         val responses =
             getP2pStoreCommunity().fetchProposalResponses(
-                blockData.SW_UNIQUE_ID,
+                blockData.DAO_ID,
                 blockData.SW_UNIQUE_PROPOSAL_ID
             )
         Log.i(

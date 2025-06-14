@@ -7,13 +7,13 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 data class JoinRequestData (
-    var SW_UNIQUE_ID: String,
+    override var DAO_ID: String,
     var SW_UNIQUE_PROPOSAL_ID: String,
     var SW_TRANSACTION_SERIALIZED: String,
     var SW_PREVIOUS_BLOCK_HASH: String,
     var SW_SIGNATURES_REQUIRED: Int,
     var SW_RECEIVER_PK: String
-)
+) : BaseData
 
 open class JoinRequestTransactionData(data: JsonObject) : BlockTransactionData(
     data,

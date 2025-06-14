@@ -7,12 +7,12 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 data class VoteNoData(
-    var SW_UNIQUE_ID: String,
+    override var DAO_ID: String,
     var SW_UNIQUE_PROPOSAL_ID: String,
     var SW_SIGNATURE_SERIALIZED: String,
     var SW_BITCOIN_PK: String,
     var SW_NONCE: String
-)
+) : BaseData
 
 class VoteNoTransactionData(data: JsonObject) : BlockTransactionData(
     data,
@@ -27,7 +27,7 @@ class VoteNoTransactionData(data: JsonObject) : BlockTransactionData(
         proposalId: String
     ): Boolean {
         val data = getData()
-        return data.SW_UNIQUE_ID == walletId && data.SW_UNIQUE_PROPOSAL_ID == proposalId
+        return data.DAO_ID == walletId && data.SW_UNIQUE_PROPOSAL_ID == proposalId
     }
 
     constructor(

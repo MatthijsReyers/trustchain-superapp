@@ -73,7 +73,7 @@ class DAOCreateHelper {
         magnetLink: String,
         category: String,
         votingThreshold: Int,
-        context: Context
+        context: Context,
     ): JoinDaoTransactionData {
         val walletManager = WalletManagerAndroid.getInstance()
         val bitcoinPublicKey = walletManager.networkPublicECKeyHex()
@@ -88,18 +88,19 @@ class DAOCreateHelper {
                 votingThreshold,
                 arrayListOf(trustChainPk.toHex()),
                 arrayListOf(bitcoinPublicKey),
-                arrayListOf(noncePoint)
+                arrayListOf(noncePoint),
+                BlockUtils.randomUUID(),
+                name,
+                description,
+                category,
+                iconIndex,
+                magnetLink,
             )
 
-        walletManager.storeNonceKey(blockData.getData().SW_UNIQUE_ID, context, nonceKey.first.privKeyBytes.toHex())
+        walletManager.storeNonceKey(blockData.getData().DAO_ID, context, nonceKey.first.privKeyBytes.toHex())
 
-        val transaction = mapOf(
-            "message" to blockData.getJsonString(),
-            "iconIndex" to iconIndex,
-            "name" to name,
-            "description" to description,
-            "category" to category,
-            "magnetLink" to magnetLink,
+        val transaction: Map<String, String> = mapOf(
+            "message" to blockData.getJsonString()
         )
 
         community.createProposalBlock(

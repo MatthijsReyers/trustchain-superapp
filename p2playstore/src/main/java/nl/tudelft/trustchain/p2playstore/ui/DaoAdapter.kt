@@ -12,19 +12,15 @@ import nl.tudelft.trustchain.p2playstore.models.P2playApp
 class DaoAdapter(private val daoList: List<P2playApp>)
     : RecyclerView.Adapter<DaoAdapter.DaoViewHolder>()
 {
-    interface OnItemClickListener {
-        fun onItemClick(app: P2playApp)
-    }
-
     class DaoViewHolder(private val binding: ItemAppBinding)
         : RecyclerView.ViewHolder(binding.root)
     {
         fun bind(app: P2playApp) {
-            binding.appName.text = app.getName()
+            binding.appName.text = app.name
             binding.appDeveloper.text = "${app.getDoaMemberCount()} members"
             binding.appEntranceFee.text = "Fee: ${app.getEntranceFee()}"
-            binding.appVotingThreshold.text = "Threshold: ${app.daoData.SW_VOTING_THRESHOLD}%"
-            binding.appIcon.setImageResource(app.getIcon())
+            binding.appVotingThreshold.text = "Threshold: ${app.getDoaVoteThreshold()}%"
+            binding.appIcon.setImageResource(app.icon)
             itemView.setOnClickListener {
                 val bundle = Bundle().apply {
                     putByteArray("publicKey", app.block.publicKey)

@@ -54,7 +54,7 @@ class DAOJoinHelper {
 
         var askSignatureBlockData =
             JoinRequestTransactionData(
-                blockData.SW_UNIQUE_ID,
+                blockData.DAO_ID,
                 serializedTransaction,
                 mostRecentBlockHash,
                 requiredSignatures,
@@ -70,7 +70,7 @@ class DAOJoinHelper {
 
             askSignatureBlockData =
                 JoinRequestTransactionData(
-                    blockData.SW_UNIQUE_ID,
+                    blockData.DAO_ID,
                     serializedTransaction,
                     mostRecentBlockHash,
                     requiredSignatures,
@@ -186,7 +186,7 @@ class DAOJoinHelper {
         newData.setTransactionSerialized(serializedTransaction)
         newData.addNoncePk(
             walletManager.addNewNonceKey(
-                oldBlockData.getData().SW_UNIQUE_ID,
+                oldBlockData.getData().DAO_ID,
                 context
             ).second.getEncoded(true).toHex()
         )
@@ -239,17 +239,17 @@ class DAOJoinHelper {
                     joinBlock.SW_BITCOIN_PKS.map { ECKey.fromPublicOnly(it.hexToBytes()) },
                     joinBlock.SW_NONCE_PKS.map { ECKey.fromPublicOnly(it.hexToBytes()) },
                     walletManager.protocolECKey(),
-                    joinBlock.SW_UNIQUE_ID,
+                    joinBlock.DAO_ID,
                     context
                 )
 
-            val nonce = walletManager.addNewNonceKey(joinBlock.SW_UNIQUE_ID, context)
+            val nonce = walletManager.addNewNonceKey(joinBlock.DAO_ID, context)
 
             val signatureSerialized = signature.toByteArray().toHex()
             if (votedInFavor) {
                 val agreementData =
                     VoteYesTransactionData(
-                        blockData.SW_UNIQUE_ID,
+                        blockData.DAO_ID,
                         blockData.SW_UNIQUE_PROPOSAL_ID,
                         signatureSerialized,
                         walletManager.protocolECKey().publicKeyAsHex,
@@ -264,7 +264,7 @@ class DAOJoinHelper {
             } else {
                 val negativeResponseData =
                     VoteNoTransactionData(
-                        blockData.SW_UNIQUE_ID,
+                        blockData.DAO_ID,
                         blockData.SW_UNIQUE_PROPOSAL_ID,
                         signatureSerialized,
                         walletManager.protocolECKey().publicKeyAsHex,
