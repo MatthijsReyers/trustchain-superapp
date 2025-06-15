@@ -623,7 +623,7 @@ class P2pStoreCommunity : Community() {
                     null
                 }
             }
-            .filter { it.DAO_ID == daoId }
+            .distinctBy { it.DAO_ID == daoId }
     }
 
     /**
@@ -658,7 +658,7 @@ class P2pStoreCommunity : Community() {
                 null
             }
         }
-        .filter { it.DAO_ID == daoId }
+        .distinctBy { it.DAO_ID == daoId }
 }
 
 
@@ -896,10 +896,6 @@ companion object {
     const val VOTE_NO_BLOCK = "P2PLAYSTORE_VOTE_NO"
 
     // Used by members of the DAO to indicate that they would like a certain feature or bug
-    // fix, note that others do NOT vote on the contents of this block to indicate how much
-    // they want it or something. Other members can instead propose updates to the app in order
-    // to claim the bounty for the feature request and other users will vote on that update
-    // block.
     const val FEATURE_REQUEST_BLOCK = "P2PLAYSTORE_FEATURE_REQUEST"
 
     // Used to propose an update based on a requested feature, practically this an extension of
