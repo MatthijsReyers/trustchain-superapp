@@ -20,11 +20,9 @@ import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.BlockListener
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTD
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTD
-import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTransactionData
 import nl.tudelft.trustchain.p2playstore.blockdata.VotingPollHelper
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
@@ -37,9 +35,6 @@ import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestData
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
-import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
-import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
-import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
 
 import java.io.File
 
@@ -47,11 +42,9 @@ class AppDetails : BaseFragment() {
     private lateinit var torrentManager: TorrentManager
 
     private var _binding: FragmentAppDetailsBinding? = null
-    private val binding
-        get() = _binding!!
+    private val binding get() = _binding!!
 
     private lateinit var daoBlock: TrustChainBlock
-    private lateinit var daoData: SWJoinBlockTD
 
     private lateinit var app: P2playApp
 
@@ -79,14 +72,13 @@ class AppDetails : BaseFragment() {
         // Actually retrieve the block
         val community = this.getTrustChainCommunity()
         this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
-        this.daoData = SWJoinBlockTransactionData(daoBlock.transaction).getData()
-
         this.app = P2playApp(this.daoBlock)
 
         torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
         this.downloadProgress = torrentManager.downloadProgress(this.app);
 
         this.setupTorrentDownloadStatus()
+        this.setupChainListeners()
     }
 
     override fun onCreateView(
@@ -101,25 +93,20 @@ class AppDetails : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         try {
+            this.setupClickListeners()
+            this.updateAppMetaData()
+            this.updateDownloadButton()
             lifecycleScope.launch {
-                loadDaoDetails()
+                loadRecentVotingPoll()
+                loadLatestPendingFeatureRequest()
+                updateUIBasedOnMembership()
             }
-            setupClickListeners()
         }
         catch (e: Throwable) {
             Log.e("DaoDetailsFragment", "Error loading DAO details: ${e.message}")
             Toast.makeText(context, "Error loading DAO details.", Toast.LENGTH_SHORT).show()
             findNavController().navigateUp()
         }
-    }
-
-    private fun loadDaoDetails() {
-        updateAppMetaData()
-        updateUIBasedOnMembership()
-        updateDownloadButton()
-        loadRecentVotingPoll()
-        loadLatestPendingFeatureRequest()
-        loadLatestApprovedUpdate()
     }
 
     /**
@@ -129,10 +116,119 @@ class AppDetails : BaseFragment() {
     fun onChainUpdated(block: TrustChainBlock) {
         Log.d("P2pStore", "Chain update ${block.type}")
 
-        this.updateAppMetaData()
-        this.updateDownloadButton();
+        when (block.type) {
+            // Was a new version of the app released?
+            P2pStoreCommunity.JOIN_BLOCK, P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> {
+                this.daoBlock = block
+                this.app = P2playApp(this.daoBlock)
+                this.updateAppMetaData()
+                this.updateDownloadButton()
+
+                // Join block can indicate a change in membership
+                this.updateUIBasedOnMembership()
+            }
+            // ALl the other possible blocks are essentially just updates for various polls,
+            else -> {
+                this.loadRecentVotingPoll()
+                this.loadLatestPendingFeatureRequest()
+            }
+        }
     }
 
+    /**
+     * Called when the user presses the install button (which is only shown when the user is not
+     * yet in the app's DAO), effectively this means they will spend bitcoins to join the shared
+     * wallet, so we'll ask them for confirmation of that first.
+     */
+    private fun onInstallApp() {
+        val entranceFee = this.app.getEntranceFee()
+        val msg = "In order to download this app you must join its DAO and pay an enterance fee " +
+            "of $entranceFee Satoshi to the shared wallet."
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Are you sure?")
+            .setMessage(msg)
+            .setPositiveButton("Join DAO") { dialog, _ ->
+                dialog.dismiss()
+                onJoinDoa()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+    }
+
+    /**
+     * Called when the user presses the "restart download" button, which is only visible when they
+     * are a member of the app DAO, but the torrent download for the app has failed.
+     */
+    private fun onRestartDownload() {
+        lifecycleScope.launch {
+            downloadProgress = 0
+            updateDownloadButton()
+            torrentManager.downloadApp(app)
+            downloadProgress = torrentManager.downloadProgress(app)
+            updateDownloadButton()
+        }
+    }
+
+    /**
+     * Called when the user presses the "open" button, which is only shown when the user is a member
+     * of the app's DAO and has finished downloading the
+     */
+    private fun onOpenApp() {
+        val applicationContext = requireContext()
+
+        val apkPath = "${applicationContext.cacheDir}/p2p-apps/${app.magnetLink.infoHash}" +
+            "/${app.magnetLink.displayName}"
+        val apkFile = File(apkPath)
+
+        if (!apkFile.exists() || !apkFile.isFile) {
+            Log.e("P2P", "File not found or invalid: $apkFile")
+            printToast(applicationContext, "No APK found connected to this DAO.")
+            return
+        }
+
+        val intent = Intent(applicationContext, ExecutionActivity::class.java).apply {
+            putExtra("fileName", apkPath)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        try {
+            applicationContext.startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Log.e("P2P", "No activity found to handle intent for APK: $apkPath", e)
+            printToast(applicationContext, "Unable to open APK – app component not found.")
+        } catch (e: SecurityException) {
+            Log.e("P2P", "Security exception when launching APK: $apkPath", e)
+            printToast(applicationContext, "Permission denied to launch APK.")
+        } catch (e: Exception) {
+            Log.e("P2P", "Unexpected error launching APK: $apkPath", e)
+            printToast(applicationContext, "Something went wrong when opening the APK.")
+        }
+    }
+
+    /**
+     * Called when the user agrees to spend bitcoins needed to join the app's DAO.
+     */
+    private fun onJoinDoa() {
+        try {
+            lifecycleScope.launch {
+                joinSharedWalletClicked(daoBlock)
+                loadRecentVotingPoll()
+                loadLatestPendingFeatureRequest()
+                updateDownloadButton();
+            }
+        } catch (e: Exception) {
+            Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
+        }
+    }
+
+    /**
+     * Sets up the required event listeners to detect when the download state for the torrent
+     * changes so we can update the UI.
+     */
     private fun setupTorrentDownloadStatus() {
         this.downloadProgress = torrentManager.downloadProgress(this.app);
         if (!this.downloadFinished()) {
@@ -165,6 +261,9 @@ class AppDetails : BaseFragment() {
         }
     }
 
+    /**
+     * Updates all the basic app metadata that is contained in the trustchain block
+     */
     private fun updateAppMetaData() {
         binding.appName.text = this.app.name
         binding.appCategory.text = this.app.category
@@ -174,6 +273,9 @@ class AppDetails : BaseFragment() {
         binding.daoIcon.setImageResource(this.app.icon)
     }
 
+    /**
+     * Shows/hides/disables UI elements based on whether the user can even use them or not.
+     */
     private fun updateUIBasedOnMembership() {
         if (this.app.isDaoMember()) {
             binding.btnFeatureRequest.isEnabled = true
@@ -186,90 +288,6 @@ class AppDetails : BaseFragment() {
         }
     }
 
-    // This function finds the latest solution block that has met the voting threshold for its feature request.
-    private fun loadLatestApprovedUpdate() {
-        lifecycleScope.launch {
-            val maxRetries = 3
-            val retryDelayMillis = 1000L // 1 second delay
-
-            for (retry in 0..maxRetries) {
-                try {
-                    val daoUniqueId = daoData.SW_UNIQUE_ID
-
-                    // Get all feature requests for this DAO
-                    val featureRequests = withContext(Dispatchers.IO) {
-                        p2playStore.getFeatureRequestsForDao(daoUniqueId)
-                    }
-                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Found ${featureRequests.size} feature requests for DAO $daoUniqueId")
-                    // Get all solution blocks for this DAO
-                    val solutionBlocks = withContext(Dispatchers.IO) {
-                        p2playStore.getSolutionBlocksForDaoAndFeature(daoUniqueId)
-                    }
-                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Found ${solutionBlocks.size} solution blocks for DAO $daoUniqueId.")
-
-                    // Get all votes for this DAO
-                    val votes = withContext(Dispatchers.IO) {
-                        p2playStore.getVotesForSolution(daoUniqueId)
-                    }
-                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Found ${votes.size} votes for DAO $daoUniqueId.")
-
-
-                    val totalMembers = daoData.SW_TRUSTCHAIN_PKS.size
-                    val votingThreshold = daoData.SW_VOTING_THRESHOLD
-
-                    // Filter for approved solutions
-                    val approvedSolutionDataWithBlocks = solutionBlocks.mapNotNull { block ->
-                        try {
-                            val solutionData = FeatureSolutionTransactionData(block.transaction).getData()
-                            block to solutionData
-                        } catch (e: Exception) {
-                            Log.e("DaoDetailsFragment", "Failed to parse solution block in approved filter: ${e.message}")
-                            null
-                        }
-                    }.filter { (block, solution) ->
-                        // Find the corresponding feature request
-                        val correspondingRequest = featureRequests.find { it.featureId == solution.featureId }
-
-                        // Only consider solutions linked to a feature request
-                        if (correspondingRequest != null) {
-                            // Count votes for this specific solution
-                            val votesForSolution = votes.filter { it.solutionId == solution.solutionId }
-                            val yesVotes = votesForSolution.count { it.isYes }
-                            val votesNeeded = votingThreshold
-                            // An update is approved if YES votes meet the threshold
-                            yesVotes >= votesNeeded
-                        } else {
-                            false
-                        }
-                    }
-                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Found ${approvedSolutionDataWithBlocks.size} approved solutions with blocks for DAO $daoUniqueId.")
-                    // Sort by block timestamp descending and take the first one
-                    val latestApprovedSolutionWithBlock = approvedSolutionDataWithBlocks
-                        .sortedByDescending { it.first.timestamp.time }
-                        .firstOrNull()
-
-
-                    if (latestApprovedSolutionWithBlock != null) {
-                        val (block, solution) = latestApprovedSolutionWithBlock
-                        Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Latest approved solution found: ${solution.solutionId} (Feature ${solution.featureId}), Block Timestamp: ${block.timestamp.time}")
-                        // Update UI with latest approved version info
-                        // Set click listener for update button
-                        // Success, break out of retry loop
-                        return@launch
-
-                    } else {
-                        Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): No approved solutions found for DAO $daoUniqueId.")
-                    }
-                } catch (e: Exception) {
-                    Log.e("DaoDetailsFragment", "loadLatestApprovedUpdate (Attempt ${retry + 1}): Error loading latest approved update: ${e.message}")
-                }
-                if (retry < maxRetries) {
-                    Log.d("DaoDetailsFragment", "loadLatestApprovedUpdate: Retrying in ${retryDelayMillis}ms...")
-                }
-            }
-        }
-    }
-
     private fun loadRecentVotingPoll() {
         lifecycleScope.launch {
             val maxRetries = 3
@@ -277,7 +295,7 @@ class AppDetails : BaseFragment() {
 
             for (retry in 0..maxRetries) {
                 try {
-                    val daoUniqueId = daoData.SW_UNIQUE_ID
+                    val daoUniqueId = app.daoId
 
                     // Get all feature requests for this DAO
                     val featureRequests = withContext(Dispatchers.IO) {
@@ -308,8 +326,8 @@ class AppDetails : BaseFragment() {
                         val correspondingRequest = featureRequests.find { it.featureId == latestVotableSolution.featureId }
 
                         if (correspondingRequest != null) {
-                            val totalMembers = daoData.SW_TRUSTCHAIN_PKS.size
-                            val votingThreshold = daoData.SW_VOTING_THRESHOLD
+                            val totalMembers = app.getDoaMemberCount()
+                            val votingThreshold = app.getDoaVoteThreshold()
                             val myPublicKey = p2playStore.myPeer.publicKey.keyToBin().toHex()
                             val hasUserVoted = votes.any { it.voterPublicKey == myPublicKey }
                             val userVote = votes.find { it.voterPublicKey == myPublicKey }?.isYes
@@ -407,7 +425,7 @@ class AppDetails : BaseFragment() {
 
             for (retry in 0..maxRetries) {
                 try {
-                    val daoUniqueId = daoData.SW_UNIQUE_ID
+                    val daoUniqueId = app.daoId
 
                     val latestPendingRequest = withContext(Dispatchers.IO) {
                         p2playStore.fetchLatestPendingRequestBlock(daoUniqueId)
@@ -462,93 +480,6 @@ class AppDetails : BaseFragment() {
                     }
                 }
             }
-        }
-    }
-
-    /**
-     * Called when the user presses the install button (which is only shown when the user is not
-     * yet in the app's DAO), effectively this means they will spend bitcoins to join the shared
-     * wallet, so we'll ask them for confirmation of that first.
-     */
-    private fun onInstallApp() {
-        val entranceFee = daoData.SW_ENTRANCE_FEE
-        val msg = "In order to download this app you must join its DAO and pay an enterance fee " +
-            "of $entranceFee Satoshi to the shared wallet."
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Are you sure?")
-            .setMessage(msg)
-            .setPositiveButton("Join DAO") { dialog, _ ->
-                dialog.dismiss()
-                onJoinDoa()
-            }
-            .setNegativeButton("Cancel") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .create()
-            .show()
-    }
-
-    private fun onRestartDownload() {
-        lifecycleScope.launch {
-            downloadProgress = 0
-            updateDownloadButton()
-            torrentManager.downloadApp(app)
-            downloadProgress = torrentManager.downloadProgress(app)
-            updateDownloadButton()
-        }
-    }
-
-    /**
-     * Called when the user presses the "open" button, which is only shown when the user is a member
-     * of the app's DAO and has finished downloading the
-     */
-    private fun onOpenApp() {
-        val applicationContext = requireContext()
-
-        val apkPath = "${applicationContext.cacheDir}/p2p-apps/${app.magnetLink.infoHash}" +
-            "/${app.magnetLink.displayName}"
-        val apkFile = File(apkPath)
-
-        if (!apkFile.exists() || !apkFile.isFile) {
-            Log.e("P2P", "File not found or invalid: $apkFile")
-            printToast(applicationContext, "No APK found connected to this DAO.")
-            return
-        }
-
-        val intent = Intent(applicationContext, ExecutionActivity::class.java).apply {
-            putExtra("fileName", apkPath)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-
-        try {
-            applicationContext.startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            Log.e("P2P", "No activity found to handle intent for APK: $apkPath", e)
-            printToast(applicationContext, "Unable to open APK – app component not found.")
-        } catch (e: SecurityException) {
-            Log.e("P2P", "Security exception when launching APK: $apkPath", e)
-            printToast(applicationContext, "Permission denied to launch APK.")
-        } catch (e: Exception) {
-            Log.e("P2P", "Unexpected error launching APK: $apkPath", e)
-            printToast(applicationContext, "Something went wrong when opening the APK.")
-        }
-    }
-
-    /**
-     * Called when the user agrees to spend bitcoins to join the app's DAO.
-     */
-    private fun onJoinDoa() {
-        try {
-            lifecycleScope.launch {
-                joinSharedWalletClicked(daoBlock)
-                loadRecentVotingPoll()
-                loadLatestPendingFeatureRequest()
-                loadLatestApprovedUpdate()
-                updateDownloadButton();
-            }
-        } catch (e: Exception) {
-            Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
         }
     }
 
@@ -645,6 +576,9 @@ class AppDetails : BaseFragment() {
         }
     }
 
+    /**
+     * Sets up all the click event handlers for buttons on the page
+     */
     private fun setupClickListeners() {
         binding.installOpenBtn.setOnClickListener {
             if (this.app.isDaoMember()) {
@@ -665,7 +599,7 @@ class AppDetails : BaseFragment() {
                 val bundle =
                     Bundle().apply {
                         putString("blockId", daoBlock.blockId) // Pass DAO block ID
-                        putString("daoUniqueId", daoData.SW_UNIQUE_ID) // Pass DAO unique ID")
+                        putString("daoUniqueId", app.daoId) // Pass DAO unique ID")
                     }
                 findNavController()
                     .navigate(
@@ -683,7 +617,7 @@ class AppDetails : BaseFragment() {
                 val bundle =
                     Bundle().apply {
                         putString("blockId", daoBlock.blockId)
-                        putString("daoUniqueId", daoData.SW_UNIQUE_ID)
+                        putString("daoUniqueId", app.daoId)
                     }
                 findNavController()
                     .navigate(R.id.action_appDetailsFragment_to_allVotingPollsFragment, bundle)
@@ -695,8 +629,7 @@ class AppDetails : BaseFragment() {
             val bundle =
                 Bundle().apply {
                     putString("blockId", daoBlock.blockId)
-                    putString("daoUniqueId", daoData.SW_UNIQUE_ID)
-                    // putString("daoId", daoData.SW_UNIQUE_ID)
+                    putString("daoUniqueId", app.daoId)
                 }
             findNavController()
                 .navigate(R.id.action_appDetailsFragment_to_featureListFragment, bundle)
@@ -719,7 +652,6 @@ class AppDetails : BaseFragment() {
                 if (data.SW_UNIQUE_ID == app.daoId) {
                     onChainUpdated(block)
                 }
-
             }
         }
         val trustChain = getTrustChainCommunity()
@@ -802,7 +734,7 @@ class AppDetails : BaseFragment() {
             Bundle().apply {
                 putString("blockId", daoBlockId)
                 putString("solutionId", solutionId)
-                putString("daoUniqueId", daoData.SW_UNIQUE_ID)
+                putString("daoUniqueId", app.daoId)
             }
         findNavController()
             .navigate(R.id.action_appDetailsFragment_to_featureVotingFragment, bundle)
