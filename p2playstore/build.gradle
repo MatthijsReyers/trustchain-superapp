@@ -8,6 +8,10 @@ android {
     namespace 'nl.tudelft.trustchain.p2playstore'
     compileSdk 34
 
+    viewBinding {
+        enabled = true
+    }
+
     buildFeatures {
         viewBinding true
     }

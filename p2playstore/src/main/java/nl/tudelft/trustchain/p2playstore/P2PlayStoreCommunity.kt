@@ -41,9 +41,9 @@ class P2pStoreCommunity : Community() {
                 ?: throw IllegalStateException("TrustChainCommunity is not configured")
     }
 
-    private val daoCreateHelper = DAOCreateHelper()
-    private val daoJoinHelper = DAOJoinHelper()
-    private val daoTransferFundsHelper = DAOTransferFundsHelper()
+    val daoCreateHelper = DAOCreateHelper()
+    val daoJoinHelper = DAOJoinHelper()
+    val daoTransferFundsHelper = DAOTransferFundsHelper()
 
     /**
      * Create a bitcoin genesis wallet and broadcast the result on trust chain. The bitcoin
@@ -343,22 +343,7 @@ class P2pStoreCommunity : Community() {
             votedInFavor: Boolean,
             context: Context
     ) {
-        val latestHash =
-                JoinRequestTransactionData(block.transaction).getData().SW_PREVIOUS_BLOCK_HASH
-        val mostRecentSWBlock =
-                fetchLatestSharedWalletBlock(latestHash.hexToBytes())
-                        ?: throw IllegalStateException("Most recent DAO block not found")
-        val joinBlock = JoinDaoTransactionData(mostRecentSWBlock.transaction).getData()
-        val oldTransaction = joinBlock.SW_TRANSACTION_SERIALIZED
 
-        DAOJoinHelper.joinAskBlockReceived(
-                oldTransaction,
-                block,
-                joinBlock,
-                myPublicKey,
-                votedInFavor,
-                context
-        )
     }
 
     /**
