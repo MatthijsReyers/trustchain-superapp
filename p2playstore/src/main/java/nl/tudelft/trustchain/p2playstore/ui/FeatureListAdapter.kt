@@ -4,10 +4,10 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import nl.tudelft.trustchain.p2playstore.databinding.ItemFeatureRequestBinding
-import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTD
+import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestData
 
 class FeatureListAdapter(
-    private val onItemClick: (FeatureRequestTD, String) -> Unit
+    private val onItemClick: (FeatureRequestData, String) -> Unit
 ) : RecyclerView.Adapter<FeatureListAdapter.FeatureViewHolder>() {
 
     private var features = listOf<FeatureRequestWithSolutions>()
@@ -40,9 +40,9 @@ class FeatureListAdapter(
             val feature = item.featureRequest
             val solutions = item.solutions
 
-            binding.tvFeatureTitle.text = feature.title
-            binding.tvFeatureDescription.text = feature.description
-            binding.tvReward.text = "${feature.reward} sats"
+            binding.tvFeatureTitle.text = feature.FEATURE_TITLE
+            binding.tvFeatureDescription.text = feature.FEATURE_DESCRIPTION
+            binding.tvReward.text = "${feature.FEATURE_REWARD} sats"
             binding.tvSolutionCount.text = "${solutions.size} solution(s)"
 
             // Set status and button text based on solutions

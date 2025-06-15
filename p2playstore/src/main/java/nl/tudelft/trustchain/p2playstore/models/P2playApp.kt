@@ -11,7 +11,7 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
-import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.AppMetaData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
@@ -139,7 +139,7 @@ class P2playApp(val block: TrustChainBlock) {
         return blocks.filter { block ->
             try {
                 val data = FeatureRequestTransactionData(block.transaction).getData()
-                data.daoId == this.daoId
+                data.DAO_ID == this.daoId
             } catch (e: Exception) {
                 Log.e(
                     "P2PlayStore.AppHelper",

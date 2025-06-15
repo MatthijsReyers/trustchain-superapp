@@ -12,10 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.tudelft.trustchain.p2playstore.R
-import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTD
-import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTD
-import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTransactionData
-import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestData
+import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateData
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentFeatureListBinding
 
 class FeatureListFragment : BaseFragment() {
@@ -86,50 +84,30 @@ class FeatureListFragment : BaseFragment() {
                 android.util.Log.d("FeatureListFragment", "loadFeatureRequests: Found ${featureRequestBlocks.size} feature request blocks for DAO $daoUniqueId")
 
 
-                // Get all solution blocks for this DAO
-                val allSolutionBlocks = withContext(Dispatchers.IO) {
-                    p2playStore.getSolutionBlocksForDaoAndFeature(daoUniqueId)
+                // Get all feature requests for this DAO
+                val featureRequests = withContext(Dispatchers.IO) {
+                    p2playStore.getFeatureRequestsForDao(daoUniqueId)
                 }
-                android.util.Log.d("FeatureListFragment", "loadFeatureRequests: Found ${allSolutionBlocks.size} total solution blocks for DAO $daoUniqueId.")
+                android.util.Log.d("FeatureListFragment", "loadFeatureRequests: Found ${featureRequests.size} feature requests for DAO $daoUniqueId")
 
-                // Map solution blocks to pairs of (SolutionData, Block) and group by featureId
-                val solutionsGroupedByFeatureId = allSolutionBlocks.mapNotNull { block ->
-                    try {
-                        val solutionData = FeatureSolutionTransactionData(block.transaction).getData()
-                        solutionData to block // Pair of SolutionData and its Block
-                    } catch (e: Exception) {
-                        android.util.Log.e("FeatureListFragment", "Failed to parse FeatureSolution block: ${e.message}")
-                        null
-                    }
-                }.groupBy { it.first.featureId }
+                // Get all feature solutions for this DAO
+                val featureSolutions = withContext(Dispatchers.IO) {
+                    p2playStore.getFeatureSolutionsForDao(daoUniqueId)
+                }
+                android.util.Log.d("FeatureListFragment", "loadFeatureRequests: Found ${featureSolutions.size} feature solutions for DAO $daoUniqueId")
 
+                // Group solutions by feature request ID
+                val solutionsGroupedByFeatureId = featureSolutions.groupBy { it.FEATURE_REQUEST_ID }
 
-                // Combine feature requests with their solutions and calculate latest timestamp
-                val featuresWithSolutionsAndTimestamp = featureRequestBlocks.mapNotNull { reqBlock ->
-                    try {
-                        val featureRequest = FeatureRequestTransactionData(reqBlock.transaction).getData()
-                        val solutionsForRequest = solutionsGroupedByFeatureId[featureRequest.featureId]?.map { it.first } ?: emptyList() // Get only the SolutionData
-                        val latestSolutionBlockForRequest = solutionsGroupedByFeatureId[featureRequest.featureId]?.maxByOrNull { it.second.timestamp.time } // Get the block of the latest solution for this feature
-
-                        // Determine the timestamp for sorting: latest of request block or latest solution block
-                        val sortTimestamp = latestSolutionBlockForRequest?.second?.timestamp?.time ?: reqBlock.timestamp.time
-
-                        FeatureRequestWithSolutionsAndTimestamp(featureRequest, solutionsForRequest, sortTimestamp)
-                    } catch (e: Exception) {
-                        android.util.Log.e("FeatureListFragment", "Failed to process feature request block ${reqBlock.blockId}: ${e.message}")
-                        null
-                    }
+                // Combine feature requests with their solutions
+                val featuresWithSolutions = featureRequests.map { featureRequest ->
+                    val solutionsForRequest = solutionsGroupedByFeatureId[featureRequest.FEATURE_REQUEST_ID] ?: emptyList()
+                    FeatureRequestWithSolutions(featureRequest, solutionsForRequest)
                 }
 
-                val sortedFeatures = featuresWithSolutionsAndTimestamp.sortedByDescending { it.latestTimestamp }
+                adapter.updateFeatures(featuresWithSolutions)
 
-                // Map back to the original adapter data format
-                val featuresForAdapter = sortedFeatures.map { FeatureRequestWithSolutions(it.featureRequest, it.solutions) }
-
-
-                adapter.updateFeatures(featuresForAdapter)
-
-                if (featuresForAdapter.isEmpty()) {
+                if (featuresWithSolutions.isEmpty()) {
                     binding.tvNoFeatures.visibility = View.VISIBLE
                     binding.recyclerViewFeatures.visibility = View.GONE
                 } else {
@@ -146,20 +124,17 @@ class FeatureListFragment : BaseFragment() {
         }
     }
 
-
-
-    private fun navigateToSubmitSolution(featureRequest: FeatureRequestTD) {
+    private fun navigateToSubmitSolution(featureRequest: FeatureRequestData) {
         val bundle = Bundle().apply {
-            putString("featureId", featureRequest.featureId)
-//            putString("daoId", featureRequest.daoId)
-            putString("daoUniqueId", featureRequest.daoId)
-            putString("featureTitle", featureRequest.title)
-            putString("featureDescription", featureRequest.description)
+            putString("featureId", featureRequest.FEATURE_REQUEST_ID)
+            putString("daoUniqueId", featureRequest.DAO_ID)
+            putString("featureTitle", featureRequest.FEATURE_TITLE)
+            putString("featureDescription", featureRequest.FEATURE_DESCRIPTION)
         }
         findNavController().navigate(R.id.action_featureListFragment_to_featureSolutionFragment, bundle)
     }
 
-    private fun navigateToViewSolutions(featureRequest: FeatureRequestTD) {
+    private fun navigateToViewSolutions(featureRequest: FeatureRequestData) {
         lifecycleScope.launch {
             if (daoUniqueId.isEmpty()) {
                 android.util.Log.e("FeatureListFragment", "daoUniqueId is empty. Cannot navigate to view solutions.")
@@ -167,28 +142,24 @@ class FeatureListFragment : BaseFragment() {
                 return@launch
             }
 
-            // Use the helper function to get solution blocks for this feature and sort by timestamp
-            val solutionBlocksForRequest = withContext(Dispatchers.IO) {
-                p2playStore.getSolutionBlocksForFeature(daoUniqueId, featureRequest.featureId)
+            // Get solutions for this specific feature
+            val solutionsForFeature = withContext(Dispatchers.IO) {
+                p2playStore.getFeatureSolutionsForDao(daoUniqueId)
+                    .filter { it.FEATURE_REQUEST_ID == featureRequest.FEATURE_REQUEST_ID }
             }
-            android.util.Log.d("FeatureListFragment", "navigateToViewSolutions: Found ${solutionBlocksForRequest.size} solution blocks for feature ${featureRequest.featureId} in DAO ${daoUniqueId}")
 
-            if (solutionBlocksForRequest.isNotEmpty()) {
-                // The list is already sorted by timestamp descending by getSolutionBlocksForFeature
-                val latestSolutionBlock = solutionBlocksForRequest.first()
-                val latestSolution = latestSolutionBlock.second // Extract SolutionData from the pair
-                android.util.Log.d("FeatureListFragment", "navigateToViewSolutions: Navigating to vote on latest solution ${latestSolution.solutionId} in DAO ${daoUniqueId}")
+            if (solutionsForFeature.isNotEmpty()) {
+                val latestSolution = solutionsForFeature.maxByOrNull { it.SW_UNIQUE_PROPOSAL_ID }
+                android.util.Log.d("FeatureListFragment", "navigateToViewSolutions: Navigating to vote on latest solution ${latestSolution?.SW_UNIQUE_PROPOSAL_ID} in DAO ${daoUniqueId}")
 
                 val bundle = Bundle().apply {
                     putString("blockId", daoBlockId)
-                    putString("solutionId", latestSolution.solutionId)
+                    putString("solutionId", latestSolution?.SW_UNIQUE_PROPOSAL_ID)
                     putString("daoUniqueId", daoUniqueId)
                 }
                 findNavController().navigate(R.id.action_featureListFragment_to_featureVotingFragment, bundle)
             } else {
-                // This case should ideally not be reached if the adapter logic is correct,
-                // but handle defensively.
-                android.util.Log.w("FeatureListFragment", "navigateToViewSolutions called but no solutions found for feature ${featureRequest.featureId} in DAO ${daoUniqueId}. Cannot navigate to voting.")
+                android.util.Log.w("FeatureListFragment", "navigateToViewSolutions called but no solutions found for feature ${featureRequest.DAO_ID} in DAO ${daoUniqueId}. Cannot navigate to voting.")
                 Toast.makeText(context, "No solutions found for this feature yet.", Toast.LENGTH_SHORT).show()
             }
         }
@@ -196,7 +167,6 @@ class FeatureListFragment : BaseFragment() {
 
     override fun onResume() {
         super.onResume()
-        // Reload feature requests whenever the fragment is resumed
         android.util.Log.d("FeatureListFragment", "onResume: Reloading feature requests.")
         loadFeatureRequests()
     }
@@ -208,13 +178,6 @@ class FeatureListFragment : BaseFragment() {
 }
 
 data class FeatureRequestWithSolutions(
-    val featureRequest: FeatureRequestTD,
-    val solutions: List<FeatureSolutionTD>
-)
-
-// Helper data class for sorting
-data class FeatureRequestWithSolutionsAndTimestamp(
-    val featureRequest: FeatureRequestTD,
-    val solutions: List<FeatureSolutionTD>,
-    val latestTimestamp: Long
+    val featureRequest: FeatureRequestData,
+    val solutions: List<ProposeUpdateData>
 )

@@ -7,13 +7,20 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.navigation.fragment.findNavController
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentFeatureSolutionBinding
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import org.bitcoinj.core.Address
+import org.bitcoinj.core.NetworkParameters
+import org.bitcoinj.params.MainNetParams
+import org.bitcoinj.params.RegTestParams
+import org.bitcoinj.params.TestNet3Params
+import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid // Import WalletManagerAndroid
 
 class FeatureSolutionFragment : BaseFragment() {
     private var _binding: FragmentFeatureSolutionBinding? = null
     private val binding get() = _binding!!
 
     private lateinit var featureId: String
-    private lateinit var daoId: String
     private lateinit var daoUniqueId: String
 
     override fun onCreateView(
@@ -29,7 +36,6 @@ class FeatureSolutionFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         featureId = arguments?.getString("featureId") ?: ""
-//        daoId = arguments?.getString("daoId") ?: ""
         daoUniqueId = arguments?.getString("daoUniqueId") ?: ""
 
 
@@ -44,11 +50,15 @@ class FeatureSolutionFragment : BaseFragment() {
 
         binding.tvFeatureTitle.text = featureTitle
         binding.tvFeatureDescription.text = featureDescription
+
+         binding.etDeveloperBitcoinAddress.hint = "Enter your Bitcoin address for reward"
     }
 
     private fun setupClickListeners() {
         binding.btnSubmitSolution.setOnClickListener {
-            submitSolution()
+            lifecycleScope.launch {
+                submitSolution()
+            }
         }
 
         binding.btnCancel.setOnClickListener {
@@ -56,10 +66,15 @@ class FeatureSolutionFragment : BaseFragment() {
         }
     }
 
-    private fun submitSolution() {
+
+    suspend private fun submitSolution() {
         val title = binding.etSolutionTitle.text.toString().trim()
         val description = binding.etSolutionDescription.text.toString().trim()
         val magnetLink = binding.etMagnetLink.text.toString().trim()
+
+//        val developerBitcoinAddress = "mty7WcvBbEYXKuwW86KJwatpMXcm7NMitX"
+         val developerBitcoinAddress = binding.etDeveloperBitcoinAddress.text.toString().trim()
+
 
         if (title.isEmpty()) {
             Toast.makeText(context, "Please enter a solution title", Toast.LENGTH_SHORT).show()
@@ -76,14 +91,32 @@ class FeatureSolutionFragment : BaseFragment() {
             return
         }
 
+        if (developerBitcoinAddress.isEmpty()) {
+            Toast.makeText(context, "Please enter your Bitcoin address to receive the reward.", Toast.LENGTH_LONG).show()
+            android.util.Log.e("FeatureSolutionFragment", "Developer Bitcoin address is missing or a placeholder!")
+            return
+        }
+
+        // Basic validation for Bitcoin address format
+        try {
+            val params: NetworkParameters = WalletManagerAndroid.getInstance().params // Use the current network params
+            Address.fromString(params, developerBitcoinAddress)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Invalid Bitcoin address format.", Toast.LENGTH_LONG).show()
+            android.util.Log.e("FeatureSolutionFragment", "Invalid Bitcoin address format: ${e.message}")
+            return
+        }
+
+
         try {
             // Use the community method to create the block
             p2playStore.createFeatureSolution(
                 daoId = daoUniqueId,
-                featureId = featureId,
-                title = title,
-                description = description,
-                apkMagnetLink = magnetLink
+                featureRequestId = featureId,
+                solutionTitle = title,
+                solutionDescription = description,
+                apkMagnetLink = magnetLink,
+                developerBitcoinAddress = developerBitcoinAddress,
             )
 
             Toast.makeText(context, "Solution submitted successfully! DAO members can now vote.", Toast.LENGTH_LONG).show()

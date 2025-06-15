@@ -62,6 +62,9 @@
             app:destination="@id/allVotingPollsFragment" />
         <action android:id="@+id/action_appDetailsFragment_to_featureSolutionFragment"
             app:destination="@id/featureSolutionFragment"/>
+<!--        <action-->
+<!--            android:id="@+id/action_appDetailsFragment_to_daoWalletFragment"-->
+<!--            app:destination="@id/daoWalletFragment" />-->
     </fragment>
 
     <fragment
@@ -78,6 +81,7 @@
         <action
             android:id="@+id/action_featureListFragment_to_featureRequestFragment"
             app:destination="@id/featureRequestFragment" />
+
         <action
             android:id="@+id/action_featureListFragment_to_featureSolutionFragment"
             app:destination="@id/featureSolutionFragment" />
@@ -130,30 +134,12 @@
             android:name="blockId"
             app:argType="string" />
         <argument
-            android:name="solutionId"
+            android:name="proposalId"
             app:argType="string" />
         <argument
             android:name="daoUniqueId"
             app:argType="string" />
     </fragment>
-
-<!--    <fragment-->
-<!--        android:id="@+id/allVotesFragment"-->
-<!--        android:name="nl.tudelft.trustchain.p2playstore.ui.AllVotesFragment"-->
-<!--        android:label="All Votes"-->
-<!--        tools:layout="@layout/fragment_all_votes">-->
-<!--        <action-->
-<!--            android:id="@+id/action_allVotesFragment_to_featureVotingFragment"-->
-<!--            app:destination="@id/featureVotingFragment" />-->
-<!--    </fragment>-->
-
-<!--    <fragment-->
-<!--        android:id="@+id/proposalsFragment"-->
-<!--        android:name="nl.tudelft.trustchain.p2playstore.ui.ProposalsFragment"-->
-<!--        android:label="Proposals"-->
-<!--        tools:layout="@layout/fragment_proposals">-->
-<!--    </fragment>-->
-
     <fragment
         android:id="@+id/allVotingPollsFragment"
         android:name="nl.tudelft.trustchain.p2playstore.ui.AllVotingPollsFragment"
@@ -171,32 +157,6 @@
     </fragment>
 
 
-    <!--<navigation xmlns:android="http://schemas.android.com/apk/res/android"-->
-<!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
-<!--    xmlns:tools="http://schemas.android.com/tools"-->
-<!--    android:id="@+id/nav_graph"-->
-<!--    app:startDestination="@+id/homeFragment">-->
-
-
-<!--    <fragment-->
-<!--        android:id="@+id/proposalsFragment"-->
-<!--        android:name="nl.tudelft.trustchain.p2playstore.Proposals"-->
-<!--        android:label="Proposals"-->
-<!--        tools:layout="@layout/fragment_proposals"/>-->
-
-    <!--    <fragment-->
-    <!--        android:id="@+id/myDaosFragment"-->
-    <!--        android:name="nl.tudelft.trustchain.p2playstore.ui.mydaos.MyDaosFragment"-->
-    <!--        android:label="My DAOs"-->
-    <!--        tools:layout="@layout/fragment_home">-->
-    <!--        <action-->
-    <!--            android:id="@+id/action_myDaosFragment_to_createJoinDaoFragment"-->
-    <!--            app:destination="@+id/createJoinDaoFragment" />-->
-    <!--        <action-->
-    <!--            android:id="@+id/action_myDaosFragment_to_daoDetailsFragment"-->
-    <!--            app:destination="@+id/daoDetailsFragment" />-->
-    <!--    </fragment>-->
-
     <!--    <fragment-->
     <!--        android:id="@+id/createJoinDaoFragment"-->
     <!--        android:name="nl.tudelft.trustchain.p2playstore.ui.createjoindao.CreateJoinDaoFragment"-->
@@ -209,24 +169,15 @@
     <!--            app:popUpToInclusive="true" />-->
     <!--    </fragment>-->
 
-    <!--    <fragment-->
-    <!--        android:id="@+id/daoDetailsFragment"-->
-    <!--        android:name="nl.tudelft.trustchain.p2playstore.ui.daodetails.DaoDetailsFragment"-->
-    <!--        android:label="DAO Details"-->
-    <!--        tools:layout="@layout/fragment_dao_details">-->
-    <!--        <argument-->
-    <!--            android:name="daoId"-->
-    <!--            app:argType="string" />-->
-    <!--        <action-->
-    <!--            android:id="@+id/action_daoDetailsFragment_to_proposeUpdateFragment"-->
-    <!--            app:destination="@+id/proposeUpdateFragment" />-->
-    <!--        <action-->
-    <!--            android:id="@+id/action_daoDetailsFragment_to_voteOnUpdateFragment"-->
-    <!--            app:destination="@+id/voteOnUpdateFragment" />-->
-    <!--        <action-->
-    <!--            android:id="@+id/action_daoDetailsFragment_to_acceptedUpdatesFragment"-->
-    <!--            app:destination="@+id/acceptedUpdatesFragment" />-->
-    <!--    </fragment>-->
+<!--    <fragment-->
+<!--        android:id="@+id/daoWalletFragment"-->
+<!--        android:name="nl.tudelft.trustchain.p2playstore.ui.DaoWalletFragment"-->
+<!--        android:label="DAO Wallet"-->
+<!--        tools:layout="@layout/fragment_wallet_balance">-->
+<!--        <argument-->
+<!--            android:name="daoUniqueId"-->
+<!--            app:argType="string" />-->
+<!--    </fragment>-->
 
     <!--    <fragment-->
     <!--        android:id="@+id/proposeUpdateFragment"-->

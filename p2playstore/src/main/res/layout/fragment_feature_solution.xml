@@ -123,6 +123,27 @@
             android:inputType="textUri"
             android:layout_marginBottom="16dp" />
 
+        <!-- Developer Bitcoin Address -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Developer Bitcoin Address"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/et_developer_bitcoin_address"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter your Bitcoin address for reward"
+            android:padding="12dp"
+            android:background="@drawable/p2p_border"
+            android:inputType="text"
+            android:layout_marginBottom="16dp" />
+
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

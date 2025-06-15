@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import nl.tudelft.ipv8.util.toHex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -15,10 +14,11 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTD
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.R
-import nl.tudelft.trustchain.p2playstore.blockdata.FeatureSolutionTransactionData
-import nl.tudelft.trustchain.p2playstore.blockdata.VotingPollHelper
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+
+import nl.tudelft.trustchain.p2playstore.transactionData.*
+
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAllVotingPollsBinding
-import android.util.Log
 
 class AllVotingPollsFragment : BaseFragment() {
     private var _binding: FragmentAllVotingPollsBinding? = null
@@ -111,124 +111,75 @@ class AllVotingPollsFragment : BaseFragment() {
 
     private fun loadVotingPolls() {
         lifecycleScope.launch {
-            val maxRetries = 5 // Increased retries
-            val retryDelayMillis = 2000L // 2 second delay
+            try {
+                if (daoUniqueId.isEmpty()) {
+                    android.util.Log.e("AllVotingPollsFragment", "daoUniqueId is empty. Cannot load voting polls.")
+                    showError("Error loading voting polls: Missing DAO ID.")
+                    return@launch
+                }
 
-            for (retry in 0..maxRetries) {
-                try {
-                    // Use the retrieved DAO Unique ID
-                    if (daoUniqueId.isEmpty()) {
-                        android.util.Log.e("AllVotingPollsFragment", "daoUniqueId is empty in loadVotingPolls. Cannot load voting polls.")
-                        binding.recyclerViewPolls.visibility = View.GONE
-                        binding.tvNoPolls.text = "Error loading voting polls: Missing DAO ID."
-                        binding.tvNoPolls.visibility = View.VISIBLE
-                        return@launch // Exit retry loop
-                    }
-
-
-                    // Get all feature requests for this DAO
-                    val featureRequests = withContext(Dispatchers.IO) {
-                        p2playStore.getFeatureRequestsForDao(daoUniqueId)
-                    }
-                    android.util.Log.d("AllVotingPollsFragment", "loadVotingPolls (Attempt ${retry + 1}): Found ${featureRequests.size} feature requests for DAO $daoUniqueId")
-
-
-                    // Get all solution blocks for this DAO
-                    val allSolutionBlocks = withContext(Dispatchers.IO) {
-                        p2playStore.getSolutionBlocksForDaoAndFeature(daoUniqueId)
-                    }
-                    android.util.Log.d("AllVotingPollsFragment", "loadVotingPolls (Attempt ${retry + 1}): Found ${allSolutionBlocks.size} total solution blocks for DAO $daoUniqueId.")
-
-
-                    // Map blocks to pairs of (Block, SolutionData) and filter for votable ones
-                    val allVotableSolutionsWithBlocks = allSolutionBlocks.mapNotNull { block ->
-                        try {
-                            val solutionData = FeatureSolutionTransactionData(block.transaction).getData()
-                            block to solutionData
-                        } catch (e: Exception) {
-                            android.util.Log.e("AllVotingPollsFragment", "Failed to parse FeatureSolution block: ${e.message}")
-                            null // Exclude blocks that cannot be parsed
+                // Get all proposals for this DAO
+                val joinRequestBlocks = withContext(Dispatchers.IO) {
+                    getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.JOIN_REQUEST_BLOCK)
+                        .filter { block ->
+                            try {
+                                JoinRequestTransactionData(block.transaction).getData().DAO_ID == daoUniqueId
+                            } catch (e: Exception) { false }
                         }
-                    }
-                        // Filter for solutions linked to OPEN feature requests
-                        .filter { (block, solution) ->
-                            featureRequests.any { it.featureId == solution.featureId && it.status == "OPEN" }
+                }
+
+                val featureSolutionBlocks = withContext(Dispatchers.IO) {
+                    getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.PROPOSE_UPDATE_BLOCK)
+                        .filter { block ->
+                            try {
+                                val data = ProposeUpdateTransactionData(block.transaction).getData()
+                                data.DAO_ID == daoUniqueId && data.FEATURE_REQUEST_ID != null
+                            } catch (e: Exception) { false }
                         }
-                    android.util.Log.d("AllVotingPollsFragment", "loadVotingPolls: Found ${allVotableSolutionsWithBlocks.size} votable solutions.")
+                }
 
-
-                    val totalMembers = daoData.SW_TRUSTCHAIN_PKS.size
-                    val votingThreshold = daoData.SW_VOTING_THRESHOLD
-                    val myPublicKey = p2playStore.myPeer.publicKey.keyToBin().toHex()
-
-                    // Create VotingPoll objects for each votable solution block
-                    val votingPolls = allVotableSolutionsWithBlocks.mapNotNull { (block, solution) ->
-                        // Find the corresponding feature request again (should exist based on filter)
-                        val correspondingRequest = featureRequests.find { it.featureId == solution.featureId }
-
-                        if (correspondingRequest != null) {
-                            val votesForSolution = withContext(Dispatchers.IO) {
-                                // Fetch votes specifically for this solution within this DAO
-                                p2playStore.getVotesForSolution(daoUniqueId, solution.solutionId)
+                // Create voting polls for each proposal
+                val votingPolls = (joinRequestBlocks + featureSolutionBlocks).mapNotNull { block ->
+                    try {
+                        when (block.type) {
+                            P2pStoreCommunity.JOIN_REQUEST_BLOCK -> {
+                                val data = JoinRequestTransactionData(block.transaction).getData()
+                                p2playStore.getVotingPoll(daoUniqueId, data.SW_UNIQUE_PROPOSAL_ID)
                             }
-                            val hasUserVoted = votesForSolution.any { it.voterPublicKey == myPublicKey }
-                            val userVote = votesForSolution.find { it.voterPublicKey == myPublicKey }?.isYes
-
-                            // Assume voting is active if the feature request status is "OPEN"
-                            // This is already filtered, so it should be true for these polls
-                            val isVotingActive = correspondingRequest.status == "OPEN"
-
-                            android.util.Log.d("AllVotingPollsFragment", "  loadVotingPolls: Creating poll for solution ${solution.solutionId} (Feature ${solution.featureId}) in DAO ${daoUniqueId}. Active: $isVotingActive, UserVoted: $hasUserVoted")
-
-                            VotingPollHelper.createVotingPoll(
-                                correspondingRequest, // Pass the actual request
-                                solution,
-                                votesForSolution,
-                                totalMembers,
-                                votingThreshold,
-                                hasUserVoted = hasUserVoted,
-                                userVote = userVote
-                            )
-                        } else {
-                            null
+                            P2pStoreCommunity.PROPOSE_UPDATE_BLOCK -> {
+                                val data = ProposeUpdateTransactionData(block.transaction).getData()
+                                p2playStore.getVotingPoll(daoUniqueId, data.SW_UNIQUE_PROPOSAL_ID)
+                            }
+                            else -> null
                         }
-                    }
-
-                    if (votingPolls.isEmpty()) {
-                        android.util.Log.d("AllVotingPollsFragment", "loadVotingPolls (Attempt ${retry + 1}): No voting polls to display for DAO $daoUniqueId.")
-                        // If no polls found, wait and retry
-                        if (retry < maxRetries) {
-                            android.util.Log.d("AllVotingPollsFragment", "loadVotingPolls: Retrying in ${retryDelayMillis}ms...")
-                        } else {
-                            binding.recyclerViewPolls.visibility = View.GONE
-                            binding.tvNoPolls.text = "No voting polls available.\nPolls will appear here when solutions are submitted for features marked as OPEN."
-                            binding.tvNoPolls.visibility = View.VISIBLE
-                        }
-
-                    } else {
-                        // Found polls, update UI and break out of retry loop
-                        binding.recyclerViewPolls.visibility = View.VISIBLE
-                        binding.tvNoPolls.visibility = View.GONE
-                        pollsAdapter.updatePolls(votingPolls)
-                        android.util.Log.d("AllVotingPollsFragment", "loadVotingPolls: Displayed ${votingPolls.size} voting polls for DAO $daoUniqueId.")
-                        return@launch // Exit retry loop
-                    }
-
-                } catch (e: Exception) {
-                    android.util.Log.e("AllVotingPollsFragment", "loadVotingPolls (Attempt ${retry + 1}): Error loading polls: ${e.message}")
-                    if (retry < maxRetries) {
-                        android.util.Log.e("AllVotingPollsFragment", "loadVotingPolls: Retrying in ${retryDelayMillis}ms due to error...")
-                    } else {
-                        // exhausted retries, show error UI
-                        binding.recyclerViewPolls.visibility = View.GONE
-                        binding.tvNoPolls.visibility = View.VISIBLE
-                        binding.tvNoPolls.text = "Error loading voting polls: ${e.message}"
+                    } catch (e: Exception) {
+                        android.util.Log.e("AllVotingPollsFragment", "Error creating voting poll: ${e.message}")
+                        null
                     }
                 }
+
+                if (votingPolls.isEmpty()) {
+                    binding.recyclerViewPolls.visibility = View.GONE
+                    binding.tvNoPolls.text = "No voting polls available."
+                    binding.tvNoPolls.visibility = View.VISIBLE
+                } else {
+                    binding.recyclerViewPolls.visibility = View.VISIBLE
+                    binding.tvNoPolls.visibility = View.GONE
+                    pollsAdapter.updatePolls(votingPolls)
+                }
+
+            } catch (e: Exception) {
+                android.util.Log.e("AllVotingPollsFragment", "Error loading polls: ${e.message}")
+                showError("Error loading voting polls: ${e.message}")
             }
         }
     }
 
+    private fun showError(message: String) {
+        binding.recyclerViewPolls.visibility = View.GONE
+        binding.tvNoPolls.visibility = View.VISIBLE
+        binding.tvNoPolls.text = message
+    }
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
