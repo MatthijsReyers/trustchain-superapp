@@ -4,7 +4,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import nl.tudelft.trustchain.p2playstore.databinding.ItemVotingPollBinding
-import nl.tudelft.trustchain.p2playstore.blockdata.VotingPoll
+import nl.tudelft.trustchain.p2playstore.transactionData.VotingPoll
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 
 class VotingPollsAdapter(
@@ -33,7 +33,7 @@ class VotingPollsAdapter(
 
         fun bind(poll: VotingPoll) {
             binding.updateTitle.text = poll.title
-            binding.votingQuestion.text = poll.question
+//            binding.votingQuestion.text = poll.question
             binding.votesRequiredText.text = "${poll.yesVotes} of ${poll.votesNeeded} votes needed"
 
             binding.yesPercentage.text = "${poll.yesPercentage}%"
