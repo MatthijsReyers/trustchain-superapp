@@ -21,7 +21,6 @@ object AppUtils {
     ) {
         containerView.post {
             val containerWidth = containerView.width
-
             if (containerWidth > 0) {
                 // Adjust padding and margins based on the specific layout XML
                 // These dimensions are taken from fragment_app_details.xml and item_voting_poll.xml

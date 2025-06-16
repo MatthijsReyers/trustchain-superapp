@@ -20,7 +20,6 @@ import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.BlockListener
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.transactionData.*
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
@@ -118,8 +117,8 @@ class AppDetails : BaseFragment() {
         lifecycleScope.launch(Dispatchers.Main) {
             loadRecentVotingPoll()
             loadLatestPendingFeatureRequest()
-            updateUIBasedOnMembership() // Membership might change on JOIN/UPDATE_ACCEPTED
-            updateDownloadButton() // App version/download status might change on UPDATE_ACCEPTED
+            updateUIBasedOnMembership()
+            updateDownloadButton()
         }
 
 
@@ -142,7 +141,6 @@ class AppDetails : BaseFragment() {
                     }
                 }
             }
-            // Other block types (JOIN_REQUEST, VOTE_YES, VOTE_NO, PROPOSE_UPDATE, FEATURE_REQUEST) primarily affect polls/requests
             else -> {
                 Log.d("P2pStore", "Chain update for block type ${block.type} triggered UI updates (polls/requests/buttons).")
             }
@@ -158,16 +156,16 @@ class AppDetails : BaseFragment() {
         if (this.app.isDaoMember()) {
             AppUtils.printToast(requireContext(), "You are already a member of this DAO.")
             Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but is already a member.")
-            updateDownloadButton() // Update button state just in case
-            updateUIBasedOnMembership() // Update UI just in case
+            updateDownloadButton()
+            updateUIBasedOnMembership()
             return
         }
 
         if (this.app.isWaitingToJoin()) {
             AppUtils.printToast(requireContext(), "You have a pending request to join this DAO.")
             Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but has a pending request.")
-            updateDownloadButton() // Update button state just in case
-            updateUIBasedOnMembership() // Update UI just in case
+            updateDownloadButton()
+            updateUIBasedOnMembership()
             return
         }
 
@@ -509,10 +507,8 @@ class AppDetails : BaseFragment() {
                         binding.latestFeatureRequestPreviewCard.setOnClickListener {
                             // Navigate to the FeatureListFragment instead of directly to SubmitSolution
                             val bundle = Bundle().apply {
-                                putString("blockId", daoBlock.blockId) // Pass original DAO block ID for context
+                                putString("blockId", daoBlock.blockId)
                                 putString("daoUniqueId", app.daoId)
-                                // Optional: pass featureRequestId to highlight the request in the list, if the list fragment supports it
-                                // putString("highlightFeatureId", latestPendingRequest.FEATURE_REQUEST_ID)
                             }
                             findNavController().navigate(R.id.action_appDetailsFragment_to_featureListFragment, bundle)
                         }
@@ -623,13 +619,6 @@ class AppDetails : BaseFragment() {
         // Fetch DAO data to check if user is a member and initiator
         lifecycleScope.launch {
             try {
-
-                // Fetch the latest DAO block (could be JOIN or UPDATE_ACCEPTED) to get member list and threshold
-                // We need the LATEST block for member list and threshold calculation
-                val latestDaoBlock = withContext(Dispatchers.IO) {
-                    p2playStore.fetchLatestSharedWalletBlockByDaoId(poll.daoId)
-                }
-
                 if (_binding == null) {
                     Log.w("AppDetails", "updateVotingState: View destroyed in coroutine, skipping UI update.")
                     return@launch // Exit the coroutine if the view is gone

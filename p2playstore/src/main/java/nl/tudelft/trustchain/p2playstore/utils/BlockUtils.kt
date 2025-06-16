@@ -45,6 +45,20 @@ object BlockUtils {
         return min(total, threshold)
     }
 
+    /**
+     * Converts the number of required signatures back to a percentage, given the total members.
+     * Useful as a fallback if the explicit voting threshold is not available.
+     */
+    @JvmStatic
+    fun intThresholdToPercentage(
+        total: Int,
+        requiredSignatures: Int
+    ): Int {
+        return if (total > 0) {
+            ceil((requiredSignatures.toDouble() / total.toDouble()) * 100.0).toInt()
+        } else 0
+    }
+
     @JvmStatic
     fun objectToJsonObject(data: Any): JsonObject {
         val jsonString = Gson().toJson(data)
