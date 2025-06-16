@@ -118,28 +118,49 @@ class AllVotingPollsFragment : BaseFragment() {
                     return@launch
                 }
 
-                // Get all proposals for this DAO
-                val joinRequestBlocks = withContext(Dispatchers.IO) {
-                    getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.JOIN_REQUEST_BLOCK)
+                // Get all relevant blocks for this DAO
+                val allRelevantBlocks = withContext(Dispatchers.IO) {
+                    val joinRequestBlocks = getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.JOIN_REQUEST_BLOCK)
                         .filter { block ->
                             try {
                                 JoinRequestTransactionData(block.transaction).getData().DAO_ID == daoUniqueId
                             } catch (e: Exception) { false }
                         }
-                }
 
-                val featureSolutionBlocks = withContext(Dispatchers.IO) {
-                    getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.PROPOSE_UPDATE_BLOCK)
+                    val featureSolutionBlocks = getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.PROPOSE_UPDATE_BLOCK)
                         .filter { block ->
                             try {
                                 val data = ProposeUpdateTransactionData(block.transaction).getData()
-                                data.DAO_ID == daoUniqueId && data.FEATURE_REQUEST_ID != null
+                                data.DAO_ID == daoUniqueId && data.FEATURE_REQUEST_ID != null // Filter for feature solutions
                             } catch (e: Exception) { false }
                         }
+                    joinRequestBlocks + featureSolutionBlocks
                 }
 
-                // Create voting polls for each proposal
-                val votingPolls = (joinRequestBlocks + featureSolutionBlocks).mapNotNull { block ->
+                // Group blocks by their unique proposal ID and take the latest block for each ID
+                val latestBlocksByProposal = allRelevantBlocks
+                    .groupBy { block ->
+                        try {
+                            // Determine the unique proposal ID based on block type
+                            when (block.type) {
+                                P2pStoreCommunity.JOIN_REQUEST_BLOCK -> JoinRequestTransactionData(block.transaction).getData().SW_UNIQUE_PROPOSAL_ID
+                                P2pStoreCommunity.PROPOSE_UPDATE_BLOCK -> ProposeUpdateTransactionData(block.transaction).getData().SW_UNIQUE_PROPOSAL_ID
+                                else -> null // Should not happen due to initial filtering
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("AllVotingPollsFragment", "Error getting proposal ID from block ${block.blockId}: ${e.message}")
+                            null
+                        }
+                    }
+                    .filterKeys { it != null } // Remove any blocks that failed to yield a proposal ID
+                    .mapValues { (_, blocks) -> // For each group of blocks with the same proposal ID
+                        blocks.maxByOrNull { it.insertTime!! } // Find the latest block by insert time
+                    }
+                    .values // Get the list of the latest blocks
+
+                // Create voting polls for each unique, latest proposal block
+                val votingPolls = latestBlocksByProposal.mapNotNull { block ->
+                    if (block == null) return@mapNotNull null // Should not happen if filtering worked
                     try {
                         when (block.type) {
                             P2pStoreCommunity.JOIN_REQUEST_BLOCK -> {
@@ -150,17 +171,17 @@ class AllVotingPollsFragment : BaseFragment() {
                                 val data = ProposeUpdateTransactionData(block.transaction).getData()
                                 p2playStore.getVotingPoll(daoUniqueId, data.SW_UNIQUE_PROPOSAL_ID)
                             }
-                            else -> null
+                            else -> null // Should not happen
                         }
                     } catch (e: Exception) {
-                        android.util.Log.e("AllVotingPollsFragment", "Error creating voting poll: ${e.message}")
+                        android.util.Log.e("AllVotingPollsFragment", "Error creating voting poll from latest block ${block.blockId}: ${e.message}")
                         null
                     }
                 }
 
                 if (votingPolls.isEmpty()) {
                     binding.recyclerViewPolls.visibility = View.GONE
-                    binding.tvNoPolls.text = "No voting polls available."
+                    binding.tvNoPolls.text = "No voting polls available.\nPolls will appear here when updates are submitted."
                     binding.tvNoPolls.visibility = View.VISIBLE
                 } else {
                     binding.recyclerViewPolls.visibility = View.VISIBLE

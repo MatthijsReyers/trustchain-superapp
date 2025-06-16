@@ -261,6 +261,8 @@ class DAOJoinHelper {
                     myPublicKey,
                     agreementData.blockType
                 )
+            Log.d("DAOJoinHelper", "createProposalBlock called for VOTE_YES_BLOCK (Join). Proposal ID: ${agreementData.getData().SW_UNIQUE_PROPOSAL_ID}")
+
             } else {
                 val negativeResponseData =
                     VoteNoTransactionData(
@@ -276,6 +278,8 @@ class DAOJoinHelper {
                     myPublicKey,
                     negativeResponseData.blockType
                 )
+            Log.d("DAOJoinHelper", "createProposalBlock called for VOTE_NO_BLOCK (Join). Proposal ID: ${negativeResponseData.getData().SW_UNIQUE_PROPOSAL_ID}")
+
             }
         }
     }

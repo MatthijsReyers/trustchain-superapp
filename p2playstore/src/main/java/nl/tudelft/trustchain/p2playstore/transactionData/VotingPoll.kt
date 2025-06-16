@@ -1,6 +1,7 @@
 package nl.tudelft.trustchain.p2playstore.transactionData
 
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
+import nl.tudelft.ipv8.util.toHex
 
 /**
  * Represents a voting poll for any type of DAO proposal
@@ -14,9 +15,9 @@ data class VotingPoll(
     val yesVotes: Int,
     val noVotes: Int,
     val totalMembers: Int,
-    val votingThreshold: Int,
+    val votingThreshold: Int, // This is the integer number of votes needed, not percentage
     val isActive: Boolean,
-    val hasUserVoted: Boolean,
+    var hasUserVoted: Boolean,
     val userVote: Boolean? = null,
     val metadata: Map<String, Any> = emptyMap()
 ) {
@@ -61,13 +62,16 @@ object CreateVotingPoll {
         yesVotes: List<VoteYesData>,
         noVotes: List<VoteNoData>,
         totalMembers: Int,
-        votingThreshold: Int,
+        votesNeeded: Int,
         hasUserVoted: Boolean,
         userVote: Boolean? = null
     ): VotingPoll {
         val requesterPk = joinRequestBlock.publicKey.toString()
 
-        val isActive = yesVotes.size < votingThreshold && (yesVotes.size + (totalMembers - (yesVotes.size + noVotes.size))) >= votingThreshold
+        // Active if not yet approved AND can still reach the required votes
+        val canStillPass = yesVotes.size + (totalMembers - (yesVotes.size + noVotes.size)) >= votesNeeded
+        val isActive = yesVotes.size < votesNeeded && canStillPass
+
 
         return VotingPoll(
             id = joinRequestData.SW_UNIQUE_PROPOSAL_ID,
@@ -78,7 +82,7 @@ object CreateVotingPoll {
             yesVotes = yesVotes.size,
             noVotes = noVotes.size,
             totalMembers = totalMembers,
-            votingThreshold = votingThreshold,
+            votingThreshold = votesNeeded,
             isActive = isActive,
             hasUserVoted = hasUserVoted,
             userVote = userVote,
@@ -97,11 +101,13 @@ object CreateVotingPoll {
         yesVotes: List<VoteYesData>,
         noVotes: List<VoteNoData>,
         totalMembers: Int,
-        votingThreshold: Int,
+        votesNeeded: Int,
         hasUserVoted: Boolean,
         userVote: Boolean? = null
     ): VotingPoll {
-        val isActive = yesVotes.size < votingThreshold && (yesVotes.size + (totalMembers - (yesVotes.size + noVotes.size))) >= votingThreshold
+        // Active if not yet approved AND can still reach the required votes
+        val canStillPass = yesVotes.size + (totalMembers - (yesVotes.size + noVotes.size)) >= votesNeeded
+        val isActive = yesVotes.size < votesNeeded && canStillPass
 
 
         return VotingPoll(
@@ -113,8 +119,8 @@ object CreateVotingPoll {
             yesVotes = yesVotes.size,
             noVotes = noVotes.size,
             totalMembers = totalMembers,
-            votingThreshold = votingThreshold,
-            isActive = featureRequest.FEATURE_STATUS == "OPEN" && solution.SW_SIGNATURES_REQUIRED > yesVotes.size,
+            votingThreshold = votesNeeded,
+            isActive = isActive,
             hasUserVoted = hasUserVoted,
             userVote = userVote,
             metadata = mapOf(
