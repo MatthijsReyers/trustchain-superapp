@@ -13,7 +13,9 @@ data class FeatureRequestData(
     var FEATURE_DESCRIPTION: String,
     var FEATURE_REWARD: Long,
     var REQUESTER_PUBLIC_KEY: String,
+//    var REQUESTER_BITCOIN_ADDRESS: String,
     var FEATURE_STATUS: String = "OPEN"
+
 ) : BaseData
 
 class FeatureRequestTransactionData(data: JsonObject) : BlockTransactionData(
@@ -28,6 +30,7 @@ class FeatureRequestTransactionData(data: JsonObject) : BlockTransactionData(
         description: String,
         reward: Long,
         requesterPublicKey: String,
+//        requesterBitcoinAddress: String,
         status: String = "OPEN"
     ) : this(
         BlockUtils.objectToJsonObject(
@@ -38,6 +41,7 @@ class FeatureRequestTransactionData(data: JsonObject) : BlockTransactionData(
                 description,
                 reward,
                 requesterPublicKey,
+//                requesterBitcoinAddress,
                 status
             )
         )

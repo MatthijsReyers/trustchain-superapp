@@ -15,8 +15,9 @@ import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestTransacti
 import nl.tudelft.trustchain.p2playstore.transactionData.AppMetaData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
@@ -42,7 +43,14 @@ class P2playApp(val block: TrustChainBlock) {
     val name: String get() = this.daoData.APP_NAME
     val description: String get() = this.daoData.APP_DESCRIPTION
     val category: String get() = this.daoData.APP_CATEGORY
-    val icon: Int get() = iconFromIconId(this.block.transaction["iconIndex"])
+    val icon: Int get() = iconFromIconId(
+        try {
+            this.block.transaction["iconIndex"]
+        } catch (e: Exception) {
+            Log.w("P2playApp", "Could not get iconIndex from block transaction: ${e.message}")
+            3 // Default icon index
+        }
+    )
     val magnetLink: MagnetLink = MagnetUtils.parseMagnet(this.daoData.APP_MAGNET_LINK)
 
     /**
@@ -52,19 +60,21 @@ class P2playApp(val block: TrustChainBlock) {
     val version: Int get() = this.block.hashNumber
 
     private fun getSharedWalletPublicKeys(): ArrayList<String> {
-        if (block.type == JOIN_BLOCK) {
-            return (daoData as JoinDoaData).SW_TRUSTCHAIN_PKS
+        return when (daoData) {
+            is JoinDoaData -> daoData.SW_TRUSTCHAIN_PKS
+            is UpdateAcceptedData -> daoData.SW_TRUSTCHAIN_PKS
+            else -> arrayListOf()
         }
-        if (block.type == UPDATE_ACCEPTED_BLOCK) {
-            return (daoData as JoinDoaData).SW_TRUSTCHAIN_PKS
-        }
-        val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
-        return data.SW_TRUSTCHAIN_PKS
     }
+
 
     fun getDoaVoteThreshold(): Int {
         if (block.type == JOIN_BLOCK) {
             return (daoData as JoinDoaData).SW_VOTING_THRESHOLD
+        } else if (block.type == PROPOSE_UPDATE_BLOCK && (daoData as ProposeUpdateData).FEATURE_REQUEST_ID != null) {
+            // Feature Solution proposals also contain voting threshold
+//            TODO:fix this to precentage instead of int signatures
+            return (daoData as ProposeUpdateData).SW_SIGNATURES_REQUIRED
         }
         val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
         return data.SW_VOTING_THRESHOLD
