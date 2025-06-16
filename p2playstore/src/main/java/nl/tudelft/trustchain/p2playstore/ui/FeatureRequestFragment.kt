@@ -6,8 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.navigation.fragment.findNavController
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentFeatureRequestBinding
 import nl.tudelft.ipv8.util.toHex
@@ -44,21 +42,6 @@ class FeatureRequestFragment : BaseFragment() {
             binding.btnSubmitRequest.alpha = 0.5f
             Toast.makeText(context, "Error: Could not load DAO information.", Toast.LENGTH_LONG).show()
         }
-
-//        if (WalletManagerAndroid.isInitialized()) {
-//            val params = WalletManagerAndroid.getInstance().params
-//            val addressHint = when(params) {
-//                RegTestParams.get() -> "Enter your RegTest Bitcoin address"
-//                TestNet3Params.get() -> "Enter your TestNet Bitcoin address"
-//                MainNetParams.get() -> "Enter your MainNet Bitcoin address"
-//                else -> "Enter your Bitcoin address"
-//            }
-//            binding.etRequesterBitcoinAddress.hint = addressHint
-//        } else {
-//            binding.etRequesterBitcoinAddress.hint = "Enter your Bitcoin address"
-//        }
-
-
         setupClickListeners()
     }
 

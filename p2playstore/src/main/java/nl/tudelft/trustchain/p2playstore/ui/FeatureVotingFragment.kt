@@ -258,30 +258,9 @@ class FeatureVotingFragment : BaseFragment() {
                     // Voting closed and approved (enough YES votes)
                     poll.isApproved -> { // Use the isApproved property from VotingPoll
                         android.util.Log.d("FeatureVotingFragment", "updateVotingState: Poll is Approved.")
-                        binding.alreadyVotedText.text = "Approved" // Use the total votes TextView to show final status
+                        binding.alreadyVotedText.text = "Approved"
                         binding.alreadyVotedText.setTextColor(resources.getColor(android.R.color.holo_green_dark, null))
-                        binding.votesRequiredText.visibility = View.GONE // Hide required text when decided
-
-//                        // If approved and this is a feature solution, show download APK button
-//                        if (poll.type == VotingPollType.FEATURE_SOLUTION) {
-//                            binding.btnDownloadApk.visibility = View.VISIBLE
-//                            binding.btnDownloadApk.isEnabled = true
-//                            binding.btnDownloadApk.alpha = 1.0f
-//                        }
-
-//                        // If approved, this is a feature solution, and I am the DAO initiator, show claim button
-//                        if (poll.type == VotingPollType.FEATURE_SOLUTION && isDaoInitiator) {
-//                            binding.btnClaimReward.visibility = View.VISIBLE
-//                            binding.btnClaimReward.text = "Trigger Reward Transfer" // Initiator triggers transfer
-//                            binding.btnClaimReward.isEnabled = true
-//                            binding.btnClaimReward.alpha = 1.0f
-//                        } else if (poll.type == VotingPollType.FEATURE_SOLUTION && isUserDeveloper) {
-//                            // Developer sees it's approved but cannot trigger unless they are also the initiator
-//                            binding.btnClaimReward.visibility = View.VISIBLE
-//                            binding.btnClaimReward.text = "Approved - Reward Pending"
-//                            binding.btnClaimReward.isEnabled = false
-//                            binding.btnClaimReward.alpha = 0.5f
-//                        }
+                        binding.votesRequiredText.visibility = View.GONE
 
                     }
                     // Voting closed and not approved
@@ -473,7 +452,6 @@ class FeatureVotingFragment : BaseFragment() {
 
 
                 // We need the total number of DAO members and voting threshold from the latest DAO block.
-                // Crucially, for the transferFunds call, we need the data from the LATEST *JOIN* block
                 android.util.Log.d("FeatureVotingFragment", "triggerRewardTransfer: Fetching latest JOIN block for DAO $daoUniqueId")
                 val latestJoinBlock = withContext(Dispatchers.IO) {
                     getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.JOIN_BLOCK)
@@ -513,21 +491,14 @@ class FeatureVotingFragment : BaseFragment() {
 
                 val currentDaoBalance = withContext(Dispatchers.IO) {
                     try {
-                        // Assuming p2playStore is an instance of P2pStoreCommunity or similar
-                        // and fetchLatestSharedWalletBlockByDaoId is a method in it.
                         val latestDaoWalletBlock = p2playStore.fetchLatestSharedWalletBlockByDaoId(daoUniqueId)
                         if (latestDaoWalletBlock != null) {
                             val serializedTx = when (latestDaoWalletBlock.type) {
-                                // Assuming P2pStoreCommunity.JOIN_BLOCK and P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK
-                                // are accessible constants representing block types.
                                 P2pStoreCommunity.JOIN_BLOCK -> JoinDaoTransactionData(latestDaoWalletBlock.transaction).getData().SW_TRANSACTION_SERIALIZED
                                 P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(latestDaoWalletBlock.transaction).getData().SW_TRANSACTION_SERIALIZED
                                 else -> null
                             }
                             if (serializedTx != null) {
-                                // Assuming CTransaction and hexToBytes are available
-                                // and you have a way to deserialize and find the relevant output.
-                                // This logic to find the balance seems specific to your transaction structure.
                                 CTransaction().deserialize(serializedTx.hexToBytes()).vout.find { it.scriptPubKey.size == 35 }?.nValue
                                     ?: 0L
                             } else {
@@ -568,16 +539,10 @@ class FeatureVotingFragment : BaseFragment() {
                     "triggerRewardTransfer: DAO has sufficient funds. Proceeding with DAO fund transfer."
                 )
 
-                // --- Initiate the DAO fund transfer ---
-                // Call the transferFunds method from P2pStoreCommunity which handles the multisig logic
-                // It will use the signatures from the VOTE_YES blocks to sign the Bitcoin transaction
-                // and then create an UPDATE_ACCEPTED_BLOCK on the TrustChain.
-
+                // Initiate the DAO fund transfer
                 try {
                     android.util.Log.d("FeatureVotingFragment", "triggerRewardTransfer: Starting p2playStore.transferFunds...")
-                    // We need the transaction of the *overall* latest DAO block (JOIN or UPDATE_ACCEPTED)
-                    // as the walletBlockData parameter for p2playStore.transferFunds.
-                    android.util.Log.d("FeatureVotingFragment", "triggerRewardTransfer: Fetching overall latest DAO block...")
+
                     val overallLatestDaoBlock = withContext(Dispatchers.IO) {
                         p2playStore.fetchLatestSharedWalletBlockByDaoId(daoUniqueId)
                     } ?: run {
@@ -591,14 +556,14 @@ class FeatureVotingFragment : BaseFragment() {
 
 
                     p2playStore.transferFunds(
-                        walletData = daoWalletStateForTransfer, // The latest JOIN block state of the DAO wallet (JoinDoaData)
-                        walletBlockData = overallLatestDaoBlock.transaction, // The transaction of the overall latest DAO block (TrustChainTransaction)
-                        blockData = solutionProposalData, // The feature solution proposal block data (ProposeUpdateData)
-                        voteResponses = allVotes, // ALL vote responses (VoteYesData and VoteNoData)
-                        receiverAddress = developerBitcoinAddress, // The developer's Bitcoin address
-                        satoshiAmount = rewardAmount, // The reward amount
+                        walletData = daoWalletStateForTransfer,
+                        walletBlockData = overallLatestDaoBlock.transaction,
+                        blockData = solutionProposalData,
+                        voteResponses = allVotes,
+                        receiverAddress = developerBitcoinAddress,
+                        satoshiAmount = rewardAmount,
                         context = requireContext(),
-                        activity = requireActivity() // Activity context needed by underlying bitcoinj calls
+                        activity = requireActivity()
                     )
 
                     android.util.Log.i("FeatureVotingFragment", "triggerRewardTransfer: DAO fund transfer for reward initiated successfully.")

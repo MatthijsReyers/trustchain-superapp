@@ -1,7 +1,6 @@
 package nl.tudelft.trustchain.p2playstore.transactionData
 
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
-import nl.tudelft.ipv8.util.toHex
 
 /**
  * Represents a voting poll for any type of DAO proposal
