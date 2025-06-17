@@ -12,6 +12,7 @@ data class ProposeUpdateData(
     var SW_UNIQUE_PROPOSAL_ID: String,
     var SW_PREVIOUS_BLOCK_HASH: String,
     var SW_BITCOIN_PKS: List<String>,
+    var SW_NONCE_PKS: ArrayList<String>,
     var SW_SIGNATURES_REQUIRED: Int,
     var SW_TRANSFER_FUNDS_AMOUNT: Long,
     var SW_TRANSFER_FUNDS_TARGET_SERIALIZED: String,
@@ -37,6 +38,12 @@ class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
         return Gson().fromJson(getJsonString(), ProposeUpdateData::class.java)
     }
 
+    fun addNoncePk(publicKey: String) {
+        val data = getData()
+        data.SW_NONCE_PKS.add(publicKey)
+        jsonData = BlockUtils.objectToJsonObject(data)
+    }
+
     // Constructor for regular fund transfers
     constructor(
         uniqueId: String,
@@ -44,6 +51,7 @@ class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
         requiredSignatures: Int,
         satoshiAmount: Long,
         bitcoinPks: List<String>,
+        noncePks: ArrayList<String>,
         transferFundsAddressSerialized: String,
         receiverPk: String,
         uniqueProposalId: String,
@@ -60,6 +68,7 @@ class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
                 uniqueProposalId,
                 previousWalletBlockHash,
                 bitcoinPks,
+                noncePks,
                 requiredSignatures,
                 satoshiAmount,
                 transferFundsAddressSerialized,
@@ -87,6 +96,7 @@ class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
         requiredSignatures: Int,
         rewardAmount: Long,
         bitcoinPks: List<String>,
+        noncePks: ArrayList<String>,
         developerBitcoinAddress: String,
         receiverPk: String,
         uniqueProposalId: String,
@@ -103,6 +113,7 @@ class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
                 uniqueProposalId,
                 previousWalletBlockHash,
                 bitcoinPks,
+                noncePks,
                 requiredSignatures,
                 rewardAmount,
                 developerBitcoinAddress,

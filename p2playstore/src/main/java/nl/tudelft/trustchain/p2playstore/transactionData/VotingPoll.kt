@@ -18,7 +18,7 @@ data class VotingPoll(
     val votingThreshold: Int, // This is the integer number of votes needed, not percentage
     val isActive: Boolean,
     var hasUserVoted: Boolean,
-    val userVote: Boolean? = null,
+    var userVote: Boolean? = null,
     val metadata: Map<String, Any> = emptyMap()
 ) {
     val pendingVotes: Int

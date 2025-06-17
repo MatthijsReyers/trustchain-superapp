@@ -24,12 +24,15 @@ import org.bitcoinj.core.Address
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
+import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedData
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 import nl.tudelft.trustchain.p2playstore.transactionData.AppMetaData
 import nl.tudelft.trustchain.currencyii.util.taproot.CTransaction
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
+import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.BlockListener
+import nl.tudelft.trustchain.p2playstore.transactionData.BaseData
 
 class FeatureVotingFragment : BaseFragment() {
     private var _binding: FragmentFeatureVotingBinding? = null
@@ -60,10 +63,13 @@ class FeatureVotingFragment : BaseFragment() {
         proposalId = arguments?.getString("solutionId") ?: ""
         daoUniqueId = arguments?.getString("daoUniqueId") ?: ""
 
+
+
         if (daoBlockId.isNotEmpty() && proposalId.isNotEmpty() && daoUniqueId.isNotEmpty()) {
-            setupVoteBlockListener()
             loadVotingPoll() // Initial load
             setupClickListeners()
+            setupVoteBlockListener()
+
         } else {
             android.util.Log.e("FeatureVotingFragment", "Missing DAO block ID, Proposal ID, or DAO Unique ID")
             Toast.makeText(context, "Error: Missing voting information.", Toast.LENGTH_SHORT).show()
@@ -72,10 +78,11 @@ class FeatureVotingFragment : BaseFragment() {
     }
 
     private fun loadVotingPoll() {
+        android.util.Log.d("FeatureVotingFragment", "loadVotingPoll called")
         lifecycleScope.launch {
             try {
                 // Add a small delay here to allow the TrustChain block to be processed
-                android.util.Log.d("FeatureVotingFragment", "loadVotingPoll: Delaying for 500ms...")
+                android.util.Log.d("FeatureVotingFragment", "loadVotingPoll: Delaying for 500ms to allow block processing...")
                 kotlinx.coroutines.delay(500) // Added delay at the start of loadVotingPoll
                 android.util.Log.d("FeatureVotingFragment", "loadVotingPoll: Delay finished. Loading poll data...")
 
@@ -92,25 +99,34 @@ class FeatureVotingFragment : BaseFragment() {
                 }
 
                 if (poll != null) {
-                    android.util.Log.d("FeatureVotingFragment", "loadVotingPoll: Voting poll found. ID: ${poll.id}, YesVotes: ${poll.yesVotes}, NoVotes: ${poll.noVotes}, IsActive: ${poll.isActive}, HasUserVoted: ${poll.hasUserVoted}")
+                    android.util.Log.d("FeatureVotingFragment", "loadVotingPoll: Voting poll found. ID: ${poll.id}, YesVotes: ${poll.yesVotes}, NoVotes: ${poll.noVotes}, Required: ${poll.votesNeeded}, IsActive: ${poll.isActive}, HasUserVoted: ${poll.hasUserVoted}, UserVote: ${poll.userVote}")
                     votingPoll = poll
                     withContext(Dispatchers.Main) {
                         updateVotingUIWithPoll(poll) // Update UI with confirmed state
                     }
                 } else {
                     android.util.Log.e("FeatureVotingFragment", "loadVotingPoll: Voting poll not found for DAO $daoUniqueId and proposal $proposalId. Setting up fallback UI.")
-                    setupFallbackUI("Voting poll not found.")
+                    withContext(Dispatchers.Main) {
+                        setupFallbackUI("Voting poll not found or details unavailable.")
+                    }
                 }
 
             } catch (e: Exception) {
                 android.util.Log.e("FeatureVotingFragment", "loadVotingPoll: Error loading voting poll: ${e.message}", e)
-                setupFallbackUI("Error loading voting data: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    setupFallbackUI("Error loading voting data: ${e.message}")
+                }
             }
             android.util.Log.d("FeatureVotingFragment", "loadVotingPoll finished")
         }
     }
 
     private fun updateVotingUIWithPoll(poll: VotingPoll) {
+        // Check if binding is null before accessing it
+        if (_binding == null) {
+            android.util.Log.w("FeatureVotingFragment", "updateVotingUIWithPoll: Binding is null, skipping UI update.")
+            return
+        }
         android.util.Log.d("FeatureVotingFragment", "updateVotingUIWithPoll called for poll ID: ${poll.id}")
         // Use data from the unified VotingPoll object
         binding.originalFeatureTitle.text = poll.title
@@ -139,7 +155,9 @@ class FeatureVotingFragment : BaseFragment() {
         binding.pendingPercentage.text = "${poll.pendingPercentage}%"
 
         binding.votesRequiredText.text = "${poll.yesVotes} of ${poll.votesNeeded} votes needed for approval"
-        android.util.Log.d("FeatureVotingFragment", "updateVotingUIWithPoll: Percentages (Y/N/P): ${poll.yesPercentage}%/${poll.noPercentage}%/${poll.pendingPercentage}%. Votes (Y/N/Req): ${poll.yesVotes}/${poll.noVotes}/${poll.votesNeeded}")
+        binding.alreadyVotedText.text = "${poll.totalVotesCast} of ${poll.totalMembers} members voted" // Use totalVotesCast and totalMembers
+
+        android.util.Log.d("FeatureVotingFragment", "updateVotingUIWithPoll: Percentages (Y/N/P): ${poll.yesPercentage}%/${poll.noPercentage}%/${poll.pendingPercentage}%. Votes (Y/N/Req): ${poll.yesVotes}/${poll.noVotes}/${poll.votesNeeded}. Total Voted: ${poll.totalVotesCast}/${poll.totalMembers}")
         AppUtils.updateProgressBars(
             binding.root,
             binding.yesProgressBar,
@@ -201,6 +219,7 @@ class FeatureVotingFragment : BaseFragment() {
                     when(latestDaoBlock.type) {
                         P2pStoreCommunity.JOIN_BLOCK -> JoinDaoTransactionData(latestDaoBlock.transaction).getData()
                         P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(latestDaoBlock.transaction).getData()
+                        P2pStoreCommunity.PROPOSE_UPDATE_BLOCK -> ProposeUpdateTransactionData(latestDaoBlock.transaction).getData()
                         else -> null
                     }
                 } else {
@@ -248,7 +267,7 @@ class FeatureVotingFragment : BaseFragment() {
                 android.util.Log.d("FeatureVotingFragment", "updateVotingState: Is user the developer of this solution? $isUserDeveloper")
 
                 binding.votingButtonsLayout.visibility = View.GONE
-//                binding.btnClaimReward.visibility = View.GONE
+
                 binding.votesRequiredText.visibility = View.VISIBLE
                 binding.alreadyVotedText.visibility = View.VISIBLE
 //                binding.btnDownloadApk.visibility = View.GONE
@@ -258,30 +277,9 @@ class FeatureVotingFragment : BaseFragment() {
                     // Voting closed and approved (enough YES votes)
                     poll.isApproved -> { // Use the isApproved property from VotingPoll
                         android.util.Log.d("FeatureVotingFragment", "updateVotingState: Poll is Approved.")
-                        binding.alreadyVotedText.text = "Approved" // Use the total votes TextView to show final status
+                        binding.alreadyVotedText.text = "Approved"
                         binding.alreadyVotedText.setTextColor(resources.getColor(android.R.color.holo_green_dark, null))
-                        binding.votesRequiredText.visibility = View.GONE // Hide required text when decided
-
-//                        // If approved and this is a feature solution, show download APK button
-//                        if (poll.type == VotingPollType.FEATURE_SOLUTION) {
-//                            binding.btnDownloadApk.visibility = View.VISIBLE
-//                            binding.btnDownloadApk.isEnabled = true
-//                            binding.btnDownloadApk.alpha = 1.0f
-//                        }
-
-//                        // If approved, this is a feature solution, and I am the DAO initiator, show claim button
-//                        if (poll.type == VotingPollType.FEATURE_SOLUTION && isDaoInitiator) {
-//                            binding.btnClaimReward.visibility = View.VISIBLE
-//                            binding.btnClaimReward.text = "Trigger Reward Transfer" // Initiator triggers transfer
-//                            binding.btnClaimReward.isEnabled = true
-//                            binding.btnClaimReward.alpha = 1.0f
-//                        } else if (poll.type == VotingPollType.FEATURE_SOLUTION && isUserDeveloper) {
-//                            // Developer sees it's approved but cannot trigger unless they are also the initiator
-//                            binding.btnClaimReward.visibility = View.VISIBLE
-//                            binding.btnClaimReward.text = "Approved - Reward Pending"
-//                            binding.btnClaimReward.isEnabled = false
-//                            binding.btnClaimReward.alpha = 0.5f
-//                        }
+                        binding.votesRequiredText.visibility = View.GONE
 
                     }
                     // Voting closed and not approved
@@ -333,7 +331,8 @@ class FeatureVotingFragment : BaseFragment() {
 
                 android.util.Log.d("FeatureVotingFragment", "updateVotingState: Final check for vote button enabled state. Poll isActive=${poll.isActive}, hasUserVoted (Poll)=${poll.hasUserVoted}, isUserMember=${isUserMember}, isUserDeveloper=${isUserDeveloper}")
                 // Disable vote buttons if not active OR user has voted (locally or on poll) OR not a member OR is the developer
-                if (!poll.isActive || !isUserMember || isUserDeveloper) {
+                if (!poll.isActive || !isUserMember || isUserDeveloper || poll.hasUserVoted) {
+                    android.util.Log.d("FeatureVotingFragment", "Disabling vote buttons: isActive=${poll.isActive}, isUserMember=${isUserMember}, isUserDeveloper=${isUserDeveloper}, hasUserVoted=${poll.hasUserVoted}")
                     binding.btnVoteYes.isEnabled = false
                     binding.btnVoteNo.isEnabled = false
                     binding.btnVoteYes.alpha = 0.5f
@@ -366,24 +365,22 @@ class FeatureVotingFragment : BaseFragment() {
 
                 // Automatically trigger reward transfer if approved and not already triggered
                 if (poll.isApproved && poll.type == VotingPollType.FEATURE_SOLUTION) { // Use isApproved
+
+
                     android.util.Log.d("FeatureVotingFragment", "updateVotingState: Poll is approved and is a Feature Solution.")
                     // Check if the transfer has already been recorded on chain.
                     android.util.Log.d("FeatureVotingFragment", "updateVotingState: Checking for existing UPDATE_ACCEPTED_BLOCK for proposal ${poll.id}")
-                    val transferDoneBlockExists = withContext(Dispatchers.IO) {
-                        getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK).any {
-                            try { UpdateAcceptedTransactionData(it.transaction).getData().SW_UNIQUE_PROPOSAL_ID == poll.id } catch (e: Exception) { false }
-                        }
-                    }
-                    android.util.Log.d("FeatureVotingFragment", "updateVotingState: UPDATE_ACCEPTED_BLOCK found? $transferDoneBlockExists. isTransferInitiated flag: $isTransferInitiated")
+//                    val transferDoneBlockExists = withContext(Dispatchers.IO) {
+//                        getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK).any {
+//                            try { UpdateAcceptedTransactionData(it.transaction).getData().SW_UNIQUE_PROPOSAL_ID == poll.id } catch (e: Exception) { false }
+//                        }
+//                    }
+//                    android.util.Log.d("FeatureVotingFragment", "updateVotingState: UPDATE_ACCEPTED_BLOCK found? $transferDoneBlockExists. isTransferInitiated flag: $isTransferInitiated")
 
-                    // --- Add check for the state flag ---
-                    if (!transferDoneBlockExists && !isTransferInitiated) {
-                        android.util.Log.d("FeatureVotingFragment", "updateVotingState: Poll approved, UPDATE_ACCEPTED_BLOCK not found, and transfer not yet initiated. Triggering reward transfer...")
+                    if (!isTransferInitiated) {
+                        android.util.Log.d("FeatureVotingFragment", "updateVotingState: Poll approved, UPDATE_ACCEPTED_BLOCK found, and transfer not yet initiated. Triggering reward transfer...")
                         isTransferInitiated = true // Set the flag
                         triggerRewardTransfer(poll)
-                    } else if (transferDoneBlockExists) {
-                        android.util.Log.d("FeatureVotingFragment", "updateVotingState: Poll approved but UPDATE_ACCEPTED_BLOCK already found. Reward transfer already triggered.")
-                        isTransferInitiated = true // Ensure flag is set if block exists
                     } else if (isTransferInitiated) {
                         android.util.Log.d(
                             "FeatureVotingFragment",
@@ -468,19 +465,14 @@ class FeatureVotingFragment : BaseFragment() {
                     p2playStore.fetchNegativeProposalResponses(daoUniqueId, proposalId)
                 }
 
-                val allVotes = yesVotes + noVotes
-                android.util.Log.d("FeatureVotingFragment", "triggerRewardTransfer: Found ${yesVotes.size} YES votes and ${noVotes.size} NO votes.")
+                val allVoteResponses: List<BaseData> = yesVotes + noVotes
+                android.util.Log.d("FeatureVotingFragment", "triggerRewardTransfer: Found ${yesVotes.size} YES votes and ${noVotes.size} NO votes (Total ${allVoteResponses.size}).")
 
 
                 // We need the total number of DAO members and voting threshold from the latest DAO block.
-                // Crucially, for the transferFunds call, we need the data from the LATEST *JOIN* block
                 android.util.Log.d("FeatureVotingFragment", "triggerRewardTransfer: Fetching latest JOIN block for DAO $daoUniqueId")
                 val latestJoinBlock = withContext(Dispatchers.IO) {
-                    getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.JOIN_BLOCK)
-                        .filter { block ->
-                            try { JoinDaoTransactionData(block.transaction).getData().DAO_ID == daoUniqueId } catch (e: Exception) { false }
-                        }
-                        .maxByOrNull { it.insertTime!! }
+                    p2playStore.fetchLatestJoinBlockByDaoId(daoUniqueId)
                 } ?: run {
                     android.util.Log.e("FeatureVotingFragment", "triggerRewardTransfer: Cannot trigger reward transfer: Latest JOIN block not found for DAO $daoUniqueId.")
                     withContext(Dispatchers.Main) { Toast.makeText(context, "Error: Could not find latest DAO join state.", Toast.LENGTH_SHORT).show() }
@@ -494,40 +486,34 @@ class FeatureVotingFragment : BaseFragment() {
 
 
                 val totalDaoMembers = daoWalletStateForTransfer.SW_TRUSTCHAIN_PKS.size
-                val votingThreshold = daoWalletStateForTransfer.SW_VOTING_THRESHOLD // Use threshold from latest JOIN block
-                val requiredSignatures = BlockUtils.percentageToIntThreshold(totalDaoMembers, votingThreshold)
-                android.util.Log.d("FeatureVotingFragment", "triggerRewardTransfer: Calculated required signatures: $requiredSignatures")
+                val votingThresholdPercentage = daoWalletStateForTransfer.SW_VOTING_THRESHOLD // Use percentage threshold from latest JOIN block
+                val requiredSignaturesForApproval = BlockUtils.percentageToIntThreshold(totalDaoMembers, votingThresholdPercentage)
+                android.util.Log.d("FeatureVotingFragment", "triggerRewardTransfer: Calculated required signatures for proposal approval: $requiredSignaturesForApproval")
 
 
-                if (yesVotes.size < requiredSignatures) { // Use the calculated required signatures based on DAO state
-                    android.util.Log.w("FeatureVotingFragment", "triggerRewardTransfer: Insufficient YES votes (${yesVotes.size}). Required: $requiredSignatures.")
+                // Re-check if enough YES votes were collected for the proposal approval
+                if (yesVotes.size < requiredSignaturesForApproval) {
+                    android.util.Log.w("FeatureVotingFragment", "triggerRewardTransfer: Insufficient YES votes (${yesVotes.size}) for proposal approval. Required: $requiredSignaturesForApproval.")
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Reward transfer not yet possible. Need $requiredSignatures YES votes, have ${yesVotes.size}.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Reward transfer not yet possible. Need $requiredSignaturesForApproval YES votes, have ${yesVotes.size}.", Toast.LENGTH_LONG).show()
                     }
                     loadVotingPoll() // Reload to show current state
                     isTransferInitiated = false // Reset flag on failure
                     return@launch
                 }
 
-                android.util.Log.d("FeatureVotingFragment", "triggerRewardTransfer: Enough YES votes (${yesVotes.size}) collected for proposal ${proposalId}. Required: $requiredSignatures. Checking DAO balance...")
+                android.util.Log.d("FeatureVotingFragment", "triggerRewardTransfer: Enough YES votes (${yesVotes.size}) collected for proposal ${proposalId}. Required: $requiredSignaturesForApproval. Checking DAO balance...")
 
                 val currentDaoBalance = withContext(Dispatchers.IO) {
                     try {
-                        // Assuming p2playStore is an instance of P2pStoreCommunity or similar
-                        // and fetchLatestSharedWalletBlockByDaoId is a method in it.
                         val latestDaoWalletBlock = p2playStore.fetchLatestSharedWalletBlockByDaoId(daoUniqueId)
                         if (latestDaoWalletBlock != null) {
                             val serializedTx = when (latestDaoWalletBlock.type) {
-                                // Assuming P2pStoreCommunity.JOIN_BLOCK and P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK
-                                // are accessible constants representing block types.
                                 P2pStoreCommunity.JOIN_BLOCK -> JoinDaoTransactionData(latestDaoWalletBlock.transaction).getData().SW_TRANSACTION_SERIALIZED
                                 P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(latestDaoWalletBlock.transaction).getData().SW_TRANSACTION_SERIALIZED
                                 else -> null
                             }
                             if (serializedTx != null) {
-                                // Assuming CTransaction and hexToBytes are available
-                                // and you have a way to deserialize and find the relevant output.
-                                // This logic to find the balance seems specific to your transaction structure.
                                 CTransaction().deserialize(serializedTx.hexToBytes()).vout.find { it.scriptPubKey.size == 35 }?.nValue
                                     ?: 0L
                             } else {
@@ -568,16 +554,10 @@ class FeatureVotingFragment : BaseFragment() {
                     "triggerRewardTransfer: DAO has sufficient funds. Proceeding with DAO fund transfer."
                 )
 
-                // --- Initiate the DAO fund transfer ---
-                // Call the transferFunds method from P2pStoreCommunity which handles the multisig logic
-                // It will use the signatures from the VOTE_YES blocks to sign the Bitcoin transaction
-                // and then create an UPDATE_ACCEPTED_BLOCK on the TrustChain.
-
+                // Initiate the DAO fund transfer
                 try {
                     android.util.Log.d("FeatureVotingFragment", "triggerRewardTransfer: Starting p2playStore.transferFunds...")
-                    // We need the transaction of the *overall* latest DAO block (JOIN or UPDATE_ACCEPTED)
-                    // as the walletBlockData parameter for p2playStore.transferFunds.
-                    android.util.Log.d("FeatureVotingFragment", "triggerRewardTransfer: Fetching overall latest DAO block...")
+
                     val overallLatestDaoBlock = withContext(Dispatchers.IO) {
                         p2playStore.fetchLatestSharedWalletBlockByDaoId(daoUniqueId)
                     } ?: run {
@@ -591,14 +571,14 @@ class FeatureVotingFragment : BaseFragment() {
 
 
                     p2playStore.transferFunds(
-                        walletData = daoWalletStateForTransfer, // The latest JOIN block state of the DAO wallet (JoinDoaData)
-                        walletBlockData = overallLatestDaoBlock.transaction, // The transaction of the overall latest DAO block (TrustChainTransaction)
-                        blockData = solutionProposalData, // The feature solution proposal block data (ProposeUpdateData)
-                        voteResponses = allVotes, // ALL vote responses (VoteYesData and VoteNoData)
-                        receiverAddress = developerBitcoinAddress, // The developer's Bitcoin address
-                        satoshiAmount = rewardAmount, // The reward amount
+                        walletData = daoWalletStateForTransfer,
+                        walletBlockData = overallLatestDaoBlock.transaction,
+                        blockData = solutionProposalData,
+                        voteResponses = allVoteResponses,
+                        receiverAddress = developerBitcoinAddress,
+                        satoshiAmount = rewardAmount,
                         context = requireContext(),
-                        activity = requireActivity() // Activity context needed by underlying bitcoinj calls
+                        activity = requireActivity()
                     )
 
                     android.util.Log.i("FeatureVotingFragment", "triggerRewardTransfer: DAO fund transfer for reward initiated successfully.")
@@ -677,8 +657,8 @@ class FeatureVotingFragment : BaseFragment() {
         }
 
         android.util.Log.d("FeatureVotingFragment", "setupVoteBlockListener called")
-        val listener = object : nl.tudelft.ipv8.attestation.trustchain.BlockListener {
-            override fun onBlockReceived(block: nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock) {
+        val listener = object : BlockListener {
+            override fun onBlockReceived(block: TrustChainBlock) {
                 android.util.Log.d("FeatureVotingFragment", "Vote Block Listener: Received block ${block.blockId}, type: ${block.type}")
                 // Check if the received block is a vote (YES or NO) for the current proposal
                 val isRelevantVote = try {
@@ -696,6 +676,12 @@ class FeatureVotingFragment : BaseFragment() {
                                 android.util.Log.d("FeatureVotingFragment", "Vote Block Listener: Checking UPDATE_ACCEPTED_BLOCK for proposal $proposalId: DAO ID Match=${data.DAO_ID == daoUniqueId}, Proposal ID Match=${data.SW_UNIQUE_PROPOSAL_ID == proposalId}, IsRelevant=$it")
                             }
                         }
+                        P2pStoreCommunity.PROPOSE_UPDATE_BLOCK -> {
+                            val data = ProposeUpdateTransactionData(block.transaction).getData()
+                            (data.DAO_ID == daoUniqueId && data.SW_UNIQUE_PROPOSAL_ID == proposalId).also {
+                                android.util.Log.d("FeatureVotingFragment", "Vote Block Listener: Checking Propose Update for proposal $proposalId: DAO ID Match=${data.DAO_ID == daoUniqueId}, Proposal ID Match=${data.SW_UNIQUE_PROPOSAL_ID == proposalId}, IsRelevant=$it")
+                            }
+                        }
                         else -> false.also { android.util.Log.d("FeatureVotingFragment", "Vote Block Listener: Received non-relevant block type: ${block.type}") }
                     }
                 } catch (e: Exception) {
@@ -704,11 +690,11 @@ class FeatureVotingFragment : BaseFragment() {
                 }
 
                 if (isRelevantVote) {
-                    android.util.Log.d("FeatureVotingFragment", "Vote Block Listener: Relevant vote block received: ${block.blockId}. Reloading poll in UI thread.")
+                    android.util.Log.d("FeatureVotingFragment", "Vote Block Listener: Relevant block received: ${block.blockId}. Reloading poll in UI thread.")
                     viewLifecycleOwner.lifecycleScope.launch {
-                        // Increased delay to allow block to be processed by the database
-                        android.util.Log.d("FeatureVotingFragment", "Vote Block Listener: Delaying for 2000ms before reloading poll...")
-                        kotlinx.coroutines.delay(2000) // Increased delay further
+                        // Use a small delay to allow the database to potentially update
+                        android.util.Log.d("FeatureVotingFragment", "Vote Block Listener: Delaying for 300ms before reloading poll...")
+                        kotlinx.coroutines.delay(300) // Reduced delay
                         android.util.Log.d("FeatureVotingFragment", "Vote Block Listener: Delay finished. Calling loadVotingPoll().")
                         loadVotingPoll()
                     }
@@ -720,6 +706,7 @@ class FeatureVotingFragment : BaseFragment() {
         getTrustChainCommunity().addListener(P2pStoreCommunity.VOTE_YES_BLOCK, listener)
         getTrustChainCommunity().addListener(P2pStoreCommunity.VOTE_NO_BLOCK, listener)
         getTrustChainCommunity().addListener(P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK, listener)
+        getTrustChainCommunity().addListener(P2pStoreCommunity.PROPOSE_UPDATE_BLOCK, listener)
         // Store the new listener instance
         voteBlockListener = listener
         android.util.Log.d("FeatureVotingFragment", "setupVoteBlockListener finished")
@@ -749,17 +736,18 @@ class FeatureVotingFragment : BaseFragment() {
 
                 // Ensure the current user is a member and can vote
                 android.util.Log.d("FeatureVotingFragment", "submitVote: Checking if user is a DAO member...")
-                val daoBlock = withContext(Dispatchers.IO) {
-                    // Using daoUniqueId to fetch latest block for membership check
+                // Use fetchLatestSharedWalletBlockByDaoId to get the overall latest DAO block for membership check
+                val latestDaoBlock = withContext(Dispatchers.IO) {
                     android.util.Log.d("FeatureVotingFragment", "submitVote: Fetching latest shared wallet block by DAO ID: $daoUniqueId for membership check.")
                     p2playStore.fetchLatestSharedWalletBlockByDaoId(daoUniqueId)
                 }
-                val isUserMember = if (daoBlock != null) {
+                val isUserMember = if (latestDaoBlock != null) {
                     val myPublicKeyHex = p2playStore.myPeer.publicKey.keyToBin().toHex()
-                    android.util.Log.d("FeatureVotingFragment", "submitVote: Latest DAO block found (ID: ${daoBlock.blockId}, Type: ${daoBlock.type}). Checking if user PK ${myPublicKeyHex.take(8)}... is member.")
-                    when(daoBlock.type) {
-                        P2pStoreCommunity.JOIN_BLOCK -> JoinDaoTransactionData(daoBlock.transaction).getData().SW_TRUSTCHAIN_PKS.contains(myPublicKeyHex)
-                        P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(daoBlock.transaction).getData().SW_TRUSTCHAIN_PKS.contains(myPublicKeyHex)
+                    android.util.Log.d("FeatureVotingFragment", "submitVote: Latest DAO block found (ID: ${latestDaoBlock.blockId}, Type: ${latestDaoBlock.type}). Checking if user PK ${myPublicKeyHex.take(8)}... is member.")
+                    when(latestDaoBlock.type) {
+                        P2pStoreCommunity.JOIN_BLOCK -> JoinDaoTransactionData(latestDaoBlock.transaction).getData().SW_TRUSTCHAIN_PKS.contains(myPublicKeyHex)
+                        P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(latestDaoBlock.transaction).getData().SW_TRUSTCHAIN_PKS.contains(myPublicKeyHex)
+//                        P2pStoreCommunity.PROPOSE_UPDATE_BLOCK -> ProposeUpdateTransactionData(latestDaoBlock.transaction).getData().SW_BITCOIN_PKS.contains(myPublicKeyHex)
                         else -> false
                     }
                 } else {
@@ -800,8 +788,14 @@ class FeatureVotingFragment : BaseFragment() {
                 }
                 android.util.Log.d("FeatureVotingFragment", "submitVote: Valid DAO and Poll IDs found. Preparing to call voteOnProposal.")
 
-
-                Toast.makeText(context, "Vote submitted. Waiting for it to appear on chain...", Toast.LENGTH_SHORT).show()
+                // Disable buttons and show pending indicator immediately
+                withContext(Dispatchers.Main) {
+                    binding.votingButtonsLayout.visibility = View.GONE
+                    binding.alreadyVotedText.text = "Submitting vote..."
+                    binding.alreadyVotedText.setTextColor(resources.getColor(android.R.color.darker_gray, null))
+                    binding.alreadyVotedText.visibility = View.VISIBLE
+                    Toast.makeText(context, "Vote submitted. Waiting for it to appear on chain...", Toast.LENGTH_SHORT).show()
+                }
 
                 // Use the community method to create the vote block (runs on IO dispatcher due to withContext)
                 withContext(Dispatchers.IO) {
@@ -814,9 +808,13 @@ class FeatureVotingFragment : BaseFragment() {
                 }
 
                 android.util.Log.d("FeatureVotingFragment", "submitVote: voteOnProposal called successfully. Waiting for block listener to update UI.")
-                currentPoll.hasUserVoted = true
+                // Optimistically update UI state to show user has voted (will be confirmed by listener)
+                withContext(Dispatchers.Main) {
+                    currentPoll.hasUserVoted = true
+                    currentPoll.userVote = isYes
+                    updateVotingState(currentPoll) // Update state locally
+                }
 
-                // The block listener will pick up the new block and trigger loadVotingPoll
 
             } catch (e: Exception) {
                 android.util.Log.e("FeatureVotingFragment", "submitVote: Error submitting vote: ${e.message}", e)
@@ -838,6 +836,12 @@ class FeatureVotingFragment : BaseFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        voteBlockListener?.let {
+            android.util.Log.d("FeatureVotingFragment", "onDestroyView: Removing block listener.")
+            getTrustChainCommunity().removeListener(it, P2pStoreCommunity.VOTE_YES_BLOCK)
+            getTrustChainCommunity().removeListener(it, P2pStoreCommunity.VOTE_NO_BLOCK)
+            getTrustChainCommunity().removeListener(it, P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK)
+        }
         voteBlockListener = null // Clear the reference
         _binding = null
     }

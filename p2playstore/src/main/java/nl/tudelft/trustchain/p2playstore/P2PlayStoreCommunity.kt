@@ -10,7 +10,6 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.ipv8.util.hexToBytes
-import nl.tudelft.trustchain.currencyii.sharedWallet.SWResponseSignatureTransactionData
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.transactionData.*
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
@@ -214,6 +213,7 @@ class P2pStoreCommunity : Community() {
                         else -> false
                     }
                 } catch (e: Exception) {
+                    Log.e("P2PlayStore", "Error filtering block ${block.blockId} by DAO ID: ${e.message}")
                     false
                 }
             }
@@ -229,6 +229,7 @@ class P2pStoreCommunity : Community() {
                 try {
                     JoinDaoTransactionData(block.transaction).getData().DAO_ID == daoId
                 } catch (e: Exception) {
+                    Log.e("P2PlayStore", "Error filtering JOIN block ${block.blockId} by DAO ID: ${e.message}")
                     false
                 }
             }
@@ -268,6 +269,37 @@ class P2pStoreCommunity : Community() {
             .maxByOrNull { it.timestamp.time }
     }
 
+    /**
+     * Fetches the latest UPDATE_ACCEPTED_BLOCK for a specific DAO.
+     */
+    fun fetchLatestUpdateAcceptedBlockByDaoId(daoId: String): TrustChainBlock? {
+        return getTrustChainCommunity().database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
+            .filter { block ->
+                try {
+                    UpdateAcceptedTransactionData(block.transaction).getData().DAO_ID == daoId
+                } catch (e: Exception) {
+                    Log.e("P2PlayStore", "Error filtering UPDATE_ACCEPTED block ${block.blockId} by DAO ID: ${e.message}")
+                    false
+                }
+            }
+            .maxByOrNull { it.insertTime!! }
+    }
+
+    /**
+     * Fetches the latest PROPOSE_UPDATE_BLOCK for a specific DAO.
+     */
+    fun fetchLatestProposeUpdateBlockByDaoId(daoId: String): TrustChainBlock? {
+        return getTrustChainCommunity().database.getBlocksWithType(PROPOSE_UPDATE_BLOCK)
+            .filter { block ->
+                try {
+                    ProposeUpdateTransactionData(block.transaction).getData().DAO_ID == daoId
+                } catch (e: Exception) {
+                    Log.e("P2PlayStore", "Error filtering PROPOSE_UPDATE block ${block.blockId} by DAO ID: ${e.message}")
+                    false
+                }
+            }
+            .maxByOrNull { it.insertTime!! }
+    }
 //    /**
 //     * Get the public key of the one that is receiving the request
 //     * @return string
@@ -327,11 +359,14 @@ class P2pStoreCommunity : Community() {
         return getTrustChainCommunity()
             .database
             .getBlocksWithType(VOTE_YES_BLOCK)
-            .filter {
-                val blockData = VoteYesTransactionData(it.transaction)
-                blockData.matchesProposal(walletId, proposalId)
+            .mapNotNull { // Use mapNotNull to filter out blocks that fail parsing
+                try { VoteYesTransactionData(it.transaction) } catch (e: Exception) {
+                    Log.e("P2PlayStore", "Error parsing VOTE_YES block ${it.blockId}: ${e.message}")
+                    null
+                }
             }
-            .map { VoteYesTransactionData(it.transaction).getData() }
+            .filter { it.matchesProposal(walletId, proposalId) }
+            .map { it.getData() }
     }
 
     /**
@@ -346,11 +381,14 @@ class P2pStoreCommunity : Community() {
         return getTrustChainCommunity()
             .database
             .getBlocksWithType(VOTE_NO_BLOCK)
-            .filter {
-                val blockData = VoteNoTransactionData(it.transaction)
-                blockData.matchesProposal(walletId, proposalId)
+            .mapNotNull { // Use mapNotNull to filter out blocks that fail parsing
+                try { VoteNoTransactionData(it.transaction) } catch (e: Exception) {
+                    Log.e("P2PlayStore", "Error parsing VOTE_NO block ${it.blockId}: ${e.message}")
+                    null
+                }
             }
-            .map { VoteNoTransactionData(it.transaction).getData() }
+            .filter { it.matchesProposal(walletId, proposalId) }
+            .map { it.getData() }
     }
 
     /**
@@ -366,8 +404,8 @@ class P2pStoreCommunity : Community() {
         val latestHash =
             JoinRequestTransactionData(block.transaction).getData().SW_PREVIOUS_BLOCK_HASH
         val mostRecentSWBlock =
-            fetchLatestSharedWalletBlock(latestHash.hexToBytes())
-                ?: throw IllegalStateException("Most recent DAO block not found")
+            fetchLatestJoinBlockByDaoId(JoinRequestTransactionData(block.transaction).getData().DAO_ID) // Fetch latest JOIN block by DAO ID
+                ?: throw IllegalStateException("Most recent DAO JOIN block not found to sign join request.")
         val joinBlock = JoinDaoTransactionData(mostRecentSWBlock.transaction).getData()
         val oldTransaction = joinBlock.SW_TRANSACTION_SERIALIZED
 
@@ -395,10 +433,10 @@ class P2pStoreCommunity : Community() {
         val daoId = proposalData.DAO_ID
 
         // We need the data from the latest JOIN block to get the current member list and transaction data
-        val latestJoinBlock = fetchLatestJoinBlockByDaoId(daoId)
+        val latestJoinBlock = fetchLatestProposeUpdateBlockByDaoId(daoId)
             ?: throw IllegalStateException("Latest JOIN block not found for DAO ${daoId}. Cannot sign transfer.")
 
-        val latestJoinData = JoinDaoTransactionData(latestJoinBlock.transaction).getData()
+        val latestJoinData = ProposeUpdateTransactionData(latestJoinBlock.transaction).getData()
 
         DAOTransferFundsHelper.transferFundsBlockReceived( // Call the companion object method
             block,
@@ -456,7 +494,7 @@ class P2pStoreCommunity : Community() {
     /**
      * Create a feature solution proposal (reusing PROPOSE_UPDATE_BLOCK)
      */
-    suspend fun createFeatureSolution(
+    fun createFeatureSolution(
         daoId: String,
         featureRequestId: String,
         solutionTitle: String,
@@ -468,7 +506,32 @@ class P2pStoreCommunity : Community() {
         val latestDaoBlock = fetchLatestSharedWalletBlockByDaoId(daoId)
             ?: throw IllegalStateException("DAO not found: $daoId")
 
-        val daoData = JoinDaoTransactionData(latestDaoBlock.transaction).getData()
+        val daoData = when(latestDaoBlock.type) {
+            JOIN_BLOCK -> JoinDaoTransactionData(latestDaoBlock.transaction).getData()
+            UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(latestDaoBlock.transaction).getData()
+            PROPOSE_UPDATE_BLOCK -> ProposeUpdateTransactionData(latestDaoBlock.transaction).getData() // Should not happen here, but include for safety
+            else -> throw IllegalStateException("Unsupported latest DAO block type for creating solution: ${latestDaoBlock.type}")
+        }
+
+        val trustChainPks: List<String>? = when (daoData) {
+            is JoinDoaData -> daoData.SW_BITCOIN_PKS
+            is UpdateAcceptedData -> daoData.SW_BITCOIN_PKS // Assuming UpdateAcceptedData has it
+            is ProposeUpdateData -> daoData.SW_BITCOIN_PKS // Assuming ProposeUpdateData class exists and has it
+            else -> null // Or throw an exception if this state is unexpected
+        }
+
+        val serialized_transaction: String? = when (daoData) {
+            is JoinDoaData -> daoData.SW_TRANSACTION_SERIALIZED
+            is UpdateAcceptedData -> daoData.SW_TRANSACTION_SERIALIZED
+            is ProposeUpdateData -> daoData.SW_TRANSFER_FUNDS_TARGET_SERIALIZED
+            else -> null
+        }
+
+        val noncePks: ArrayList<String> = when (daoData) {
+            is JoinDoaData -> daoData.SW_NONCE_PKS
+            is UpdateAcceptedData -> daoData.SW_NONCE_PKS // Assuming UpdateAcceptedData has it
+            else -> arrayListOf() // Should not happen
+        }
 
         // Get the feature request to know the reward amount
         val featureRequest = getFeatureRequestsForDao(daoId)
@@ -477,33 +540,19 @@ class P2pStoreCommunity : Community() {
 
         val proposalId = BlockUtils.randomUUID()
         val requiredSignatures = BlockUtils.percentageToIntThreshold(
-            daoData.SW_BITCOIN_PKS.size,
-            daoData.SW_VOTING_THRESHOLD
+            trustChainPks?.size!!, // Use member count from the latest DAO state
+            // Need the voting threshold. The latest JOIN block definitely has it.
+            fetchLatestJoinBlockByDaoId(daoId)?.let { JoinDaoTransactionData(it.transaction).getData().SW_VOTING_THRESHOLD }
+                ?: throw IllegalStateException("Could not determine voting threshold from latest JOIN block for DAO $daoId")
         )
-
-        val featureSolutionData = ProposeUpdateTransactionData(
-            daoId = daoId,
-            featureRequestId = featureRequestId,
-            solutionTitle = solutionTitle,
-            solutionDescription = solutionDescription,
-            developerPublicKey = myPeer.publicKey.pub().toString(),
-            apkMagnetLink = apkMagnetLink,
-            previousWalletBlockHash = latestDaoBlock.calculateHash().toHex(),
-            requiredSignatures = requiredSignatures,
-            rewardAmount = featureRequest.FEATURE_REWARD,
-            bitcoinPks = daoData.SW_BITCOIN_PKS,
-            developerBitcoinAddress = developerBitcoinAddress,
-            receiverPk = "", // Will be set for each member
-            uniqueProposalId = proposalId,
-            transactionSerialized = daoData.SW_TRANSACTION_SERIALIZED,
-            appName = daoData.APP_NAME,
-            appDescription = daoData.APP_DESCRIPTION,
-            appCategory = daoData.APP_CATEGORY,
-            appIcon = daoData.APP_ICON
-        )
+        Log.d("P2PlayStore", "Required signatures: $requiredSignatures")
+        // Fetch the transaction serialized from the LATEST JOIN block for the proposal
+//        val latestJoinBlock = fetchLatestJoinBlockByDaoId(daoId)
+//            ?: throw IllegalStateException("Latest JOIN block not found for DAO ${daoId}. Cannot create solution proposal.")
+//        val transactionSerializedForProposal = JoinDaoTransactionData(latestJoinBlock.transaction).getData().SW_TRANSACTION_SERIALIZED
 
         // Send proposal to all DAO members
-        for (memberPk in daoData.SW_TRUSTCHAIN_PKS) {
+        for (memberPk in trustChainPks) {
             val memberSpecificProposal = ProposeUpdateTransactionData(
                 daoId = daoId,
                 featureRequestId = featureRequestId,
@@ -511,14 +560,15 @@ class P2pStoreCommunity : Community() {
                 solutionDescription = solutionDescription,
                 developerPublicKey = myPeer.publicKey.pub().toString(),
                 apkMagnetLink = apkMagnetLink,
-                previousWalletBlockHash = latestDaoBlock.calculateHash().toHex(),
-                requiredSignatures = requiredSignatures,
+                previousWalletBlockHash = latestDaoBlock.calculateHash().toHex(), // Use hash of overall latest DAO block
+                requiredSignatures = requiredSignatures, // Calculated based on latest members and threshold
                 rewardAmount = featureRequest.FEATURE_REWARD,
-                bitcoinPks = daoData.SW_BITCOIN_PKS,
+                bitcoinPks = trustChainPks,
+                noncePks = noncePks,
                 developerBitcoinAddress = developerBitcoinAddress,
-                receiverPk = memberPk, // Set specific receiver
+                receiverPk = memberPk,
                 uniqueProposalId = proposalId,
-                transactionSerialized = daoData.SW_TRANSACTION_SERIALIZED,
+                transactionSerialized = serialized_transaction.toString(),
                 appName = daoData.APP_NAME,
                 appDescription = daoData.APP_DESCRIPTION,
                 appCategory = daoData.APP_CATEGORY,
@@ -594,6 +644,7 @@ class P2pStoreCommunity : Community() {
                 )
             }
             PROPOSE_UPDATE_BLOCK -> {
+                Log.d("P2PlayStore", "Voting on proposal block $proposalId ${proposalBlock.type}")
                 transferFundsBlockReceived(
                     proposalBlock,
                     myPeer.publicKey.keyToBin(),
@@ -631,18 +682,18 @@ class P2pStoreCommunity : Community() {
      * Get all feature requests for a DAO
      */
     fun getFeatureRequestsForDao(daoId: String): List<FeatureRequestData> {
-    val blocks = getTrustChainCommunity().database.getBlocksWithType(FEATURE_REQUEST_BLOCK)
+        val blocks = getTrustChainCommunity().database.getBlocksWithType(FEATURE_REQUEST_BLOCK)
 
-    return blocks
-        .mapNotNull { block ->
-            try {
-                FeatureRequestTransactionData(block.transaction).getData()
-            } catch (e: Exception) {
-                Log.e("P2PlayStoreCommunity", "Failed to parse FeatureRequest block: ${e.message}")
-                null
+        return blocks
+            .mapNotNull { block ->
+                try {
+                    FeatureRequestTransactionData(block.transaction).getData()
+                } catch (e: Exception) {
+                    Log.e("P2PlayStoreCommunity", "Failed to parse FeatureRequest block: ${e.message}")
+                    null
+                }
             }
-        }
-        .filter{it.DAO_ID == daoId}.distinctBy { it.FEATURE_REQUEST_ID }
+            .filter{it.DAO_ID == daoId}.distinctBy { it.FEATURE_REQUEST_ID }
     }
 
     /**
@@ -650,36 +701,36 @@ class P2pStoreCommunity : Community() {
      * Returns a list of TrustChainBlock.
      */
     fun getFeatureRequestBlocksForDao(daoId: String): List<TrustChainBlock> {
-    val blocks = getTrustChainCommunity().database.getBlocksWithType(FEATURE_REQUEST_BLOCK)
-    return blocks.filter { block ->
-        try {
-            FeatureRequestTransactionData(block.transaction).getData().DAO_ID == daoId
-        } catch (e: Exception) {
-            Log.e("P2PlayStoreCommunity", "Failed to parse FeatureRequest block in getFeatureRequestBlocksForDao: ${e.message}")
-            false
+        val blocks = getTrustChainCommunity().database.getBlocksWithType(FEATURE_REQUEST_BLOCK)
+        return blocks.filter { block ->
+            try {
+                FeatureRequestTransactionData(block.transaction).getData().DAO_ID == daoId
+            } catch (e: Exception) {
+                Log.e("P2PlayStoreCommunity", "Failed to parse FeatureRequest block in getFeatureRequestBlocksForDao: ${e.message}")
+                false
+            }
         }
     }
-}
     /**
      * Get all feature solutions for a DAO
      */
     fun getFeatureSolutionsForDao(daoId: String): List<ProposeUpdateData> {
-    val blocks = getTrustChainCommunity().database.getBlocksWithType(PROPOSE_UPDATE_BLOCK)
+        val blocks = getTrustChainCommunity().database.getBlocksWithType(PROPOSE_UPDATE_BLOCK)
 
-    return blocks
-        .mapNotNull { block ->
-            try {
-                val proposalData = ProposeUpdateTransactionData(block.transaction).getData()
-                // Only return feature solutions (not regular fund transfers)
-                if (proposalData.FEATURE_REQUEST_ID != null) proposalData else null
-            } catch (e: Exception) {
-                Log.e("P2PlayStoreCommunity", "Failed to parse ProposeUpdate block: ${e.message}")
-                null
+        return blocks
+            .mapNotNull { block ->
+                try {
+                    val proposalData = ProposeUpdateTransactionData(block.transaction).getData()
+                    // Only return feature solutions (not regular fund transfers)
+                    if (proposalData.FEATURE_REQUEST_ID != null) proposalData else null
+                } catch (e: Exception) {
+                    Log.e("P2PlayStoreCommunity", "Failed to parse ProposeUpdate block: ${e.message}")
+                    null
+                }
             }
-        }
-        .filter { it.DAO_ID == daoId }
-        .distinctBy { it.SW_UNIQUE_PROPOSAL_ID }
-}
+            .filter { it.DAO_ID == daoId }
+            .distinctBy { it.SW_UNIQUE_PROPOSAL_ID }
+    }
 
 
     /**
@@ -687,64 +738,82 @@ class P2pStoreCommunity : Community() {
      */
     fun getVotingPoll(daoId: String, proposalId: String): VotingPoll? {
         // First, find the specific proposal block. If not found, we cannot create a poll.
-        // This also implicitly filters out non-proposal block types passed incorrectly.
+        Log.d("P2PlayStoreCommunity", "Getting voting poll for proposal $proposalId")
         val proposalBlock = findProposalBlock(daoId, proposalId) ?: return null
+        Log.d("P2PlayStoreCommunity", "Proposal block found: ${proposalBlock.type}")
 
         val yesVotes = fetchProposalResponses(daoId, proposalId)
         val noVotes = fetchNegativeProposalResponses(daoId, proposalId)
 
         // Get DAO info for voting thresholds and member count from the LATEST DAO block
-        val daoBlock = fetchLatestSharedWalletBlockByDaoId(daoId) ?: return null
+        val latestDaoBlock = fetchLatestSharedWalletBlockByDaoId(daoId) ?: run {
+            Log.e("P2PlayStoreCommunity", "Latest DAO block not found for DAO $daoId when getting voting poll.");
+            return null
+        }
 
-        // --- Correctly extract DAO data based on block type ---
         val daoMemberTrustChainPks: List<String>
-        val daoVotingThreshold: Int
-        when(daoBlock.type) {
+        val daoVotingThresholdPercentage: Int // Get the percentage threshold from the latest JOIN block
+        val requiredSignaturesFromProposal: Int // Get the required signatures from the proposal block itself
+
+        when(latestDaoBlock.type) {
             JOIN_BLOCK -> {
-                val data = JoinDaoTransactionData(daoBlock.transaction).getData()
+                val data = JoinDaoTransactionData(latestDaoBlock.transaction).getData()
                 daoMemberTrustChainPks = data.SW_TRUSTCHAIN_PKS
-                daoVotingThreshold = data.SW_VOTING_THRESHOLD // Use threshold from the latest JOIN block
+                // The voting threshold percentage is stored in the JOIN block
+                daoVotingThresholdPercentage = data.SW_VOTING_THRESHOLD
             }
             UPDATE_ACCEPTED_BLOCK -> {
-                val data = UpdateAcceptedTransactionData(daoBlock.transaction).getData()
+                val data = UpdateAcceptedTransactionData(latestDaoBlock.transaction).getData()
                 daoMemberTrustChainPks = data.SW_TRUSTCHAIN_PKS
-                // Update Accepted blocks don't explicitly store voting threshold,
-                // so we should probably fetch the latest JOIN block for the threshold.
-                val latestJoinBlock = fetchLatestJoinBlockByDaoId(daoId)
-                    ?: run { Log.e("P2PlayStoreCommunity", "Latest JOIN block not found for DAO $daoId when getting voting threshold."); return null } // Cannot determine threshold without latest JOIN block
-                daoVotingThreshold = latestJoinBlock?.let { JoinDaoTransactionData(it.transaction).getData().SW_VOTING_THRESHOLD }
-                    ?: run { // This fallback is still not ideal, ideally JOIN block is found
-                        Log.w("P2PlayStoreCommunity", "Fallback: Using required signatures from proposal block to estimate threshold.")
-                        // Estimate threshold from required signatures in the proposal data if JOIN block is missing (should not happen now)
-                        when (proposalBlock.type) {
-                            JOIN_REQUEST_BLOCK -> JoinRequestTransactionData(proposalBlock.transaction).getData().SW_SIGNATURES_REQUIRED // This is already an INT
-                            PROPOSE_UPDATE_BLOCK -> {
-                                val proposalData = ProposeUpdateTransactionData(proposalBlock.transaction).getData()
-                                // Convert required signatures (INT) back to percentage
-                                BlockUtils.intThresholdToPercentage(daoMemberTrustChainPks.size, proposalData.SW_SIGNATURES_REQUIRED)
-                            }
-                            else -> 0
-                        }
-                    }
+                // UPDATE_ACCEPTED blocks don't explicitly store the threshold percentage,
+                // so we must get it from the latest JOIN block.
+                val latestJoinBlock = fetchLatestUpdateAcceptedBlockByDaoId(daoId)
+                    ?: run { Log.e("P2PlayStoreCommunity", "Latest JOIN block not found for DAO $daoId to get voting threshold percentage."); return null }
+                daoVotingThresholdPercentage = JoinDaoTransactionData(latestJoinBlock.transaction).getData().SW_VOTING_THRESHOLD
+            }
+            PROPOSE_UPDATE_BLOCK -> { // Include PROPOSE_UPDATE_BLOCK in latest check for robustness
+                val data = ProposeUpdateTransactionData(latestDaoBlock.transaction).getData()
+                daoMemberTrustChainPks = data.SW_BITCOIN_PKS
+                Log.d("P2PlayStoreCommunity", "Getting voting threshold percentage from PROPOSE_UPDATE block")
+
+                // Again, get threshold percentage from latest JOIN block
+                val latestJoinBlock = fetchLatestProposeUpdateBlockByDaoId(daoId)
+                    ?: run { Log.e("P2PlayStoreCommunity", "Latest JOIN block not found for DAO $daoId to get voting threshold percentage from PROPOSE_UPDATE block."); return null }
+                daoVotingThresholdPercentage = JoinDaoTransactionData(latestJoinBlock.transaction).getData().SW_VOTING_THRESHOLD
             }
             else -> {
-                Log.e("P2PlayStoreCommunity", "Unexpected block type for DAO block: ${daoBlock.type}")
+                Log.e("P2PlayStoreCommunity", "Unexpected latest DAO block type for DAO $daoId: ${latestDaoBlock.type}")
                 return null // Cannot get DAO info from unexpected block type
             }
         }
         // --- End DAO Data Extraction ---
 
+        // Get the required signatures directly from the proposal block data
+        requiredSignaturesFromProposal = when(proposalBlock.type) {
+            JOIN_REQUEST_BLOCK -> JoinRequestTransactionData(proposalBlock.transaction).getData().SW_SIGNATURES_REQUIRED
+            PROPOSE_UPDATE_BLOCK -> ProposeUpdateTransactionData(proposalBlock.transaction).getData().SW_SIGNATURES_REQUIRED
+            else -> {
+                Log.e("P2PlayStoreCommunity", "Unexpected proposal block type for required signatures: ${proposalBlock.type}")
+                return null
+            }
+        }
 
         val myPublicKey = myPeer.publicKey.keyToBin().toHex()
-        // --- Correctly check if user has voted using block creator PK ---
         // Filter all vote blocks for this specific proposal and check if the current user is the creator of any of them
         val allVoteBlocks = getTrustChainCommunity().database.getBlocksWithType(VOTE_YES_BLOCK).filter {
             try { VoteYesTransactionData(it.transaction).matchesProposal(daoId, proposalId) } catch (e: Exception) { false }
         } + getTrustChainCommunity().database.getBlocksWithType(VOTE_NO_BLOCK).filter {
             try { VoteNoTransactionData(it.transaction).matchesProposal(daoId, proposalId) } catch (e: Exception) { false }
         }
+        Log.d("P2PlayStoreCommunity", "Found ${myPublicKey::class.java.name}  vote blocks for proposal $proposalId")
+        val hasUserVoted = allVoteBlocks.any { block ->
+            // Log the type of block.publicKey for each block being checked
+            Log.d("P2PlayStoreCommunity", "block.publicKey type: ${block.publicKey::class.java.name}, myPublicKey type: ${myPublicKey::class.java.name}")
+            Log.d("P2PlayStoreCommunity", "block.publicKey: ${block.publicKey}, myPublicKey: ${myPublicKey}")
+            block.publicKey.toString() == myPublicKey
+        }
+        Log.d("P2PlayStoreCommunity", "Has user voted: $hasUserVoted")
 
-        val hasUserVoted = allVoteBlocks.any { it.publicKey.toString() == myPublicKey }
         val userVote = allVoteBlocks.find {it.publicKey.toString() == myPublicKey }?.type == VOTE_YES_BLOCK
 
 
@@ -752,8 +821,8 @@ class P2pStoreCommunity : Community() {
             JOIN_REQUEST_BLOCK -> {
                 val joinRequestData = JoinRequestTransactionData(proposalBlock.transaction).getData()
                 CreateVotingPoll.createJoinRequestPoll(
-                    proposalBlock, joinRequestData, yesVotes, noVotes, // Use proposalBlock here
-                    daoMemberTrustChainPks.size, daoVotingThreshold, // Use corrected DAO info
+                    proposalBlock, joinRequestData, yesVotes, noVotes,
+                    daoMemberTrustChainPks.size, requiredSignaturesFromProposal,
                     hasUserVoted, userVote
                 )
             }
@@ -763,19 +832,25 @@ class P2pStoreCommunity : Community() {
                     // This is a feature solution proposal
                     val featureRequest = getFeatureRequestsForDao(daoId)
                         .find { it.FEATURE_REQUEST_ID == proposalData.FEATURE_REQUEST_ID }
-                        ?: return null
+                        ?: run {
+                            Log.e("P2PlayStoreCommunity", "Feature Request not found for solution ${proposalData.SW_UNIQUE_PROPOSAL_ID} in DAO $daoId");
+                            return null
+                        }
                     CreateVotingPoll.createFeatureSolutionPoll(
                         featureRequest, proposalData, yesVotes, noVotes,
-                        daoMemberTrustChainPks.size, daoVotingThreshold, // Use corrected DAO info
+                        daoMemberTrustChainPks.size, requiredSignaturesFromProposal,
                         hasUserVoted, userVote
                     )
                 } else {
-                    android.util.Log.d("P2PlayStore", "Proposal is not a feature solution")
+                   Log.d("P2PlayStore", "Proposal is not a feature solution")
                     null
                 }
             }
-            else -> null
-        } // Return null for block types that are not proposals
+            else -> {
+                Log.e("P2PlayStoreCommunity", "Unsupported proposal block type: ${proposalBlock.type}")
+                null
+            } // Return null for block types that are not proposals
+        }
     }
 
 
@@ -783,27 +858,28 @@ class P2pStoreCommunity : Community() {
 
     // Helper methods
     fun findProposalBlock(daoId: String, proposalId: String): TrustChainBlock? {
-    val joinRequests = getTrustChainCommunity().database.getBlocksWithType(JOIN_REQUEST_BLOCK)
-    val proposals = getTrustChainCommunity().database.getBlocksWithType(PROPOSE_UPDATE_BLOCK)
+        val joinRequests = getTrustChainCommunity().database.getBlocksWithType(JOIN_REQUEST_BLOCK)
+        val proposals = getTrustChainCommunity().database.getBlocksWithType(PROPOSE_UPDATE_BLOCK)
 
-    return (joinRequests + proposals).find { block ->
-        try {
-            when (block.type) {
-                JOIN_REQUEST_BLOCK -> {
-                    val data = JoinRequestTransactionData(block.transaction).getData()
-                    data.DAO_ID == daoId && data.SW_UNIQUE_PROPOSAL_ID == proposalId
+        return (joinRequests + proposals).find { block ->
+            try {
+                when (block.type) {
+                    JOIN_REQUEST_BLOCK -> {
+                        val data = JoinRequestTransactionData(block.transaction).getData()
+                        data.DAO_ID == daoId && data.SW_UNIQUE_PROPOSAL_ID == proposalId
+                    }
+                    PROPOSE_UPDATE_BLOCK -> {
+                        val data = ProposeUpdateTransactionData(block.transaction).getData()
+                        data.DAO_ID == daoId && data.SW_UNIQUE_PROPOSAL_ID == proposalId
+                    }
+                    else -> false
                 }
-                PROPOSE_UPDATE_BLOCK -> {
-                    val data = ProposeUpdateTransactionData(block.transaction).getData()
-                    data.DAO_ID == daoId && data.SW_UNIQUE_PROPOSAL_ID == proposalId
-                }
-                else -> false
+            } catch (e: Exception) {
+                Log.e("P2PlayStore", "Error parsing block ${block.blockId} in findProposalBlock: ${e.message}")
+                false
             }
-        } catch (e: Exception) {
-            false
         }
     }
-}
 
 //    suspend fun getSolutionsForFeature(
 //            daoId: String,
@@ -902,20 +978,20 @@ class P2pStoreCommunity : Community() {
 //    }
 //
     fun getDaoBlock(blockId: String): TrustChainBlock? {
-    val parts = blockId.split(".")
-    if (parts.size != 2) {
-        Log.e("P2PlayStoreCommunity", "Invalid block ID format: $blockId")
-        return null
+        val parts = blockId.split(".")
+        if (parts.size != 2) {
+            Log.e("P2PlayStoreCommunity", "Invalid block ID format: $blockId")
+            return null
+        }
+        return try {
+            val publicKey = parts[0].hexToBytes()
+            val sequenceNumber = parts[1].toUInt()
+            getTrustChainCommunity().database.get(publicKey, sequenceNumber)
+        } catch (e: Exception) {
+            Log.e("P2PlayStoreCommunity", "Error getting DAO block $blockId: ${e.message}")
+            null
+        }
     }
-    return try {
-        val publicKey = parts[0].hexToBytes()
-        val sequenceNumber = parts[1].toUInt()
-        getTrustChainCommunity().database.get(publicKey, sequenceNumber)
-    } catch (e: Exception) {
-        Log.e("P2PlayStoreCommunity", "Error getting DAO block $blockId: ${e.message}")
-        null
-    }
-}
 //
 //    /**
 //     * Fetches all solution data for a specific DAO, grouped by feature ID.
@@ -935,31 +1011,32 @@ class P2pStoreCommunity : Community() {
 //            .groupBy { it.featureId } // group by request
 //    }
 
-companion object {
-    // Used as genesis block to create a new App DAO, or to indicate that someone has
-    // successfully joined the DAO.
-    const val JOIN_BLOCK = "P2PLAYSTORE_JOIN_DAO"
+    companion object {
+        // Used as genesis block to create a new App DAO, or to indicate that someone has
+        // successfully joined the DAO.
+        const val JOIN_BLOCK = "P2PLAYSTORE_JOIN_DAO"
 
-    // Used by someone not in the App DAO, when they want to join the app DAO, members of the
-    // DAO will respond to this block by voting on it with vote blocks.
-    const val JOIN_REQUEST_BLOCK = "P2PLAYSTORE_JOIN_REQUEST"
+        // Used by someone not in the App DAO, when they want to join the app DAO, members of the
+        // DAO will respond to this block by voting on it with vote blocks.
+        const val JOIN_REQUEST_BLOCK = "P2PLAYSTORE_JOIN_REQUEST"
 
-    // Used by members to vote "yes"/agree to the proposed transaction
-    const val VOTE_YES_BLOCK = "P2PLAYSTORE_VOTE_YES"
+        // Used by members to vote "yes"/agree to the proposed transaction
+        const val VOTE_YES_BLOCK = "P2PLAYSTORE_VOTE_YES"
 
-    // Used by members to vote "no"/disagree to the proposed transaction
-    const val VOTE_NO_BLOCK = "P2PLAYSTORE_VOTE_NO"
+        // Used by members to vote "no"/disagree to the proposed transaction
+        const val VOTE_NO_BLOCK = "P2PLAYSTORE_VOTE_NO"
 
-    // Used by members of the DAO to indicate that they would like a certain feature or bug
-    const val FEATURE_REQUEST_BLOCK = "P2PLAYSTORE_FEATURE_REQUEST"
+        // Used by members of the DAO to indicate that they would like a certain feature or bug
+        const val FEATURE_REQUEST_BLOCK = "P2PLAYSTORE_FEATURE_REQUEST"
 
-    // Used to propose an update based on a requested feature, practically this an extension of
-    // the `currencyii` `TRANSFER_FUNDS_ASK_BLOCK` because along with an updated magnet link
-    // the developer proposes to move the feature bounty to their own wallet.
-    const val PROPOSE_UPDATE_BLOCK = "P2PLAYSTORE_PROPOSE_UPDATE"
+        // Used to propose an update based on a requested feature, practically this an extension of
+        // the `currencyii` `TRANSFER_FUNDS_ASK_BLOCK` because along with an updated magnet link
+        // the developer proposes to move the feature bounty to their own wallet.
+        const val PROPOSE_UPDATE_BLOCK = "P2PLAYSTORE_PROPOSE_UPDATE"
 
-    // Resulting block after an update proposal has received enough votes and the transfer has
-    // been completed.
-    const val UPDATE_ACCEPTED_BLOCK = "P2PLAYSTORE_UPDATE_ACCEPTED"
+        // Resulting block after an update proposal has received enough votes and the transfer has
+        // been completed.
+        const val UPDATE_ACCEPTED_BLOCK = "P2PLAYSTORE_UPDATE_ACCEPTED"
     }
 }
+

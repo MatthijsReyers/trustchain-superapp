@@ -44,6 +44,7 @@ class AppDetails : BaseFragment() {
     private lateinit var daoBlock: TrustChainBlock
     private lateinit var app: P2playApp
 
+
     /**
      * Integer between 0-100, this indicates how far along the torrent download for this apps
      * APK file is.
@@ -76,6 +77,7 @@ class AppDetails : BaseFragment() {
 
         this.setupTorrentDownloadStatus()
         this.setupChainListeners()
+        this.updateUIBasedOnMembership()
     }
 
     override fun onCreateView(
@@ -339,7 +341,6 @@ class AppDetails : BaseFragment() {
                     val featureSolutions = withContext(Dispatchers.IO) {
                         p2playStore.getFeatureSolutionsForDao(daoUniqueId)
                     }
-
                     // Fetch blocks and insert times for all solutions
                     val solutionsWithBlocks = featureSolutions.mapNotNull { solution ->
                         val solutionBlock = withContext(Dispatchers.IO) {

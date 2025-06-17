@@ -133,6 +133,7 @@ class DaoWalletFragment : BaseFragment() {
                             Log.w("DaoWalletFragment", "No shared wallet output found in latest block for DAO $daoUniqueId")
                         }
                     } else {
+                        Log.w("DaoWalletFragment", "${Pair(serializedTx, trustChainPks)}, ${Pair(latestDaoBlock.transaction, latestDaoBlock.type)}")
                         Log.w("DaoWalletFragment", "SW_TRANSACTION_SERIALIZED is null in latest block for DAO $daoUniqueId")
                     }
 
