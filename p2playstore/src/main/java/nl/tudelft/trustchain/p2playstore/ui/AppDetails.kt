@@ -31,6 +31,7 @@ import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils.findFilesByExtension
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
 
 import java.io.File
@@ -214,37 +215,68 @@ class AppDetails : BaseFragment() {
     }
 
     /**
-     * Called when the user presses the "open" button, which is only shown when the user is a member
-     * of the app's DAO and has finished downloading the
+     * Attempts to launch the downloaded APK associated with the current app's DAO.
+     *
+     * This function:
+     * - Locates the APK inside the app's P2P cache directory.
+     * - Validates the presence and uniqueness of the APK file.
+     * - Launches the APK via an `ExecutionActivity` intent.
+     *
+     * The method provides error feedback to the user using `Toast` messages
+     * and logs warnings for unexpected or invalid states.
+     *
+     * Preconditions:
+     * - The user must be a member of the DAO.
+     * - The APK must have already been downloaded.
      */
     private fun onOpenApp() {
         val applicationContext = requireContext()
+        val dir = File(applicationContext.cacheDir, "p2p-apps/${app.magnetLink.infoHash}")
 
-        val apkPath = "${applicationContext.cacheDir}/p2p-apps/${app.magnetLink.infoHash}" +
-            "/${app.magnetLink.displayName}"
-        val apkFile = File(apkPath)
+        val apkFiles = try {
+            findFilesByExtension(dir, ".apk")
+        } catch (e: IllegalArgumentException) {
+            e.message?.let {
+                Log.w("P2P", it)
+                printToast(applicationContext,"Directory containing APK not found or invalid.")
+            }
+            return
+        }
+
+        val apkFile: File
+        if (apkFiles.isEmpty()) {
+            Log.e("P2P", "No APK files found in: ${dir.absolutePath}")
+            printToast(applicationContext,"Could not find APK in the torrent.")
+            return
+        } else if (apkFiles.size > 1) {
+            Log.e("P2P", "Multiple APK files found in: ${dir.absolutePath}")
+            printToast(applicationContext,"Found multiple APK's in the torrent.")
+            return
+        } else {
+            apkFile = apkFiles.first()
+        }
 
         if (!apkFile.exists() || !apkFile.isFile) {
-            Log.e("P2P", "File not found or invalid: $apkFile")
+            Log.e("P2P", "File not found or invalid: ${apkFile.path}")
             printToast(applicationContext, "No APK found connected to this DAO.")
             return
         }
 
         val intent = Intent(applicationContext, ExecutionActivity::class.java).apply {
-            putExtra("fileName", apkPath)
+            putExtra("fileName", apkFile.path)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
         try {
             applicationContext.startActivity(intent)
         } catch (e: ActivityNotFoundException) {
-            Log.e("P2P", "No activity found to handle intent for APK: $apkPath", e)
+            Log.e("P2P", "No activity found to handle intent for APK: ${apkFile.path}", e)
             printToast(applicationContext, "Unable to open APK – app component not found.")
         } catch (e: SecurityException) {
-            Log.e("P2P", "Security exception when launching APK: $apkPath", e)
+            Log.e("P2P", "Security exception when launching APK: ${apkFile.path}", e)
             printToast(applicationContext, "Permission denied to launch APK.")
         } catch (e: Exception) {
-            Log.e("P2P", "Unexpected error launching APK: $apkPath", e)
+            Log.e("P2P", "Unexpected error launching APK: ${apkFile.path}", e)
             printToast(applicationContext, "Something went wrong when opening the APK.")
         }
     }
