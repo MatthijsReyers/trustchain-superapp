@@ -25,9 +25,9 @@ class P2pStoreCommunity : Community() {
                 ?: throw IllegalStateException("TrustChainCommunity is not configured")
     }
 
-    private val daoCreateHelper = DAOCreateHelper()
-    private val daoJoinHelper = DAOJoinHelper()
-    private val daoTransferFundsHelper = DAOTransferFundsHelper()
+    val daoCreateHelper = DAOCreateHelper()
+    val daoJoinHelper = DAOJoinHelper()
+    val daoTransferFundsHelper = DAOTransferFundsHelper()
 
     /**
      * Create a bitcoin genesis wallet and broadcast the result on trust chain. The bitcoin

@@ -1,5 +1,6 @@
 package nl.tudelft.trustchain.p2playstore.models
 
+import UpdateProposalPoll
 import android.util.Log
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
@@ -15,8 +16,8 @@ import nl.tudelft.trustchain.p2playstore.transactionData.AppMetaData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateData
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
@@ -111,7 +112,11 @@ class P2playApp(val block: TrustChainBlock) {
     }
 
     /**
-     * Look on the trust chain if there exists a newer version/update for this app.
+     * Look on the trust chain if there exists a newer version/accepted update for this app.
+     *
+     * Note that this means that if you have created an instance of this model with a
+     * `PROPOSE_UPDATE` block which has not been accepted yet this method might actually return an
+     * older version.
      */
     fun getLatestVersion(): P2playApp {
         val joinBlocks = trustChain.database.getBlocksWithType(JOIN_BLOCK)
@@ -126,17 +131,52 @@ class P2playApp(val block: TrustChainBlock) {
     }
 
     /**
-     * Returns a list of all requests to join this app's DOA, including ones for which voting has
-     * already finished.
+     * Returns a list of all join DAO requests for this app, including the ones for which voting has
+     * already concluded.
      */
-    fun getDaoJoinRequests(): List<DaoJoinRequest> {
+    fun getDaoJoinPolls(): List<DaoJoinPoll> {
         val blocks = trustChain.database.getBlocksWithType(JOIN_REQUEST_BLOCK)
-        return blocks
+            .filter { b -> ProposeUpdateTransactionData(b.transaction).getData().DAO_ID == daoId }
+        return blocks.map { b -> DaoJoinPoll(b) }
+    }
+
+    /**
+     * Returns a list of all open join DAO requests for this app (i.e. all the requests which have
+     * not been finished yet.
+     */
+    fun getOpenDaoJoinPolls(): List<DaoJoinPoll> {
+        return this.getDaoJoinPolls().filter { poll -> poll.isPending }
+    }
+
+    /**
+     * Gets the lastest DAO join
+     */
+    fun getMyDaoJoinPoll(): DaoJoinPoll? {
+        val myKey = trustChain.myPeer.publicKey.keyToBin()
+        val blocks = trustChain.database.getBlocksWithType(JOIN_REQUEST_BLOCK)
             .filter { b ->
-                val data = JoinRequestTransactionData(b.transaction).getData()
-                data.DAO_ID == this.daoId
+                val data = ProposeUpdateTransactionData(b.transaction).getData()
+                data.DAO_ID == daoId && b.publicKey == myKey
             }
-            .map { b -> DaoJoinRequest(b) }
+        val block = blocks.maxByOrNull { b -> b.insertTime!! }
+        if (block == null) return null
+        return DaoJoinPoll(block)
+    }
+
+    fun getUpdatePolls(): List<UpdateProposalPoll> {
+        val blocks = trustChain.database.getBlocksWithType(PROPOSE_UPDATE_BLOCK)
+            .filter { b ->
+                try {
+                    ProposeUpdateTransactionData(b.transaction).getData().DAO_ID == daoId
+                } catch (err: Throwable) {
+                    false
+                }
+            }
+        return blocks.map { b -> UpdateProposalPoll(b) }
+    }
+
+    fun getOpenUpdatePolls(): List<UpdateProposalPoll> {
+        return this.getUpdatePolls().filter { poll -> poll.isPending }
     }
 
     /**
@@ -176,11 +216,11 @@ class P2playApp(val block: TrustChainBlock) {
         if (this.isDaoMember()) {
             return false
         }
-        val joinRequests = this.getDaoJoinRequests()
+        val joinRequests = this.getDaoJoinPolls()
         val myPublicKey = trustChain.myPeer.publicKey.keyToBin().toHex()
         for (request in joinRequests) {
             if (request.requestingUser == myPublicKey) {
-                if (request.isPending()) {
+                if (request.isPending) {
                     return true
                 }
             }
