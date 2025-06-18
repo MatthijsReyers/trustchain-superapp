@@ -11,7 +11,7 @@ object AppUtils {
      * Recursively searches for files with a specific extension inside a given directory.
      *
      * @param folder The root folder to search.
-     * @param extension File extension to match (e.g. ".apk").
+     * @param extension File extensions to match (e.g. ".apk").
      * @param recursive Whether to search subdirectories recursively. Defaults to true.
      * @return A list of [File] objects that match the given extension.
      *
@@ -19,7 +19,7 @@ object AppUtils {
      */
     fun findFilesByExtension(
         folder: File,
-        extension: String,
+        extensions: Set<String>,
         recursive: Boolean = true
     ): List<File> {
         require(folder.exists() && folder.isDirectory) {
@@ -30,8 +30,8 @@ object AppUtils {
 
         folder.listFiles()?.forEach { file ->
             if (file.isDirectory && recursive) {
-                files.addAll(findFilesByExtension(file, extension, recursive))
-            } else if (file.name.endsWith(extension)) {
+                files.addAll(findFilesByExtension(file, extensions, recursive))
+            } else if (extensions.any { file.name.endsWith(it, ignoreCase = true) }) {
                 files += file
             }
         }

@@ -3,11 +3,15 @@ package nl.tudelft.trustchain.p2playstore.ui
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 
@@ -160,6 +164,60 @@ class AppDetails : BaseFragment() {
         }
     }
 
+    private fun loadScreenshots() {
+        val applicationContext = requireContext()
+        val dir = File(applicationContext.cacheDir, "p2p-apps/${app.magnetLink.infoHash}")
+
+        val files = try {
+            findFilesByExtension(
+                dir,
+                setOf(".bmp", ".gif", ".heif", ".heic", ".jpeg", ".jpg", ".png", ".webp")
+            )
+        } catch (e: IllegalArgumentException) {
+            e.message?.let {
+                Log.d("P2P", it)
+            }
+            return
+        }
+
+        if (files.isEmpty()) {
+            Log.d("P2P", "No image files found in: ${dir.path}")
+            return
+        }
+
+        val container = binding.screenshotsContainer
+        container.removeAllViews()
+
+//        val options = BitmapFactory.Options().apply {
+//            inJustDecodeBounds = true
+//        }
+//        BitmapFactory.decodeFile(files[0].path, options)
+//        val imageHeight: Int = options.outHeight
+//        val imageWidth: Int = options.outWidth
+//        val imageType: String = options.outMimeType
+
+        // TODO use the above information to prevent java.lang.OutOfMemory
+
+        val imageSizePx = (120 * resources.displayMetrics.density).toInt()
+
+        for (file in files) {
+            val imageView = ImageView(applicationContext).apply {
+                layoutParams = LinearLayout.LayoutParams(imageSizePx, imageSizePx).also {
+                    it.setMargins(8, 0, 8, 0)
+                }
+                scaleType = ImageView.ScaleType.CENTER_CROP
+
+                val options = BitmapFactory.Options().apply {
+                    inSampleSize = 2 // Downscale to avoid memory issues
+                }
+
+                setImageBitmap(BitmapFactory.decodeFile(file.path, options))
+            }
+
+            container.addView(imageView)
+        }
+    }
+
     /**
     * Called when the user presses the install button (which is only shown when the user is not
     * yet in the app's DAO), effectively this means they will spend bitcoins to join the shared
@@ -234,7 +292,7 @@ class AppDetails : BaseFragment() {
         val dir = File(applicationContext.cacheDir, "p2p-apps/${app.magnetLink.infoHash}")
 
         val apkFiles = try {
-            findFilesByExtension(dir, ".apk")
+            findFilesByExtension(dir, setOf(".apk"))
         } catch (e: IllegalArgumentException) {
             e.message?.let {
                 Log.w("P2P", it)
@@ -417,6 +475,7 @@ class AppDetails : BaseFragment() {
             if (this.downloadFinished()) {
                 this.binding.installOpenBtn.isEnabled = true
                 this.binding.installOpenBtn.text = "Open"
+                loadScreenshots()
             }
             else if (this.downloadProgress == null) {
                 this.binding.installOpenBtn.isEnabled = true
