@@ -15,6 +15,8 @@ import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 
+import java.io.File
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -38,8 +40,6 @@ import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.findFilesByExtension
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
 
-import java.io.File
-
 class AppDetails : BaseFragment() {
     private lateinit var torrentManager: TorrentManager
 
@@ -56,7 +56,7 @@ class AppDetails : BaseFragment() {
      * Integer between 0-100, this indicates how far along the torrent download for this apps
      * APK file is.
      */
-    private var downloadProgress: Int? = null;
+    private var downloadProgress: Int? = null
 
     /**
      * Has the torrent with the APK file for this app finished downloading yet?
@@ -69,7 +69,7 @@ class AppDetails : BaseFragment() {
         super.onCreate(bundle)
 
         // The previous fragment (home) tells us which block/app/version to show
-        val args = this.requireArguments();
+        val args = this.requireArguments()
         val publicKey = args.getByteArray("publicKey")!!
         val sequenceNumber = args.getInt("sequenceNumber").toUInt()
 
@@ -172,11 +172,9 @@ class AppDetails : BaseFragment() {
             findFilesByExtension(
                 dir,
                 setOf(".bmp", ".gif", ".heif", ".heic", ".jpeg", ".jpg", ".png", ".webp")
-            )
+            ).sorted()
         } catch (e: IllegalArgumentException) {
-            e.message?.let {
-                Log.d("P2P", it)
-            }
+            e.message?.let { Log.d("P2P", it) }
             return
         }
 
@@ -188,34 +186,76 @@ class AppDetails : BaseFragment() {
         val container = binding.screenshotsContainer
         container.removeAllViews()
 
-//        val options = BitmapFactory.Options().apply {
-//            inJustDecodeBounds = true
-//        }
-//        BitmapFactory.decodeFile(files[0].path, options)
-//        val imageHeight: Int = options.outHeight
-//        val imageWidth: Int = options.outWidth
-//        val imageType: String = options.outMimeType
+        val imageHeightPx = container.layoutParams.height.takeIf { it > 0 } ?: 200
+        val maxImageWidthPx = (150 * resources.displayMetrics.density).toInt()
 
-        // TODO use the above information to prevent java.lang.OutOfMemory
-
-        val imageSizePx = (120 * resources.displayMetrics.density).toInt()
 
         for (file in files) {
-            val imageView = ImageView(applicationContext).apply {
-                layoutParams = LinearLayout.LayoutParams(imageSizePx, imageSizePx).also {
-                    it.setMargins(8, 0, 8, 0)
-                }
-                scaleType = ImageView.ScaleType.CENTER_CROP
+            // First decode only bounds to get original size
+            val boundsOptions = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            BitmapFactory.decodeFile(file.path, boundsOptions)
 
-                val options = BitmapFactory.Options().apply {
-                    inSampleSize = 2 // Downscale to avoid memory issues
-                }
+            val originalWidth = boundsOptions.outWidth
+            val originalHeight = boundsOptions.outHeight
 
-                setImageBitmap(BitmapFactory.decodeFile(file.path, options))
+            if (originalWidth <= 0 || originalHeight <= 0) continue // Skip corrupted images
+
+            // Compute target width preserving aspect ratio
+            var targetWidth = (originalWidth.toFloat() / originalHeight.toFloat() * imageHeightPx).toInt()
+            if (targetWidth > maxImageWidthPx) {
+                targetWidth = maxImageWidthPx
             }
 
-            container.addView(imageView)
+            // Decode image with sampling
+            val decodeOptions = BitmapFactory.Options().apply {
+                inSampleSize = calculateInSampleSize(boundsOptions, targetWidth, imageHeightPx)
+            }
+
+            try {
+                val bitmap = BitmapFactory.decodeFile(file.path, decodeOptions)
+                if (bitmap == null) {
+                    Log.w("P2P", "Failed to decode bitmap from: ${file.path}")
+                    continue
+                }
+
+                val imageView = ImageView(applicationContext).apply {
+                    layoutParams = LinearLayout.LayoutParams(targetWidth, imageHeightPx).also {
+                        it.setMargins(8, 0, 8, 0)
+                    }
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    setImageBitmap(bitmap)
+                }
+
+                container.addView(imageView)
+            } catch (e: OutOfMemoryError) {
+                Log.e("P2P", "OutOfMemoryError decoding image: ${file.path}", e)
+                continue
+            } catch (e: Exception) {
+                Log.e("P2P", "Unexpected error decoding image: ${file.path}", e)
+                continue
+            }
         }
+    }
+
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        // Raw height and width of image
+        val (height: Int, width: Int) = options.run { outHeight to outWidth }
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+
+            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+            // height and width larger than the requested height and width.
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+
+        return inSampleSize
     }
 
     /**
@@ -357,6 +397,10 @@ class AppDetails : BaseFragment() {
             }
             requireActivity().runOnUiThread {
                 updatePolls()
+                joinSharedWalletClicked(daoBlock)
+                loadRecentVotingPoll()
+                loadLatestPendingFeatureRequest()
+                updateDownloadButton()
             }
         } catch (e: Exception) {
             Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
@@ -368,7 +412,7 @@ class AppDetails : BaseFragment() {
      * changes so we can update the UI.
      */
     private fun setupTorrentDownloadStatus() {
-        this.downloadProgress = torrentManager.downloadProgress(this.app);
+        this.downloadProgress = torrentManager.downloadProgress(this.app)
         if (!this.downloadFinished()) {
             lifecycleScope.launch {
                 torrentManager.onStarted.collect { link ->
@@ -591,7 +635,7 @@ class AppDetails : BaseFragment() {
         binding.installOpenBtn.setOnClickListener {
             if (this.app.isDaoMember()) {
                 if (this.downloadProgress == null) {
-                    this.onRestartDownload();
+                    this.onRestartDownload()
                 }
                 else if (this.downloadFinished()) {
                     this.onOpenApp()
