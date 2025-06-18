@@ -6,24 +6,6 @@
     android:background="@android:color/white">
 
     <!-- Header -->
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:elevation="4dp"
-        android:background="@android:color/white">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:text="All Voting Polls"
-            android:textColor="@android:color/black"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-    </RelativeLayout>
 
     <!-- Voting Polls List -->
     <androidx.recyclerview.widget.RecyclerView
