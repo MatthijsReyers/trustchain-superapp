@@ -150,7 +150,7 @@ class AppDetails : BaseFragment() {
             .setMessage(msg)
             .setPositiveButton("Join DAO") { dialog, _ ->
                 dialog.dismiss()
-                onJoinDoa()
+                onJoinDao()
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
@@ -212,13 +212,13 @@ class AppDetails : BaseFragment() {
     /**
      * Called when the user agrees to spend bitcoins needed to join the app's DAO.
      */
-    private fun onJoinDoa() {
+    private fun onJoinDao() {
         try {
             lifecycleScope.launch {
                 joinSharedWalletClicked(daoBlock)
                 loadRecentVotingPoll()
                 loadLatestPendingFeatureRequest()
-                updateDownloadButton();
+                updateDownloadButton()
             }
         } catch (e: Exception) {
             Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
@@ -267,7 +267,7 @@ class AppDetails : BaseFragment() {
     private fun updateAppMetaData() {
         binding.appName.text = this.app.name
         binding.appCategory.text = this.app.category
-        binding.daoMembersCount.text = this.app.getDoaMemberCount().toString()
+        binding.daoMembersCount.text = this.app.getDaoMemberCount().toString()
         binding.appLatestVersion.text = this.app.version.toString()
         binding.appDescription.text = this.app.description
         binding.daoIcon.setImageResource(this.app.icon)
@@ -326,8 +326,8 @@ class AppDetails : BaseFragment() {
                         val correspondingRequest = featureRequests.find { it.featureId == latestVotableSolution.featureId }
 
                         if (correspondingRequest != null) {
-                            val totalMembers = app.getDoaMemberCount()
-                            val votingThreshold = app.getDoaVoteThreshold()
+                            val totalMembers = app.getDaoMemberCount()
+                            val votingThreshold = app.getDaoVoteThreshold()
                             val myPublicKey = p2playStore.myPeer.publicKey.keyToBin().toHex()
                             val hasUserVoted = votes.any { it.voterPublicKey == myPublicKey }
                             val userVote = votes.find { it.voterPublicKey == myPublicKey }?.isYes

@@ -5,7 +5,6 @@ import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
@@ -13,10 +12,9 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPD
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.blockdata.FeatureRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.AppMetaData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
@@ -42,7 +40,7 @@ class P2playApp(val block: TrustChainBlock) {
     val name: String get() = this.daoData.APP_NAME
     val description: String get() = this.daoData.APP_DESCRIPTION
     val category: String get() = this.daoData.APP_CATEGORY
-    val icon: Int get() = iconFromIconId(this.block.transaction["iconIndex"])
+    val icon: Int get() = iconFromIconId(this.daoData.APP_ICON)
     val magnetLink: MagnetLink = MagnetUtils.parseMagnet(this.daoData.APP_MAGNET_LINK)
 
     /**
@@ -53,18 +51,19 @@ class P2playApp(val block: TrustChainBlock) {
 
     private fun getSharedWalletPublicKeys(): ArrayList<String> {
         if (block.type == JOIN_BLOCK) {
-            return (daoData as JoinDoaData).SW_TRUSTCHAIN_PKS
+            return (daoData as JoinDaoData).SW_TRUSTCHAIN_PKS
         }
+
         if (block.type == UPDATE_ACCEPTED_BLOCK) {
-            return (daoData as JoinDoaData).SW_TRUSTCHAIN_PKS
+            return (daoData as JoinDaoData).SW_TRUSTCHAIN_PKS
         }
         val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
         return data.SW_TRUSTCHAIN_PKS
     }
 
-    fun getDoaVoteThreshold(): Int {
+    fun getDaoVoteThreshold(): Int {
         if (block.type == JOIN_BLOCK) {
-            return (daoData as JoinDoaData).SW_VOTING_THRESHOLD
+            return (daoData as JoinDaoData).SW_VOTING_THRESHOLD
         }
         val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
         return data.SW_VOTING_THRESHOLD
@@ -73,7 +72,7 @@ class P2playApp(val block: TrustChainBlock) {
     /**
      * Returns the amount of members the DAO for this app has.
      */
-    fun getDoaMemberCount(): Int {
+    fun getDaoMemberCount(): Int {
         return this.getSharedWalletPublicKeys().size
     }
 
@@ -82,7 +81,7 @@ class P2playApp(val block: TrustChainBlock) {
      */
     fun getEntranceFee(): Long {
         if (block.type == JOIN_BLOCK) {
-            return (daoData as JoinDoaData).SW_ENTRANCE_FEE
+            return (daoData as JoinDaoData).SW_ENTRANCE_FEE
         }
         val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
         return data.SW_ENTRANCE_FEE
@@ -117,7 +116,7 @@ class P2playApp(val block: TrustChainBlock) {
     }
 
     /**
-     * Returns a list of all requests to join this app's DOA, including ones for which voting has
+     * Returns a list of all requests to join this app's DAO, including ones for which voting has
      * already finished.
      */
     fun getDaoJoinRequests(): List<DaoJoinRequest> {
@@ -151,7 +150,7 @@ class P2playApp(val block: TrustChainBlock) {
     }
 
     /**
-     * Checks if this user/ipv8 peer is a member of this app's DOA. Note that this is computed based
+     * Checks if this user/ipv8 peer is a member of this app's DAO. Note that this is computed based
      * on the block that was given in the constructor, if a newer version of the app is available in
      * which the user became a member than this result will be outdated.
      */
@@ -161,7 +160,7 @@ class P2playApp(val block: TrustChainBlock) {
     }
 
     /**
-     * Checks if this user/ipv8 peer is waiting for other users to be voted into the DOA
+     * Checks if this user/ipv8 peer is waiting for other users to be voted into the DAO
      */
     fun isWaitingToJoin(): Boolean {
         if (this.isDaoMember()) {

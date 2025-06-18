@@ -6,7 +6,7 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
-data class JoinDoaData(
+data class JoinDaoData(
     override var DAO_ID: String,
     var SW_ENTRANCE_FEE: Long,
     var SW_TRANSACTION_SERIALIZED: String,
@@ -25,8 +25,8 @@ class JoinDaoTransactionData(
     data: JsonObject,
 ) : BlockTransactionData(data, P2pStoreCommunity.JOIN_BLOCK) {
 
-    fun getData(): JoinDoaData {
-        return Gson().fromJson(getJsonString(), JoinDoaData::class.java)
+    fun getData(): JoinDaoData {
+        return Gson().fromJson(getJsonString(), JoinDaoData::class.java)
     }
 
     fun addTrustChainPk(publicKey: String) {
@@ -68,7 +68,7 @@ class JoinDaoTransactionData(
         magnetLink: String,
     ) : this(
         BlockUtils.objectToJsonObject(
-            JoinDoaData(
+            JoinDaoData(
                 uniqueId,
                 entranceFee,
                 transactionSerialized,
