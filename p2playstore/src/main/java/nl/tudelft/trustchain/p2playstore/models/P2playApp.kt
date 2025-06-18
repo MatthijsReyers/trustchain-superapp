@@ -156,7 +156,7 @@ class P2playApp(val block: TrustChainBlock) {
         val blocks = trustChain.database.getBlocksWithType(JOIN_REQUEST_BLOCK)
             .filter { b ->
                 val data = ProposeUpdateTransactionData(b.transaction).getData()
-                data.DAO_ID == daoId && b.publicKey == myKey
+                data.DAO_ID == daoId && b.linkPublicKey.contentEquals(myKey)
             }
         val block = blocks.maxByOrNull { b -> b.insertTime!! }
         if (block == null) return null
