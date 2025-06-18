@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 
 import nl.tudelft.ipv8.attestation.trustchain.BlockListener
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
+import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
@@ -97,6 +98,7 @@ class AppDetails : BaseFragment() {
             this.updateAppMetaData()
             this.updateDownloadButton()
             this.updatePolls()
+            this.finalizeJoinRequest()
             lifecycleScope.launch {
                 loadLatestPendingFeatureRequest()
                 updateUIBasedOnMembership()
@@ -130,6 +132,9 @@ class AppDetails : BaseFragment() {
             // ALl the other possible blocks are essentially just updates for various polls,
             else -> {
                 this.loadLatestPendingFeatureRequest()
+
+                // Check if this user requested to join the DAO and has collected enough votes now.
+                this.finalizeJoinRequest()
             }
         }
     }
@@ -416,6 +421,8 @@ class AppDetails : BaseFragment() {
         )
 
         try {
+            this.binding.installOpenBtn.text = "Joining.."
+
             getP2pStoreCommunity().joinBitcoinWallet(
                 daoBlock.transaction,
                 myPoll.daoData,
@@ -427,6 +434,10 @@ class AppDetails : BaseFragment() {
                 this.app.daoId,
                 requireContext()
             )
+            
+            // Now update the UI to inform the user they have joined successfully
+            val latestApp = this.app.getLatestVersion()
+            this.onChainUpdated(latestApp.block)
         }
         catch (t: Throwable) {
             Log.e("Coin", "Joining failed. ${t.message ?: "No further information"}.")
