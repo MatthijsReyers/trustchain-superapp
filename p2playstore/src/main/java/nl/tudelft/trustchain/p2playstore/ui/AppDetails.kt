@@ -702,14 +702,14 @@ class AppDetails : BaseFragment() {
             }
         }
 
-        // Navigate to DAO Wallet fragment
-        binding.daoWalletInfoLayout.setOnClickListener {
-            Log.d("AppDetails", "Navigating to DAO Wallet Fragment for DAO ${app.daoId}")
-            val bundle = Bundle().apply {
-                putString("daoUniqueId", app.daoId)
-            }
-            findNavController().navigate(R.id.action_appDetailsFragment_to_daoWalletFragment, bundle)
-        }
+//        // Navigate to DAO Wallet fragment
+//        binding.daoWalletInfoLayout.setOnClickListener {
+//            Log.d("AppDetails", "Navigating to DAO Wallet Fragment for DAO ${app.daoId}")
+//            val bundle = Bundle().apply {
+//                putString("daoUniqueId", app.daoId)
+//            }
+//            findNavController().navigate(R.id.action_appDetailsFragment_to_daoWalletFragment, bundle)
+//        }
 
 
         binding.btnFeatureRequest.setOnClickListener {

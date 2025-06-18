@@ -134,21 +134,21 @@ class FeatureVotingFragment : BaseFragment() {
             binding.developerName.visibility = View.GONE
         }
 
-        binding.yesPercentage.text = "${poll.yesPercentage}%"
-        binding.noPercentage.text = "${poll.noPercentage}%"
-        binding.pendingPercentage.text = "${poll.pendingPercentage}%"
+//        binding.yesPercentage.text = "${poll.yesPercentage}%"
+//        binding.noPercentage.text = "${poll.noPercentage}%"
+//        binding.pendingPercentage.text = "${poll.pendingPercentage}%"
 
         binding.votesRequiredText.text = "${poll.yesVotes} of ${poll.votesNeeded} votes needed for approval"
         android.util.Log.d("FeatureVotingFragment", "updateVotingUIWithPoll: Percentages (Y/N/P): ${poll.yesPercentage}%/${poll.noPercentage}%/${poll.pendingPercentage}%. Votes (Y/N/Req): ${poll.yesVotes}/${poll.noVotes}/${poll.votesNeeded}")
-        AppUtils.updateProgressBars(
-            binding.root,
-            binding.yesProgressBar,
-            binding.noProgressBar,
-            binding.pendingProgressBar,
-            poll.yesPercentage,
-            poll.noPercentage,
-            poll.pendingPercentage
-        )
+//        AppUtils.updateProgressBars(
+//            binding.root,
+//            binding.yesProgressBar,
+//            binding.noProgressBar,
+//            binding.pendingProgressBar,
+//            poll.yesPercentage,
+//            poll.noPercentage,
+//            poll.pendingPercentage
+//        )
         android.util.Log.d("FeatureVotingFragment", "updateVotingUIWithPoll: Progress bars updated.")
         updateVotingState(poll)
         android.util.Log.d("FeatureVotingFragment", "updateVotingUIWithPoll finished")
@@ -162,19 +162,19 @@ class FeatureVotingFragment : BaseFragment() {
         binding.developerName.visibility = View.GONE
         binding.rewardAmount.visibility = View.GONE
 
-
-        binding.yesPercentage.text = "0%"
-        binding.noPercentage.text = "0%"
-        binding.pendingPercentage.text = "100%"
-        AppUtils.updateProgressBars(
-            binding.root,
-            binding.yesProgressBar,
-            binding.noProgressBar,
-            binding.pendingProgressBar,
-            0,
-            0,
-            100
-        )
+//
+//        binding.yesPercentage.text = "0%"
+//        binding.noPercentage.text = "0%"
+//        binding.pendingPercentage.text = "100%"
+//        AppUtils.updateProgressBars(
+//            binding.root,
+//            binding.yesProgressBar,
+//            binding.noProgressBar,
+//            binding.pendingProgressBar,
+//            0,
+//            0,
+//            100
+//        )
         binding.votesRequiredText.text = "N/A votes needed"
         binding.alreadyVotedText.text = "N/A members voted"
 
