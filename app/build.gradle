@@ -155,6 +155,7 @@ dependencies {
 
     // Testing
     testImplementation "junit:junit:$junit_version"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:5.4.0"
     androidTestImplementation "androidx.test.ext:junit:$android_junit_version"
 
     // Hilt
