@@ -518,41 +518,21 @@ class AppDetails : BaseFragment() {
             findNavController()
                 .navigate(R.id.action_appDetailsFragment_to_featureListFragment, bundle)
         }
-        // The click listener for latest_feature_request_preview_card is set dynamically in
-        // loadLatestPendingFeatureRequest
 
         binding.joinProposalContainer.setOnClickListener {
             Log.d("P2PlayStore", "Navigating to join poll")
             val joinPolls = this.app.getOpenDaoJoinPolls();
             if (joinPolls.isNotEmpty()) {
-                navigateToVotingFragment(
-                    this.app.block.blockId,
-                    joinPolls[0].proposalId,
-                    joinPolls[0].daoId,
-                )
+                findNavController()
+                    .navigate(
+                        R.id.action_appDetailsFragment_to_featureVotingFragment,
+                        Bundle().apply {
+                            putString("proposalId", joinPolls[0].proposalId)
+                            putString("pollType", "join")
+                        }
+                    )
             }
         }
-    }
-
-    private fun navigateToVotingFragment(daoBlockId: String, proposalId: String, daoUniqueId: String) {
-        val bundle = Bundle().apply {
-            putString("blockId", daoBlockId)
-            putString("solutionId", proposalId)
-            putString("daoUniqueId", daoUniqueId)
-        }
-        findNavController()
-            .navigate(R.id.action_appDetailsFragment_to_featureVotingFragment, bundle)
-    }
-
-    private fun navigateToSubmitSolution(featureRequest: FeatureRequestData) {
-        val bundle = Bundle().apply {
-            putString("featureId", featureRequest.FEATURE_REQUEST_ID)
-            putString("daoUniqueId", featureRequest.DAO_ID) // Keep DAO_ID for context
-            putString("featureTitle", featureRequest.FEATURE_TITLE)
-            putString("featureDescription", featureRequest.FEATURE_DESCRIPTION)
-        }
-
-        findNavController().navigate(R.id.action_appDetailsFragment_to_featureSolutionFragment, bundle)
     }
 
     override fun onDestroyView() {

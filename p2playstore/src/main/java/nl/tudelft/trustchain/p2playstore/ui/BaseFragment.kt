@@ -6,6 +6,7 @@ import androidx.annotation.LayoutRes
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.tudelft.ipv8.IPv8
 import nl.tudelft.ipv8.android.IPv8Android
@@ -63,6 +64,7 @@ abstract class BaseFragment(
             override fun onBlockReceived(block: TrustChainBlock) {
                 Log.d("P2pStore", "Chain update ${block.type}")
                 lifecycleScope.launch(Dispatchers.Main) {
+                    delay(500)
                     onChainUpdated(block)
                 }
             }

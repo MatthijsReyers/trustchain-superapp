@@ -33,10 +33,6 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
     val category: String = daoData.APP_CATEGORY;
     val magnetLink: MagnetLink = MagnetUtils.parseMagnet(daoData.APP_MAGNET_LINK);
 
-    override fun submitVote(isYes: Boolean, context: Context) {
-
-    }
-
     companion object {
         /**
          * Tries to find a join proposal with the given proposal ID.

@@ -281,81 +281,6 @@ class P2pStoreCommunity : Community() {
     }
 
     /**
-     * Given a shared wallet proposal block, calculate the signature and respond with a trust chain
-     * block.
-     */
-    fun joinAskBlockReceived(
-        block: TrustChainBlock,
-        myPublicKey: ByteArray,
-        votedInFavor: Boolean,
-        context: Context
-    ) {
-        val latestHash =
-            JoinRequestTransactionData(block.transaction).getData().SW_PREVIOUS_BLOCK_HASH
-        val mostRecentSWBlock =
-            fetchLatestSharedWalletBlock(latestHash.hexToBytes())
-                ?: throw IllegalStateException("Most recent DAO block not found")
-        val joinBlock = JoinDaoTransactionData(mostRecentSWBlock.transaction).getData()
-        val oldTransaction = joinBlock.SW_TRANSACTION_SERIALIZED
-
-        DAOJoinHelper.joinAskBlockReceived(
-            oldTransaction,
-            block,
-            joinBlock,
-            myPublicKey,
-            votedInFavor,
-            context
-        )
-    }
-
-    /**
-     * Given a shared wallet transfer fund proposal block, calculate the signature and respond with
-     * a trust chain block.
-     */
-    fun transferFundsBlockReceived(
-        block: TrustChainBlock,
-        myPublicKey: ByteArray,
-        votedInFavor: Boolean,
-        context: Context
-    ) {
-        val proposalData = ProposeUpdateTransactionData(block.transaction).getData()
-        val daoId = proposalData.DAO_ID
-
-        // We need the data from the latest JOIN block to get the current member list and transaction data
-        val latestJoinBlock = fetchLatestJoinBlockByDaoId(daoId)
-            ?: throw IllegalStateException("Latest JOIN block not found for DAO ${daoId}. Cannot sign transfer.")
-
-        val latestJoinData = JoinDaoTransactionData(latestJoinBlock.transaction).getData()
-
-        DAOTransferFundsHelper.transferFundsBlockReceived( // Call the companion object method
-            block,
-            latestJoinData, // Pass the latest JOIN block data
-            myPublicKey,
-            votedInFavor,
-            context,
-            getTrustChainCommunity()
-        )
-    }
-
-//    /** Given a proposal, check if the number of signatures required is met */
-//    fun checkEnoughFavorSignatures(block: TrustChainBlock): Boolean {
-//        if (block.type == JOIN_REQUEST_BLOCK) {
-//            val data = JoinRequestTransactionData(block.transaction).getData()
-//            val signatures =
-//                ArrayList(fetchProposalResponses(data.DAO_ID, data.SW_UNIQUE_PROPOSAL_ID))
-//            return data.SW_SIGNATURES_REQUIRED <= signatures.size
-//        }
-//        if (block.type == PROPOSE_UPDATE_BLOCK) {
-//            val data = ProposeUpdateTransactionData(block.transaction).getData()
-//            val signatures =
-//                ArrayList(fetchProposalResponses(data.DAO_ID, data.SW_UNIQUE_PROPOSAL_ID))
-//            return data.SW_SIGNATURES_REQUIRED <= signatures.size
-//        }
-//
-//        return false
-//    }
-
-    /**
      * Create a feature request proposal block on trust chain.
      */
     fun createFeatureRequest(daoId: String, title: String, description: String, reward: Long) {
@@ -462,42 +387,6 @@ class P2pStoreCommunity : Community() {
         }
 
         Log.d("P2PlayStore", "Created Feature Solution block for Feature $featureRequestId in DAO $daoId")
-    }
-
-    /**
-     * Vote on any proposal (join request, feature solution, fund transfer)
-     */
-    fun voteOnProposal(
-        daoId: String,
-        proposalId: String,
-        isYes: Boolean,
-        context: Context
-    ) {
-        // Find the proposal block
-        val proposalBlock = findProposalBlock(daoId, proposalId)
-            ?: throw IllegalStateException("Proposal not found: $proposalId")
-        Log.d("P2PlayStore", "Voting on proposal $proposalId ${proposalBlock.type}")
-        when (proposalBlock.type) {
-            JOIN_REQUEST_BLOCK -> {
-                joinAskBlockReceived(
-                    proposalBlock,
-                    myPeer.publicKey.keyToBin(),
-                    isYes,
-                    context
-                )
-            }
-            PROPOSE_UPDATE_BLOCK -> {
-                transferFundsBlockReceived(
-                    proposalBlock,
-                    myPeer.publicKey.keyToBin(),
-                    isYes,
-                    context
-                )
-            }
-            else -> throw IllegalArgumentException("Unknown proposal type: ${proposalBlock.type}")
-        }
-
-        Log.d("P2PlayStore", "Vote submitted: ${if (isYes) "Yes" else "No"} for proposal $proposalId")
     }
 
     /**
