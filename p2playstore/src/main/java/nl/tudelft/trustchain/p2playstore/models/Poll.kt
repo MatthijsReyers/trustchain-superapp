@@ -52,17 +52,6 @@ abstract class Poll(val block: TrustChainBlock) {
     abstract val votesRequired: Int
 
     /**
-     * Total number of members/peers inside the DAO
-     */
-    val totalMembers: Int get() {
-        val newestJoinBlock = trustChain.database.getBlocksWithType(P2pStoreCommunity.JOIN_BLOCK)
-            .filter { b -> JoinDaoTransactionData(b.transaction).getData().DAO_ID == daoId }
-            .maxByOrNull { b -> b.insertTime!! }
-        val data = JoinDaoTransactionData(newestJoinBlock!!.transaction).getData()
-        return data.SW_TRUSTCHAIN_PKS.size
-    }
-
-    /**
      * Amount of people/peers that have voted in this poll.
      */
     val votes: Int get() = getUpVotes().size + getDownVotes().size
@@ -74,11 +63,11 @@ abstract class Poll(val block: TrustChainBlock) {
      */
     val pendingVotes: Int get() = votesRequired - votes
 
-    val yesPercentage: Float get() = (getUpVotes().size) / totalMembers.toFloat()
+    val yesPercentage: Float get() = (getUpVotes().size) / votesRequired.toFloat()
 
-    val noPercentage: Float get() = (getDownVotes().size) / totalMembers.toFloat()
+    val noPercentage: Float get() = (getDownVotes().size) / votesRequired.toFloat()
 
-    val pendingPercentage: Float get() = (pendingVotes) / totalMembers.toFloat()
+    val pendingPercentage: Float get() = (pendingVotes) / votesRequired.toFloat()
 
     /**
      * Checks if the poll/request has been accepted/approved by the community.

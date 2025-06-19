@@ -103,6 +103,11 @@ class AppDetails : BaseFragment() {
         return binding.root
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -123,6 +128,8 @@ class AppDetails : BaseFragment() {
      * we want to update the whole UI since votes/version updates might have changed.
      */
     override suspend fun onChainUpdated(block: TrustChainBlock) {
+        if (this._binding == null) return;
+
         // TODO: Replace with BaseTransactionData class for better type safety, since there
         // is really no guarantee that it will be this kind of block.
         val data = JoinDaoTransactionData(block.transaction).getData()
@@ -344,34 +351,34 @@ class AppDetails : BaseFragment() {
      */
     private fun updatePolls() {
         val joinPolls = this.app.getOpenDaoJoinPolls();
-        if (joinPolls.isNotEmpty()) {
-            binding.joinProposalContainer.visibility = View.VISIBLE
-            val view = binding.joinProposal
-            val peer = joinPolls[0].requestingUser.substring(0, 6)
-            view.pollDescription.text = "Should peer $peer be allowed to join the app DAO?"
-            view.pollTitle.text = "DAO join request"
-            this.updatePollView(view, joinPolls[0])
-        }
-        else {
-            binding.joinProposalContainer.visibility = View.GONE
-        }
-
-       val updatePolls = this.app.getOpenUpdatePolls();
-       Log.d("P2PlayStore", "updatePolls: $updatePolls")
-       if (updatePolls.isNotEmpty()) {
-           binding.updateProposalContainer.visibility = View.VISIBLE
-           val view = binding.updateProposal
-           view.pollDescription.text = updatePolls[0].description
-           view.pollTitle.text = "Release update"
-           this.updatePollView(view, updatePolls[0])
-       }
-       else {
-           binding.updateProposalContainer.visibility = View.GONE
-       }
+//        if (joinPolls.isNotEmpty()) {
+//            binding.joinProposalContainer.visibility = View.VISIBLE
+//            val view = binding.joinProposal
+//            val peer = joinPolls[0].requestingUser.substring(0, 6)
+//            view.pollDescription.text = "Should peer $peer be allowed to join the app DAO?"
+//            view.pollTitle.text = "DAO join request"
+//            this.updatePollView(view, joinPolls[0])
+//        }
+//        else {
+//            binding.joinProposalContainer.visibility = View.GONE
+//        }
+//
+//       val updatePolls = this.app.getOpenUpdatePolls();
+//       Log.d("P2PlayStore", "updatePolls: $updatePolls")
+//       if (updatePolls.isNotEmpty()) {
+//           binding.updateProposalContainer.visibility = View.VISIBLE
+//           val view = binding.updateProposal
+//           view.pollDescription.text = updatePolls[0].description
+//           view.pollTitle.text = "Release update"
+//           this.updatePollView(view, updatePolls[0])
+//       }
+//       else {
+//           binding.updateProposalContainer.visibility = View.GONE
+//       }
 
         // Show/hide the "no active proposals text"
-        binding.noProposalsText.visibility =
-            if (joinPolls.isEmpty() && updatePolls.isEmpty()) { View.VISIBLE } else { View.GONE }
+        binding.noProposalsText.visibility = View.VISIBLE
+//            if (joinPolls.isEmpty() && updatePolls.isEmpty()) { View.VISIBLE } else { View.GONE }
     }
 
     private fun updatePollView(view: PollPreviewBinding, poll: Poll) {
@@ -503,8 +510,7 @@ class AppDetails : BaseFragment() {
         // btnSeeAllVotes click listener (Existing) - Navigate to AllVotingPollsFragment
         binding.btnSeeAllVotes.setOnClickListener {
             val bundle = Bundle().apply {
-                putString("blockId", daoBlock.blockId)
-                putString("daoUniqueId", app.daoId)
+                putString("daoId", app.daoId)
             }
             findNavController()
                 .navigate(R.id.action_appDetailsFragment_to_allVotingPollsFragment, bundle)
@@ -512,31 +518,25 @@ class AppDetails : BaseFragment() {
 
         binding.btnSeeAllFeatures.setOnClickListener {
             val bundle = Bundle().apply {
-                putString("blockId", daoBlock.blockId)
-                putString("daoUniqueId", app.daoId)
+                putString("daoId", app.daoId)
             }
             findNavController()
                 .navigate(R.id.action_appDetailsFragment_to_featureListFragment, bundle)
         }
 
-        binding.joinProposalContainer.setOnClickListener {
-            Log.d("P2PlayStore", "Navigating to join poll")
-            val joinPolls = this.app.getOpenDaoJoinPolls();
-            if (joinPolls.isNotEmpty()) {
-                findNavController()
-                    .navigate(
-                        R.id.action_appDetailsFragment_to_featureVotingFragment,
-                        Bundle().apply {
-                            putString("proposalId", joinPolls[0].proposalId)
-                            putString("pollType", "join")
-                        }
-                    )
-            }
-        }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+//        binding.joinProposalContainer.setOnClickListener {
+//            Log.d("P2PlayStore", "Navigating to join poll")
+//            val joinPolls = this.app.getOpenDaoJoinPolls();
+//            if (joinPolls.isNotEmpty()) {
+//                findNavController()
+//                    .navigate(
+//                        R.id.action_appDetailsFragment_to_featureVotingFragment,
+//                        Bundle().apply {
+//                            putString("proposalId", joinPolls[0].proposalId)
+//                            putString("pollType", "join")
+//                        }
+//                    )
+//            }
+//        }
     }
 }
