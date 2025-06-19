@@ -6,6 +6,7 @@ import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
@@ -101,7 +102,7 @@ class P2playApp(val block: TrustChainBlock) {
      * Gets the latest join block, this block should contain the latest update when it comes to the
      * state of the shared bitcoin wallet.
      */
-    private fun getLatestJoin(): TrustChainBlock {
+    fun getLatestJoin(): TrustChainBlock {
         return trustChain.database.getBlocksWithType(JOIN_BLOCK)
             .filter { b ->
                 val data = JoinRequestTransactionData(b.transaction).getData()
@@ -225,5 +226,27 @@ class P2playApp(val block: TrustChainBlock) {
             }
         }
         return false
+    }
+
+    companion object {
+        /**
+         * Tries to find an app with the given DAO id.
+         */
+        fun findByDoaId(daoId: String): P2playApp? {
+            val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
+
+            val joinBlocks = trustChain.database.getBlocksWithType(JOIN_BLOCK)
+            val updateBlocks = trustChain.database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
+
+            val latest = (joinBlocks + updateBlocks)
+                .filter { b ->
+                    val data = JoinRequestTransactionData(b.transaction).getData()
+                    data.DAO_ID == daoId
+                }
+                .maxByOrNull { b -> b.insertTime!! }
+
+            if (latest == null) return null
+            return P2playApp(latest)
+        }
     }
 }

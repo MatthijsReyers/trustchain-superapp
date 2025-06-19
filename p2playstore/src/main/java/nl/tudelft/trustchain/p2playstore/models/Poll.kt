@@ -2,13 +2,28 @@ package nl.tudelft.trustchain.p2playstore.models
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
+import nl.tudelft.ipv8.util.hexToBytes
+import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.VotingPollType
+import nl.tudelft.trustchain.p2playstore.utils.DAOJoinHelper
+import nl.tudelft.trustchain.p2playstore.utils.DAOTransferFundsHelper
 
 abstract class Poll(val block: TrustChainBlock) {
     protected val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
@@ -124,7 +139,68 @@ abstract class Poll(val block: TrustChainBlock) {
         }
     }
 
+    /**
+     * Gets the app that this poll relates to.
+     * Note that this is an update proposal the returned app will actually be that new version.
+     */
+    fun getApp(): P2playApp {
+        if (this.block.type == PROPOSE_UPDATE_BLOCK) {
+            return P2playApp(this.block)
+        }
+        // Null safety: such an app must exist otherwise this poll class could never actually be
+        // instantiated.
+        return P2playApp.findByDoaId(this.daoId)!!
+    }
+
     fun getAllVotes() = (this.getUpVotes() + this.getDownVotes())
 
-    abstract fun submitVote(isYes: Boolean, context: Context)
+    /**
+     * Submit a vote for the poll, note that calling this function if you are not a member will do
+     * nothing but if you call it rapidly many times while the chain is still updating you can
+     * create multiple vote blocks.
+     */
+    suspend fun submitVote(isYes: Boolean, context: Context) {
+        android.util.Log.d("P2PlayStore", "Voting $isYes on proposal $proposalId")
+
+        // Only members are allowed to vote on proposals for the DAO
+        val app = this.getApp()
+        if (!app.isDaoMember()) return
+
+        // Only create one vote block per user/peer
+        if (this.hasVoted()) return
+
+        val joinBlock = app.getLatestJoin()
+
+        val myPublicKey = trustChain.myPeer.publicKey.keyToBin()
+
+        // Use the community method to create the vote block (runs on IO dispatcher due to withContext)
+        withContext(Dispatchers.IO) {
+            when (block.type) {
+                JOIN_REQUEST_BLOCK -> {
+                    val data = JoinDaoTransactionData(joinBlock.transaction).getData()
+                    val oldTransaction = data.SW_TRANSACTION_SERIALIZED
+                    DAOJoinHelper.joinAskBlockReceived(
+                        oldTransaction,
+                        block,
+                        data,
+                        myPublicKey,
+                        isYes,
+                        context
+                    )
+                }
+                PROPOSE_UPDATE_BLOCK -> {
+                    val data = JoinDaoTransactionData(joinBlock.transaction).getData()
+                    DAOTransferFundsHelper.transferFundsBlockReceived(
+                        block,
+                        data,
+                        myPublicKey,
+                        isYes,
+                        context,
+                        trustChain
+                    )
+                }
+                else -> throw IllegalArgumentException("Unknown proposal type: ${block.type}")
+            }
+        }
+    }
 }

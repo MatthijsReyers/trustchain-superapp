@@ -79,7 +79,7 @@
 
                     <View
                         android:id="@+id/no_progress_bar"
-                        android:layout_width="1dp"
+                        android:layout_width="40dp"
                         android:layout_height="match_parent"
                         android:background="#F44336"
                         android:gravity="end"

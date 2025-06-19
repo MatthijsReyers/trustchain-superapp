@@ -97,20 +97,21 @@
                 android:id="@+id/btn_download_apk"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
+                android:layout_marginBottom="24dp"
+                android:backgroundTint="#1976D2"
                 android:text="Download APK to Test"
                 android:textColor="@android:color/white"
-                android:backgroundTint="#1976D2"
-                android:layout_marginBottom="24dp" />
+                android:visibility="gone" />
 
             <!-- Voting Question -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Does this implementation work correctly and appear safe?"
-                android:textSize="18sp"
-                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:text="Are you in fact sure this is the page?"
                 android:textColor="#333"
-                android:layout_marginBottom="8dp" />
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="match_parent"

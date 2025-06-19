@@ -25,29 +25,6 @@ class DaoJoinPoll(block: TrustChainBlock): Poll(block) {
     override val requestingUser = block.publicKey.toHex()
     override val votesRequired: Int = daoData.SW_SIGNATURES_REQUIRED
 
-    override fun submitVote(isYes: Boolean, context: Context) {
-        val myPublicKey = this.trustChain.myPeer.publicKey.keyToBin()
-
-        val latestHash = JoinRequestTransactionData(block.transaction)
-            .getData().SW_PREVIOUS_BLOCK_HASH
-
-        val mostRecentSWBlock =
-            p2pStoreCommunity.fetchLatestSharedWalletBlock(latestHash.hexToBytes())
-                ?: throw IllegalStateException("Most recent DAO block not found")
-
-        val joinBlock = JoinDaoTransactionData(mostRecentSWBlock.transaction).getData()
-        val oldTransaction = joinBlock.SW_TRANSACTION_SERIALIZED
-
-        DAOJoinHelper.joinAskBlockReceived(
-            oldTransaction,
-            block,
-            joinBlock,
-            myPublicKey,
-            isYes,
-            context
-        )
-    }
-
     companion object {
         /**
          * Tries to find a join proposal with the given proposal ID.
