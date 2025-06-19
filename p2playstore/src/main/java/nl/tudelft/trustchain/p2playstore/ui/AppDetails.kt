@@ -24,6 +24,13 @@ import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
 import nl.tudelft.trustchain.p2playstore.P2PlayStoreMainActivity
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_NO_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BLOCK
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.databinding.PollPreviewBinding
@@ -32,6 +39,8 @@ import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestData
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.models.Poll
 import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
 
@@ -70,16 +79,19 @@ class AppDetails : BaseFragment() {
         val publicKey = args.getByteArray("publicKey")!!
         val sequenceNumber = args.getInt("sequenceNumber").toUInt()
 
-        // Actually retrieve the block
-        val community = this.getTrustChainCommunity()
-        this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
-        this.app = P2playApp(this.daoBlock)
+        try {
+            // Actually retrieve the block
+            val community = this.getTrustChainCommunity()
+            this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
+            this.app = P2playApp(this.daoBlock)
+        }
+        catch (e: Throwable) {
+            Log.e("P2PlayStore", "Error loading DAO details: ${e.message}")
+            findNavController().navigateUp()
+        }
 
         torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
         this.downloadProgress = torrentManager.downloadProgress(this.app);
-
-        this.setupTorrentDownloadStatus()
-        this.setupChainListeners()
     }
 
     override fun onCreateView(
@@ -93,34 +105,34 @@ class AppDetails : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        try {
-            this.setupClickListeners()
-            this.updateAppMetaData()
-            this.updateDownloadButton()
-            this.updatePolls()
-            this.finalizeJoinRequest()
-            lifecycleScope.launch {
-                loadLatestPendingFeatureRequest()
-                updateUIBasedOnMembership()
-            }
-        }
-        catch (e: Throwable) {
-            Log.e("DaoDetailsFragment", "Error loading DAO details: ${e.message}")
-            Toast.makeText(context, "Error loading DAO details.", Toast.LENGTH_SHORT).show()
-            findNavController().navigateUp()
-        }
+
+        this.setupClickListeners()
+        this.setupTorrentDownloadStatus()
+
+        this.updateAppMetaData()
+        this.updateDownloadButton()
+        this.updateUIBasedOnMembership()
+        this.updatePolls()
+        this.updateFeatureRequests()
+
+        this.finalizeJoinRequest()
     }
 
     /**
      * Called whenever new blocks with the DAO ID for this app are detected, practically this means
      * we want to update the whole UI since votes/version updates might have changed.
      */
-    private fun onChainUpdated(block: TrustChainBlock) {
-        Log.d("P2pStore", "Chain update ${block.type}")
+    override suspend fun onChainUpdated(block: TrustChainBlock) {
+        // TODO: Replace with BaseTransactionData class for better type safety, since there
+        // is really no guarantee that it will be this kind of block.
+        val data = JoinDaoTransactionData(block.transaction).getData()
+
+        // Is the new block relevant for this app?
+        if (data.DAO_ID != app.daoId) return;
 
         when (block.type) {
             // Was a new version of the app released?
-            P2pStoreCommunity.JOIN_BLOCK, P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> {
+            JOIN_BLOCK, UPDATE_ACCEPTED_BLOCK -> {
                 this.daoBlock = block
                 this.app = P2playApp(this.daoBlock)
                 requireActivity().runOnUiThread {
@@ -129,9 +141,16 @@ class AppDetails : BaseFragment() {
                     updateUIBasedOnMembership()
                 }
             }
-            // ALl the other possible blocks are essentially just updates for various polls,
-            else -> {
-                this.loadLatestPendingFeatureRequest()
+            // Did someone create a new poll/proposal?
+            JOIN_REQUEST_BLOCK, PROPOSE_UPDATE_BLOCK -> {
+                this.updatePolls()
+            }
+            // Did someone create a new feature request?
+            FEATURE_REQUEST_BLOCK -> {
+                this.updateFeatureRequests()
+            }
+            // Did someone vote in a poll?
+            VOTE_YES_BLOCK, VOTE_NO_BLOCK -> {
 
                 // Check if this user requested to join the DAO and has collected enough votes now.
                 this.finalizeJoinRequest()
@@ -235,7 +254,6 @@ class AppDetails : BaseFragment() {
     private fun onJoinDoa() {
         try {
             lifecycleScope.launch {
-
                 val mostRecentSWBlock =
                     getP2pStoreCommunity().fetchLatestSharedWalletBlock(daoBlock.calculateHash())
                         ?: daoBlock
@@ -244,8 +262,6 @@ class AppDetails : BaseFragment() {
                 } catch (t: Throwable) {
                     Log.e("P2P", "Join wallet proposal failed. ${t.message ?: "No further information"}.")
                 }
-
-                loadLatestPendingFeatureRequest()
                 updateDownloadButton()
             }
             requireActivity().runOnUiThread {
@@ -319,6 +335,10 @@ class AppDetails : BaseFragment() {
         }
     }
 
+    private fun updateFeatureRequests() {
+        // TODO:
+    }
+
     /**
      * Updates the list of polls/proposals
      */
@@ -367,10 +387,6 @@ class AppDetails : BaseFragment() {
 
         val totalMembers = this.app.getDoaMemberCount()
         view.votingProgress.text = "${poll.votes} of $totalMembers members voted"
-    }
-
-    private fun loadLatestPendingFeatureRequest() {
-
     }
 
     /**
@@ -434,10 +450,12 @@ class AppDetails : BaseFragment() {
                 this.app.daoId,
                 requireContext()
             )
-            
+
             // Now update the UI to inform the user they have joined successfully
             val latestApp = this.app.getLatestVersion()
-            this.onChainUpdated(latestApp.block)
+            lifecycleScope.launch(Dispatchers.Main) {
+                onChainUpdated(latestApp.block)
+            }
         }
         catch (t: Throwable) {
             Log.e("Coin", "Joining failed. ${t.message ?: "No further information"}.")
@@ -514,34 +532,6 @@ class AppDetails : BaseFragment() {
                 )
             }
         }
-    }
-
-    /**
-     * This function attaches a bunch of event listeners to the trustchain so we can detect new
-     * blocks when they are created and update the UI accordingly
-     */
-    private fun setupChainListeners() {
-        val listener: BlockListener = object: BlockListener {
-            override fun onBlockReceived(block: TrustChainBlock) {
-                // TODO: Replace with BaseTransactionData class for better type safety, since there
-                // is really no guarantee that it will be this kind of block.
-                val data = SWJoinBlockTransactionData(block.transaction).getData()
-                // Is the new block relevant for this app?
-                if (data.SW_UNIQUE_ID == app.daoId) {
-                    lifecycleScope.launch(Dispatchers.Main) {
-                        onChainUpdated(block)
-                    }
-                }
-            }
-        }
-        val trustChain = getTrustChainCommunity()
-        trustChain.addListener(P2pStoreCommunity.JOIN_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.JOIN_REQUEST_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.VOTE_YES_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.VOTE_NO_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.PROPOSE_UPDATE_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.FEATURE_REQUEST_BLOCK, listener);
     }
 
     private fun navigateToVotingFragment(daoBlockId: String, proposalId: String, daoUniqueId: String) {
