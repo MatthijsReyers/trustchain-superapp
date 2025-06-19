@@ -284,46 +284,22 @@
                 android:layout_centerVertical="true"
                 android:text="See All"
                 android:textColor="#1E88E5" />
+
         </RelativeLayout>
 
         <!-- Voting Progress Card -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/join_proposal_container"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:clickable="true"
-            android:focusable="false"
-            android:foreground="?android:attr/selectableItemBackground"
-            android:visibility="visible"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-
-            <include
-                android:id="@+id/join_proposal"
-                layout="@layout/poll_preview" />
-        </androidx.cardview.widget.CardView>
+        <include
+            android:id="@+id/join_proposal"
+            layout="@layout/poll_preview"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
         <!-- Pending Feature Requests -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/update_proposal_container"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:clickable="false"
-            android:focusable="false"
-            android:foreground="?android:attr/selectableItemBackground"
-            android:visibility="visible"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-            <include
-                android:id="@+id/update_proposal"
-                layout="@layout/poll_preview" />
-        </androidx.cardview.widget.CardView>
+        <include
+            android:id="@+id/update_proposal"
+            layout="@layout/poll_preview"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
         <TextView
             android:id="@+id/no_proposals_text"

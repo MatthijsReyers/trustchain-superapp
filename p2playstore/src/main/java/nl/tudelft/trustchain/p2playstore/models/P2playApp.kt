@@ -6,7 +6,6 @@ import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
@@ -134,7 +133,7 @@ class P2playApp(val block: TrustChainBlock) {
      * Returns a list of all join DAO requests for this app, including the ones for which voting has
      * already concluded.
      */
-    fun getDaoJoinPolls(): List<DaoJoinPoll> {
+    fun getAllDaoJoinPolls(): List<DaoJoinPoll> {
         val blocks = trustChain.database.getBlocksWithType(JOIN_REQUEST_BLOCK)
             .filter { b -> ProposeUpdateTransactionData(b.transaction).getData().DAO_ID == daoId }
         return blocks.map { b -> DaoJoinPoll(b) }
@@ -145,7 +144,7 @@ class P2playApp(val block: TrustChainBlock) {
      * not been finished yet.
      */
     fun getOpenDaoJoinPolls(): List<DaoJoinPoll> {
-        return this.getDaoJoinPolls().filter { poll -> poll.isPending }
+        return this.getAllDaoJoinPolls().filter { poll -> poll.isPending }
     }
 
     /**
@@ -163,7 +162,10 @@ class P2playApp(val block: TrustChainBlock) {
         return DaoJoinPoll(block)
     }
 
-    fun getUpdatePolls(): List<UpdateProposalPoll> {
+    /**
+     * Gets all the update proposal polls that have ever been proposed for this app.
+     */
+    fun getAllUpdatePolls(): List<UpdateProposalPoll> {
         val blocks = trustChain.database.getBlocksWithType(PROPOSE_UPDATE_BLOCK)
             .filter { b ->
                 try {
@@ -175,8 +177,11 @@ class P2playApp(val block: TrustChainBlock) {
         return blocks.map { b -> UpdateProposalPoll(b) }
     }
 
+    /**
+     * Gets all the update proposal polls that have not been finished yet.
+     */
     fun getOpenUpdatePolls(): List<UpdateProposalPoll> {
-        return this.getUpdatePolls().filter { poll -> poll.isPending }
+        return this.getAllUpdatePolls().filter { poll -> poll.isPending }
     }
 
     /**
@@ -216,7 +221,7 @@ class P2playApp(val block: TrustChainBlock) {
         if (this.isDaoMember()) {
             return false
         }
-        val joinRequests = this.getDaoJoinPolls()
+        val joinRequests = this.getAllDaoJoinPolls()
         val myPublicKey = trustChain.myPeer.publicKey.keyToBin().toHex()
         for (request in joinRequests) {
             if (request.requestingUser == myPublicKey) {
