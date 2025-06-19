@@ -58,6 +58,9 @@ class AppDetails : BaseFragment() {
 
     private lateinit var app: P2playApp
 
+    private var joinPoll: PollPreviewHolder? = null
+    private var updatePoll: PollPreviewHolder? = null
+
     /**
      * Integer between 0-100, this indicates how far along the torrent download for this apps
      * APK file is.
@@ -113,6 +116,7 @@ class AppDetails : BaseFragment() {
 
         this.setupClickListeners()
         this.setupTorrentDownloadStatus()
+        this.setupPollPreviews()
 
         this.updateAppMetaData()
         this.updateDownloadButton()
@@ -351,49 +355,23 @@ class AppDetails : BaseFragment() {
      */
     private fun updatePolls() {
         val joinPolls = this.app.getOpenDaoJoinPolls();
-//        if (joinPolls.isNotEmpty()) {
-//            binding.joinProposalContainer.visibility = View.VISIBLE
-//            val view = binding.joinProposal
-//            val peer = joinPolls[0].requestingUser.substring(0, 6)
-//            view.pollDescription.text = "Should peer $peer be allowed to join the app DAO?"
-//            view.pollTitle.text = "DAO join request"
-//            this.updatePollView(view, joinPolls[0])
-//        }
-//        else {
-//            binding.joinProposalContainer.visibility = View.GONE
-//        }
-//
-//       val updatePolls = this.app.getOpenUpdatePolls();
-//       Log.d("P2PlayStore", "updatePolls: $updatePolls")
-//       if (updatePolls.isNotEmpty()) {
-//           binding.updateProposalContainer.visibility = View.VISIBLE
-//           val view = binding.updateProposal
-//           view.pollDescription.text = updatePolls[0].description
-//           view.pollTitle.text = "Release update"
-//           this.updatePollView(view, updatePolls[0])
-//       }
-//       else {
-//           binding.updateProposalContainer.visibility = View.GONE
-//       }
 
-        // Show/hide the "no active proposals text"
-        binding.noProposalsText.visibility = View.VISIBLE
-//            if (joinPolls.isEmpty() && updatePolls.isEmpty()) { View.VISIBLE } else { View.GONE }
-    }
-
-    private fun updatePollView(view: PollPreviewBinding, poll: Poll) {
-        view.progressBar.post {
-            // Clamp value at 1, because 0 maps to 100% for some reason...
-            view.yesProgressBar.layoutParams.width =
-                max(1, (view.progressBar.width * poll.yesPercentage).roundToInt())
-            view.noProgressBar.layoutParams.width =
-                max(1, (view.progressBar.width * poll.noPercentage).roundToInt())
-            view.yesProgressBar.requestLayout()
-            view.noProgressBar.requestLayout()
+        if (joinPolls.isNotEmpty()) {
+            this.joinPoll?.bind(joinPolls[0])
+        } else {
+            this.joinPoll?.hide()
         }
 
-        val totalMembers = this.app.getDoaMemberCount()
-        view.votingProgress.text = "${poll.votes} of $totalMembers members voted"
+       val updatePolls = this.app.getOpenUpdatePolls();
+       if (updatePolls.isNotEmpty()) {
+           this.updatePoll?.bind(updatePolls[0])
+       } else {
+           this.updatePoll?.hide()
+       }
+
+        // Show/hide the "no active proposals text"
+        binding.noProposalsText.visibility =
+            if (joinPolls.isEmpty() && updatePolls.isEmpty()) { View.VISIBLE } else { View.GONE }
     }
 
     /**
@@ -467,6 +445,17 @@ class AppDetails : BaseFragment() {
         catch (t: Throwable) {
             Log.e("Coin", "Joining failed. ${t.message ?: "No further information"}.")
         }
+    }
+
+    private fun setupPollPreviews() {
+        this.joinPoll = PollPreviewHolder(
+            binding.joinProposal,
+            R.id.action_appDetailsFragment_to_featureVotingFragment
+        );
+        this.updatePoll = PollPreviewHolder(
+            binding.updateProposal,
+            R.id.action_appDetailsFragment_to_featureVotingFragment
+        );
     }
 
     /**
