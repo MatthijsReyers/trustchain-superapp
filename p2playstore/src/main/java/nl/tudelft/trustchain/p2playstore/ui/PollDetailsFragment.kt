@@ -47,8 +47,6 @@ class PollDetailsFragment : BaseFragment() {
         } else {
             this.updateProposalPoll = UpdateProposalPoll.findByProposalId(proposalId)
         }
-
-        this.setupChainListeners()
     }
 
     override fun onCreateView(
@@ -73,7 +71,7 @@ class PollDetailsFragment : BaseFragment() {
      * Called whenever new blocks with the DAO ID for this app are detected, practically this means
      * we want to update the whole UI since votes/version updates might have changed.
      */
-    fun onChainUpdated(block: TrustChainBlock) {
+    override suspend fun onChainUpdated(block: TrustChainBlock) {
         Log.d("P2pStore", "Chain update ${block.type}")
 
         when (block.type) {
@@ -139,31 +137,5 @@ class PollDetailsFragment : BaseFragment() {
                 poll.submitVote(false, requireContext())
             }
         }
-    }
-
-    /**
-     * This function attaches a bunch of event listeners to the trustchain so we can detect new
-     * blocks when they are created and update the UI accordingly
-     */
-    private fun setupChainListeners() {
-        val listener: BlockListener = object: BlockListener {
-            override fun onBlockReceived(block: TrustChainBlock) {
-                // TODO: Replace with BaseTransactionData class for better type safety, since there
-                // is really no guarantee that it will be this kind of block.
-                val data = SWJoinBlockTransactionData(block.transaction).getData()
-                // Is the new block relevant for this app?
-                if (data.SW_UNIQUE_ID == daoId) {
-                    onChainUpdated(block)
-                }
-            }
-        }
-        val trustChain = getTrustChainCommunity()
-        trustChain.addListener(P2pStoreCommunity.JOIN_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.JOIN_REQUEST_BLOCK, listener);
-        trustChain.addListener(VOTE_YES_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.VOTE_NO_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.PROPOSE_UPDATE_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK, listener);
-        trustChain.addListener(P2pStoreCommunity.FEATURE_REQUEST_BLOCK, listener);
     }
 }

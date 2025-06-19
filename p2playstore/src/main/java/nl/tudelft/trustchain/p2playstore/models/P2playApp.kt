@@ -67,7 +67,6 @@ class P2playApp(val block: TrustChainBlock) {
         }
     }
 
-
     fun getDoaVoteThreshold(): Int {
         if (block.type == JOIN_BLOCK) {
             return (daoData as JoinDoaData).SW_VOTING_THRESHOLD
