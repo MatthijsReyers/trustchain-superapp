@@ -36,6 +36,8 @@ class AllVotingPollsFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         try {
+            this.daoId = arguments?.getString("daoId")!!
+            this.app = P2playApp.findByDoaId(daoId)!!
             this.loadPolls()
         }
         catch (err: Throwable) {
@@ -47,6 +49,7 @@ class AllVotingPollsFragment : BaseFragment() {
 
     override suspend fun onChainUpdated(block: TrustChainBlock) {
         try {
+            this.app = this.app.getLatestVersion()
             this.loadPolls()
         }
         catch (err: Throwable) {
@@ -59,14 +62,17 @@ class AllVotingPollsFragment : BaseFragment() {
         _binding = null
     }
 
+    /**
+     * Refreshes the list of polls
+     */
     private fun loadPolls() {
-        this.daoId = arguments?.getString("daoId")!!
-        this.app = P2playApp.findByDoaId(daoId)!!
         this.polls = ArrayList()
-        this.polls.addAll(app.getAllUpdatePolls())
-        this.polls.addAll(app.getAllDaoJoinPolls())
+        this.polls.addAll(this.app.getAllUpdatePolls())
+        this.polls.addAll(this.app.getAllDaoJoinPolls())
         this.polls.sortBy { poll: Poll -> poll.block.insertTime }
+        this.polls.reverse()
         this.pollsAdapter.updatePolls(this.polls)
+        Log.d("P2PlayStore", "Updated polls list: ${this.polls.size} polls loaded")
     }
 
     private fun setupRecyclerView() {
