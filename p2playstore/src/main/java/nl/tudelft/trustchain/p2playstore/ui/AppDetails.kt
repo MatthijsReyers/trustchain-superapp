@@ -379,6 +379,7 @@ class AppDetails : BaseFragment() {
      * Updates the download/open button based on the state of DOA and the app download
      */
     private fun updateDownloadButton() {
+        if (this._binding == null) return
         if (this.app.isDaoMember()) {
             if (this.downloadFinished()) {
                 this.binding.installOpenBtn.isEnabled = true
