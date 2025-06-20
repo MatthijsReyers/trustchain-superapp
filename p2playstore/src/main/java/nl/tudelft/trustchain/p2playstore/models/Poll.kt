@@ -27,7 +27,6 @@ import nl.tudelft.trustchain.p2playstore.utils.DAOTransferFundsHelper
 
 abstract class Poll(val block: TrustChainBlock) {
     protected val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
-    protected val p2pStoreCommunity: P2pStoreCommunity = IPv8Android.getInstance().getOverlay()!!
 
     /**
      * Unique identifier for the DAO that belongs to this app, this ID remains the same across all

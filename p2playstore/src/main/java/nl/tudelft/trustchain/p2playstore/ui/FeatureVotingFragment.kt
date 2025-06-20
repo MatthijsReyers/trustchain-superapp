@@ -70,6 +70,7 @@ class FeatureVotingFragment : BaseFragment() {
         this.updateVoteButtons()
         this.updateProgressBars()
         this.updatePreviewCard()
+        this.updateBottomCard()
     }
 
     override suspend fun onChainUpdated(block: TrustChainBlock) {
@@ -79,7 +80,9 @@ class FeatureVotingFragment : BaseFragment() {
 
             when (block.type) {
                 VOTE_NO_BLOCK, VOTE_YES_BLOCK -> {
-                    updateVoteButtons();
+                    updateVoteButtons()
+                    updateProgressBars()
+                    updateBottomCard()
                 }
             }
         }
@@ -91,6 +94,14 @@ class FeatureVotingFragment : BaseFragment() {
     override fun onResume() {
         super.onResume()
         android.util.Log.d("FeatureVotingFragment", "onResume called. Reloading poll data.")
+        try {
+            updateVoteButtons()
+            updateProgressBars()
+            updateBottomCard()
+        }
+        catch (err: Throwable) {
+            android.util.Log.e("P2PlayStore", "Error updating UI after resume: $err")
+        }
     }
 
     override fun onDestroyView() {
@@ -121,52 +132,6 @@ class FeatureVotingFragment : BaseFragment() {
     }
 
     /**
-     * Updates/disables the vote "yes"/"no" buttons depending on whether or the user is allowed
-     * to/already has voted in this poll.
-     */
-    private fun updateVoteButtons() {
-        // Is the user even allowed to vote?
-        if (!this.app.isDaoMember()) {
-            this.binding.btnVoteNo.alpha = 0.3f
-            this.binding.btnVoteNo.isEnabled = false
-            this.binding.btnVoteNo.text = "Vote no"
-
-            this.binding.btnVoteYes.alpha = 0.3f
-            this.binding.btnVoteYes.isEnabled = false
-            this.binding.btnVoteYes.text = "Vote yes"
-            return
-        }
-
-        // Has the user not yet voted?
-        val myVote = this.poll.getMyVote()
-        if (myVote == null) {
-            this.binding.btnVoteNo.alpha = 1.0f
-            this.binding.btnVoteNo.isEnabled = true
-            this.binding.btnVoteNo.text = "Vote no"
-
-            this.binding.btnVoteYes.alpha = 1.0f
-            this.binding.btnVoteYes.isEnabled = true
-            this.binding.btnVoteYes.text = "Vote yes"
-            return
-        }
-
-        this.binding.btnVoteNo.isEnabled = false
-        this.binding.btnVoteYes.isEnabled = false
-
-        if (myVote.type == VOTE_YES_BLOCK) {
-            this.binding.btnVoteNo.alpha = 0.3f
-            this.binding.btnVoteNo.text = "Vote no"
-            this.binding.btnVoteYes.alpha = 1.0f
-            this.binding.btnVoteYes.text = "Voted yes"
-        } else {
-            this.binding.btnVoteNo.alpha = 1.0f
-            this.binding.btnVoteNo.text = "Voted no"
-            this.binding.btnVoteYes.alpha = 0.3f
-            this.binding.btnVoteYes.text = "Vote yes"
-        }
-    }
-
-    /**
      * Updates the card at the top of the page which describes what poll the user is voting on,
      * this can be either a join request or an app update proposal.
      */
@@ -179,6 +144,25 @@ class FeatureVotingFragment : BaseFragment() {
         } else {
             binding.updateProposalCard.visibility = View.VISIBLE
             binding.joinRequestCard.visibility = View.GONE
+        }
+    }
+
+    /**
+     * Updates the card on the bottom
+     */
+    private fun updateBottomCard() {
+        val yes = poll.getUpVotes().size
+        val required = poll.votesRequired
+        if (poll.isApproved) {
+            binding.votesRequiredText.text = "Proposal was approved with $yes of " +
+                "${required} required votes"
+        }
+        else if (poll.isDenied) {
+            val no = poll.getDownVotes().size
+            binding.votesRequiredText.text = "Proposal was denied with $no no votes"
+        }
+        else {
+            binding.votesRequiredText.text = "$yes of ${required} votes needed for approval"
         }
     }
 
@@ -205,6 +189,60 @@ class FeatureVotingFragment : BaseFragment() {
             binding.pendingProgress,
             poll.pendingPercentage
         )
+    }
+
+    /**
+     * Updates/disables the vote "yes"/"no" buttons depending on whether or the user is allowed
+     * to/already has voted in this poll.
+     */
+    private fun updateVoteButtons() {
+        // Is the user even allowed to vote?
+        if (!this.app.isDaoMember()) {
+            return this.disableVoteButtons()
+        }
+
+        // Has the user not yet voted?
+        val myVote = this.poll.getMyVote()
+        if (myVote == null) {
+            // Is the poll still open?
+            if (!this.poll.isPending) {
+                return this.disableVoteButtons()
+            }
+
+            this.binding.btnVoteNo.alpha = 1.0f
+            this.binding.btnVoteNo.isEnabled = true
+            this.binding.btnVoteNo.text = "Vote no"
+
+            this.binding.btnVoteYes.alpha = 1.0f
+            this.binding.btnVoteYes.isEnabled = true
+            this.binding.btnVoteYes.text = "Vote yes"
+            return
+        }
+
+        this.binding.btnVoteNo.isEnabled = false
+        this.binding.btnVoteYes.isEnabled = false
+
+        if (myVote.type == VOTE_YES_BLOCK) {
+            this.binding.btnVoteNo.alpha = 0.3f
+            this.binding.btnVoteNo.text = "Vote no"
+            this.binding.btnVoteYes.alpha = 1.0f
+            this.binding.btnVoteYes.text = "Voted yes"
+        } else {
+            this.binding.btnVoteNo.alpha = 1.0f
+            this.binding.btnVoteNo.text = "Voted no"
+            this.binding.btnVoteYes.alpha = 0.3f
+            this.binding.btnVoteYes.text = "Vote yes"
+        }
+    }
+
+    private fun disableVoteButtons() {
+        this.binding.btnVoteNo.alpha = 0.3f
+        this.binding.btnVoteNo.isEnabled = false
+        this.binding.btnVoteNo.text = "Vote no"
+
+        this.binding.btnVoteYes.alpha = 0.3f
+        this.binding.btnVoteYes.isEnabled = false
+        this.binding.btnVoteYes.text = "Vote yes"
     }
 
     private fun updateProgressBar(bar: FrameLayout, progress: View, value: Float) {
