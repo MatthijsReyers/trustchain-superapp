@@ -127,9 +127,9 @@
 
     <fragment
         android:id="@+id/featureVotingFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.ui.FeatureVotingFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.PollDetailsFragment"
         android:label="Vote on Feature"
-        tools:layout="@layout/fragment_feature_voting">
+        tools:layout="@layout/fragment_poll_details">
         <argument
             android:name="blockId"
             app:argType="string" />
@@ -142,9 +142,9 @@
     </fragment>
     <fragment
         android:id="@+id/allVotingPollsFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.ui.AllVotingPollsFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.AllPollsFragment"
         android:label="All Voting Polls"
-        tools:layout="@layout/fragment_all_voting_polls">
+        tools:layout="@layout/fragment_all_polls">
         <argument
             android:name="blockId"
             app:argType="string" />

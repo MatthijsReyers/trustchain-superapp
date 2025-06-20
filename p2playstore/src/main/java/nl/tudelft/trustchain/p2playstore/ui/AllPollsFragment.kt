@@ -8,12 +8,12 @@ import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
-import nl.tudelft.trustchain.p2playstore.databinding.FragmentAllVotingPollsBinding
+import nl.tudelft.trustchain.p2playstore.databinding.FragmentAllPollsBinding
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.models.Poll
 
-class AllVotingPollsFragment : BaseFragment() {
-    private var _binding: FragmentAllVotingPollsBinding? = null
+class AllPollsFragment : BaseFragment() {
+    private var _binding: FragmentAllPollsBinding? = null
     private val binding get() = _binding!!
 
     private lateinit var daoId: String
@@ -29,7 +29,7 @@ class AllVotingPollsFragment : BaseFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentAllVotingPollsBinding.inflate(inflater, container, false)
+        _binding = FragmentAllPollsBinding.inflate(inflater, container, false)
         return binding.root
     }
 
