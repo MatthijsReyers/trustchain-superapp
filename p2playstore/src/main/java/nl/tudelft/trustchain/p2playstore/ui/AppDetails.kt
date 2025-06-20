@@ -150,6 +150,7 @@ class AppDetails : BaseFragment() {
                     updateAppMetaData()
                     updateDownloadButton()
                     updateUIBasedOnMembership()
+                    updatePolls()
                 }
             }
             // Did someone create a new poll/proposal?
@@ -162,7 +163,7 @@ class AppDetails : BaseFragment() {
             }
             // Did someone vote in a poll?
             VOTE_YES_BLOCK, VOTE_NO_BLOCK -> {
-
+                this.updatePolls()
                 // Check if this user requested to join the DAO and has collected enough votes now.
                 this.finalizeJoinRequest()
             }
