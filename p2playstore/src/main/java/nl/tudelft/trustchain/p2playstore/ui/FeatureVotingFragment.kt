@@ -1,5 +1,6 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
+import UpdateProposalPoll
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -27,8 +28,12 @@ class FeatureVotingFragment : BaseFragment() {
     private val binding get() = _binding!!
 
     private lateinit var proposalId: String
-    private lateinit var poll: Poll
     private lateinit var app: P2playApp
+
+    private val poll: Poll get() = joinPoll ?: updatePoll!!
+
+    private var joinPoll: DaoJoinPoll? = null
+    private var updatePoll: UpdateProposalPoll? = null
 
     /**
      * Is the user currently voting? We disable the buttons during this time to prevent them from
@@ -50,8 +55,8 @@ class FeatureVotingFragment : BaseFragment() {
         try {
             this.proposalId = arguments?.getString("proposalId")!!
             when (val pollType = arguments?.getString("pollType")) {
-                "join" -> this.poll = DaoJoinPoll.findByProposalId(proposalId)!!
-                "update" -> this.poll = DaoJoinPoll.findByProposalId(proposalId)!!
+                "join" -> this.joinPoll = DaoJoinPoll.findByProposalId(proposalId)!!
+                "update" -> this.updatePoll = UpdateProposalPoll.findByProposalId(proposalId)!!
                 else -> throw Exception("Unknown poll type: $pollType")
             }
             this.app = this.poll.getApp()
@@ -64,6 +69,7 @@ class FeatureVotingFragment : BaseFragment() {
 
         this.updateVoteButtons()
         this.updateProgressBars()
+        this.updatePreviewCard()
     }
 
     override suspend fun onChainUpdated(block: TrustChainBlock) {
@@ -157,6 +163,22 @@ class FeatureVotingFragment : BaseFragment() {
             this.binding.btnVoteNo.text = "Voted no"
             this.binding.btnVoteYes.alpha = 0.3f
             this.binding.btnVoteYes.text = "Vote yes"
+        }
+    }
+
+    /**
+     * Updates the card at the top of the page which describes what poll the user is voting on,
+     * this can be either a join request or an app update proposal.
+     */
+    private fun updatePreviewCard() {
+        if (this.joinPoll != null) {
+            binding.updateProposalCard.visibility = View.GONE
+            binding.joinRequestCard.visibility = View.VISIBLE
+            binding.joinRequestPeer.text = this.joinPoll!!.requestingUser.substring(0, 8)
+            binding.feeAmount.text = "${this.app.getEntranceFee()} sats"
+        } else {
+            binding.updateProposalCard.visibility = View.VISIBLE
+            binding.joinRequestCard.visibility = View.GONE
         }
     }
 

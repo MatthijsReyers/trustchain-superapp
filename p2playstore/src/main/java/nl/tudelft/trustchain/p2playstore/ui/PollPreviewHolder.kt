@@ -2,7 +2,6 @@ package nl.tudelft.trustchain.p2playstore.ui
 
 import UpdateProposalPoll
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
