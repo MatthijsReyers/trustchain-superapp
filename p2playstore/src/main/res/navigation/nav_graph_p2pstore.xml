@@ -38,7 +38,9 @@
         tools:layout="@layout/fragment_home">
         <action
             android:id="@+id/action_homeFragment_to_appDetails"
-            app:destination="@id/appDetails" />
+            app:destination="@id/appDetails"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
     </fragment>
 
     <fragment
@@ -52,16 +54,25 @@
             />
         <action
             android:id="@+id/action_appDetailsFragment_to_featureListFragment"
-            app:destination="@id/featureListFragment" />
+            app:destination="@id/featureListFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
         <action
             android:id="@+id/action_appDetailsFragment_to_featureVotingFragment"
-            app:destination="@id/featureVotingFragment" />
+            app:destination="@id/featureVotingFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
 
         <action
             android:id="@+id/action_appDetailsFragment_to_allVotingPollsFragment"
-            app:destination="@id/allVotingPollsFragment" />
-        <action android:id="@+id/action_appDetailsFragment_to_featureSolutionFragment"
-            app:destination="@id/featureSolutionFragment"/>
+            app:destination="@id/allVotingPollsFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+        <action
+            android:id="@+id/action_appDetailsFragment_to_featureSolutionFragment"
+            app:destination="@id/featureSolutionFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
 <!--        <action-->
 <!--            android:id="@+id/action_appDetailsFragment_to_daoWalletFragment"-->
 <!--            app:destination="@id/daoWalletFragment" />-->
@@ -80,14 +91,20 @@
             app:argType="string" />
         <action
             android:id="@+id/action_featureListFragment_to_featureRequestFragment"
-            app:destination="@id/featureRequestFragment" />
+            app:destination="@id/featureRequestFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
 
         <action
             android:id="@+id/action_featureListFragment_to_featureSolutionFragment"
-            app:destination="@id/featureSolutionFragment" />
+            app:destination="@id/featureSolutionFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
         <action
             android:id="@+id/action_featureListFragment_to_featureVotingFragment"
-            app:destination="@id/featureVotingFragment" />
+            app:destination="@id/featureVotingFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
     </fragment>
 
     <fragment
@@ -153,7 +170,9 @@
             app:argType="string" />
         <action
             android:id="@+id/action_allVotingPollsFragment_to_featureVotingFragment"
-            app:destination="@id/featureVotingFragment" />
+            app:destination="@id/featureVotingFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
     </fragment>
 
 
