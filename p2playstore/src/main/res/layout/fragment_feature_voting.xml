@@ -161,21 +161,22 @@
                     </LinearLayout>
 
                     <FrameLayout
+                        android:id="@+id/yes_progress_bar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
 
                         <View
                             android:layout_width="match_parent"
                             android:layout_height="8dp"
-                            android:background="#EEEEEE"
-                            android:layout_gravity="center_vertical" />
+                            android:layout_gravity="center_vertical"
+                            android:background="#EEEEEE" />
 
                         <View
                             android:id="@+id/yes_progress"
-                            android:layout_width="0dp"
+                            android:layout_width="100dp"
                             android:layout_height="8dp"
-                            android:background="#4CAF50"
-                            android:layout_gravity="center_vertical" />
+                            android:layout_gravity="center_vertical"
+                            android:background="#4CAF50" />
 
                     </FrameLayout>
 
@@ -214,21 +215,22 @@
                     </LinearLayout>
 
                     <FrameLayout
+                        android:id="@+id/no_progress_bar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
 
                         <View
                             android:layout_width="match_parent"
                             android:layout_height="8dp"
-                            android:background="#EEEEEE"
-                            android:layout_gravity="center_vertical" />
+                            android:layout_gravity="center_vertical"
+                            android:background="#EEEEEE" />
 
                         <View
                             android:id="@+id/no_progress"
                             android:layout_width="0dp"
                             android:layout_height="8dp"
-                            android:background="#F44336"
-                            android:layout_gravity="center_vertical" />
+                            android:layout_gravity="center_vertical"
+                            android:background="#F44336" />
 
                     </FrameLayout>
 
@@ -266,21 +268,22 @@
                     </LinearLayout>
 
                     <FrameLayout
+                        android:id="@+id/pending_progress_bar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
 
                         <View
                             android:layout_width="match_parent"
                             android:layout_height="8dp"
-                            android:background="#EEEEEE"
-                            android:layout_gravity="center_vertical" />
+                            android:layout_gravity="center_vertical"
+                            android:background="#EEEEEE" />
 
                         <View
                             android:id="@+id/pending_progress"
                             android:layout_width="0dp"
                             android:layout_height="8dp"
-                            android:background="#9E9E9E"
-                            android:layout_gravity="center_vertical" />
+                            android:layout_gravity="center_vertical"
+                            android:background="#9E9E9E" />
 
                     </FrameLayout>
 
