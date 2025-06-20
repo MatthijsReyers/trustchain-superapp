@@ -13,8 +13,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
@@ -72,6 +76,15 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
 //        val amountToSend = Coin.parseCoin(amountBTC.toString())
 //        val sendRequest = SendRequest.to(address, amountToSend)
 //        val sendResult = wallet.kit.wallet().sendCoins(sendRequest)
+    }
+
+    override suspend fun onChainUpdated(block: TrustChainBlock) {
+        when (block.type) {
+            // Did a new app (verion) just release?
+            JOIN_BLOCK, UPDATE_ACCEPTED_BLOCK -> {
+                this.updateAppsLists()
+            }
+        }
     }
 
     private fun setupRecyclerViews() {
