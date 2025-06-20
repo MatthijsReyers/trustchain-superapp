@@ -5,33 +5,13 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.lifecycle.lifecycleScope
+import android.widget.FrameLayout
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import nl.tudelft.ipv8.util.*
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentFeatureVotingBinding
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
-
-import nl.tudelft.trustchain.p2playstore.transactionData.VotingPoll
-import nl.tudelft.trustchain.p2playstore.transactionData.VotingPollType
-import org.bitcoinj.core.Address
-import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
-import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedData
-import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
-import nl.tudelft.trustchain.p2playstore.transactionData.AppMetaData
-import nl.tudelft.trustchain.currencyii.util.taproot.CTransaction
-import nl.tudelft.trustchain.p2playstore.utils.AppUtils
-import nl.tudelft.ipv8.attestation.trustchain.BlockListener
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_NO_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BLOCK
@@ -39,6 +19,8 @@ import nl.tudelft.trustchain.p2playstore.models.DaoJoinPoll
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.models.Poll
 import nl.tudelft.trustchain.p2playstore.transactionData.BaseData
+import kotlin.math.max
+import kotlin.math.roundToInt
 
 class FeatureVotingFragment : BaseFragment() {
     private var _binding: FragmentFeatureVotingBinding? = null
@@ -50,7 +32,7 @@ class FeatureVotingFragment : BaseFragment() {
 
     /**
      * Is the user currently voting? We disable the buttons during this time to prevent them from
-     * creating multiple vote blocks by spamming clicks while
+     * creating multiple vote blocks by spamming clicks while we're still creating their vote block.
      */
     private var isVoting = false
 
@@ -79,6 +61,9 @@ class FeatureVotingFragment : BaseFragment() {
             findNavController().navigateUp()
         }
         this.setupClickListeners()
+
+        this.updateVoteButtons()
+        this.updateProgressBars()
     }
 
     override suspend fun onChainUpdated(block: TrustChainBlock) {
@@ -129,6 +114,10 @@ class FeatureVotingFragment : BaseFragment() {
         }
     }
 
+    /**
+     * Updates/disables the vote "yes"/"no" buttons depending on whether or the user is allowed
+     * to/already has voted in this poll.
+     */
     private fun updateVoteButtons() {
         // Is the user even allowed to vote?
         if (!this.app.isDaoMember()) {
@@ -168,6 +157,40 @@ class FeatureVotingFragment : BaseFragment() {
             this.binding.btnVoteNo.text = "Voted no"
             this.binding.btnVoteYes.alpha = 0.3f
             this.binding.btnVoteYes.text = "Vote yes"
+        }
+    }
+
+    /**
+     * Updates the "yes"/"no"/"pending" progress bars and percentages that indicate how (many) the
+     * members of the DAO have voted.
+     */
+    private fun updateProgressBars() {
+        binding.percentageYes.text = "${(poll.yesPercentage * 100).roundToInt()}%"
+        this.updateProgressBar(
+            binding.yesProgressBar,
+            binding.yesProgress,
+            poll.yesPercentage
+        )
+        binding.percentageNo.text = "${(poll.noPercentage * 100).roundToInt()}%"
+        this.updateProgressBar(
+            binding.noProgressBar,
+            binding.noProgress,
+            poll.noPercentage
+        )
+        binding.percentagePending.text = "${(poll.pendingPercentage * 100).roundToInt()}%"
+        this.updateProgressBar(
+            binding.pendingProgressBar,
+            binding.pendingProgress,
+            poll.pendingPercentage
+        )
+    }
+
+    private fun updateProgressBar(bar: FrameLayout, progress: View, value: Float) {
+        bar.post {
+            // Clamp value at 1, because 0 maps to 100% for some reason...
+            progress.layoutParams.width = max(1, (bar.width * value).roundToInt())
+            progress.requestLayout()
+            bar.requestLayout()
         }
     }
 
