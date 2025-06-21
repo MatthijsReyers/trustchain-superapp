@@ -1,6 +1,8 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
+import android.os.Bundle
 import android.view.View
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FeatureRequestPreviewBinding
@@ -8,7 +10,7 @@ import nl.tudelft.trustchain.p2playstore.models.FeatureRequest
 
 class FeatureRequestPreviewHolder(
     private val binding: FeatureRequestPreviewBinding,
-    private val dest: Int = R.id.action_featureListFragment_to_featureRequestFragment
+    private val dest: Int = R.id.action_featureListFragment_to_featureSolutionFragment
 ) : RecyclerView.ViewHolder(binding.root) {
 
     fun hide() {
@@ -25,6 +27,16 @@ class FeatureRequestPreviewHolder(
             binding.solutionCount.text = "1 solution"
         } else {
             binding.solutionCount.text = "${solutions} solutions"
+        }
+        binding.card.setOnClickListener {
+            itemView.findNavController()
+                .navigate(
+                    dest,
+                    Bundle().apply {
+                        putString("daoId", request.doaId)
+                        putString("featureRequestId", request.featureRequestId)
+                    }
+                )
         }
     }
 }

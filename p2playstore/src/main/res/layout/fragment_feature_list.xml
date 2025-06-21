@@ -2,33 +2,26 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/white"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@android:color/white">
+    android:padding="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
         android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Feature Requests"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black" />
+        android:orientation="horizontal">
 
         <Button
             android:id="@+id/btn_request_feature"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:backgroundTint="#1976D2"
             android:text="Request Feature"
             android:textColor="@android:color/white"
-            android:backgroundTint="#1976D2"
             android:textSize="12sp" />
 
     </LinearLayout>
@@ -44,10 +37,10 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:text="No feature requests yet.\nBe the first to request a feature!"
-        android:textSize="16sp"
-        android:textColor="@android:color/darker_gray"
         android:gravity="center"
+        android:text="No feature requests yet.\nBe the first to request a feature!"
+        android:textColor="@android:color/darker_gray"
+        android:textSize="16sp"
         android:visibility="gone" />
 
 </LinearLayout>
