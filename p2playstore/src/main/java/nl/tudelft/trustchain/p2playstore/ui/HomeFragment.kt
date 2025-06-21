@@ -16,22 +16,18 @@ import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
-import org.bitcoinj.core.Address
-import org.bitcoinj.core.Coin
-import org.bitcoinj.wallet.SendRequest
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    private var allDaoAdapter: DaoAdapter? = null
-    private var myDaoAdapter: DaoAdapter? = null
+    private var allDaoAdapter: AppPreviewsAdapter? = null
+    private var myDaoAdapter: AppPreviewsAdapter? = null
 
     /**
      * This background job tries to find new apps on the trustchain at a set time interval.
@@ -270,13 +266,13 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                 }
 
                 binding.allApps.text = "All apps (${allApps.size})"
-                allDaoAdapter = DaoAdapter(allApps)
+                allDaoAdapter = AppPreviewsAdapter(allApps)
                 binding.rvTopApps.adapter = allDaoAdapter
 
                 val myApps = allApps.filter { app -> app.isDaoMember() }
 
                 binding.installedApps.text = "Installed apps (${myApps.size})"
-                myDaoAdapter = DaoAdapter(myApps)
+                myDaoAdapter = AppPreviewsAdapter(myApps)
                 binding.rvRecommended.adapter = myDaoAdapter
             }
             catch (e: Exception) {

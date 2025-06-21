@@ -80,7 +80,7 @@
 
     <fragment
         android:id="@+id/featureListFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.ui.FeatureListFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.AllFeatureRequestsFragment"
         android:label="Feature Requests"
         tools:layout="@layout/fragment_feature_list">
         <argument
