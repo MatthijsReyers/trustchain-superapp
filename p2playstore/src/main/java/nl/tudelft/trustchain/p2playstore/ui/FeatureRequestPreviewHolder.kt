@@ -22,9 +22,9 @@ class FeatureRequestPreviewHolder(
         binding.reward.text = "Reward: ${request.reward} sats"
         val solutions = request.getSolutions().size
         if (solutions == 1) {
-            binding.reward.text = "1 solution"
+            binding.solutionCount.text = "1 solution"
         } else {
-            binding.reward.text = "${solutions} solutions"
+            binding.solutionCount.text = "${solutions} solutions"
         }
     }
 }
