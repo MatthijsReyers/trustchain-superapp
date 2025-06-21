@@ -48,7 +48,7 @@ class PollPreviewHolder(
 
         binding.votingProgress.text = "${poll.votes} of ${poll.votesRequired} members voted"
 
-        binding.root.setOnClickListener {
+        binding.card.setOnClickListener {
             val pollType = if (poll is DaoJoinPoll) "join" else "update"
             itemView.findNavController()
                 .navigate(

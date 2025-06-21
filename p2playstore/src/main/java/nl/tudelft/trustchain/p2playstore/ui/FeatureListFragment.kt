@@ -5,17 +5,10 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.p2playstore.R
-import nl.tudelft.trustchain.p2playstore.transactionData.BaseFeatureRequestData
-import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateData
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentFeatureListBinding
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
@@ -46,7 +39,7 @@ class FeatureListFragment : BaseFragment() {
             setupRecyclerView()
             setupClickListeners()
 
-            loadFeatureRequests()
+            updateFeatureRequests()
         }
         catch (e: Throwable) {
             Log.e("P2PlayStore", "Error loading app details: ${e.message}")
@@ -59,7 +52,7 @@ class FeatureListFragment : BaseFragment() {
             // Update the feature request list if anything has changed about this app.
             val data = JoinDaoTransactionData(block.transaction).getData()
             if (data.DAO_ID == this.app.daoId) {
-                loadFeatureRequests()
+                updateFeatureRequests()
             }
         }
         catch (e: Throwable) {
@@ -71,7 +64,7 @@ class FeatureListFragment : BaseFragment() {
     override fun onResume() {
         try {
             super.onResume()
-            loadFeatureRequests()
+            updateFeatureRequests()
         }
         catch (e: Throwable) {
             Log.e("P2PlayStore", "Error updating UI after resume: ${e.message}")
@@ -83,9 +76,17 @@ class FeatureListFragment : BaseFragment() {
         _binding = null
     }
 
-    private fun loadFeatureRequests() {
+    private fun updateFeatureRequests() {
         val requests = this.app.getFeatureRequests()
-        this.adapter.updateRequests(requests)
+        if (requests.isEmpty()) {
+            this.adapter.updateRequests(requests)
+            binding.tvNoFeatures.visibility = View.VISIBLE
+            binding.recyclerViewFeatures.visibility = View.GONE
+        }
+        else {
+            binding.tvNoFeatures.visibility = View.GONE
+            this.adapter.updateRequests(requests)
+        }
     }
 
     private fun setupRecyclerView() {
