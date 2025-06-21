@@ -68,15 +68,22 @@ class P2playApp(val block: TrustChainBlock) {
     }
 
     fun getDoaVoteThreshold(): Int {
-        if (block.type == JOIN_BLOCK) {
-            return (daoData as JoinDoaData).SW_VOTING_THRESHOLD
-        } else if (block.type == PROPOSE_UPDATE_BLOCK && (daoData as ProposeUpdateData).FEATURE_REQUEST_ID != null) {
-            // Feature Solution proposals also contain voting threshold
-//            TODO:fix this to precentage instead of int signatures
-            return (daoData as ProposeUpdateData).SW_SIGNATURES_REQUIRED
+        try {
+            if (block.type == JOIN_BLOCK) {
+                return (daoData as JoinDoaData).SW_VOTING_THRESHOLD
+            } else if (block.type == PROPOSE_UPDATE_BLOCK
+                && (daoData as ProposeUpdateData).FEATURE_REQUEST_ID != null) {
+                // Feature Solution proposals also contain voting threshold
+    //            TODO:fix this to precentage instead of int signatures
+                return daoData.SW_SIGNATURES_REQUIRED
+            }
+            val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
+            return data.SW_VOTING_THRESHOLD
         }
-        val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
-        return data.SW_VOTING_THRESHOLD
+        catch (err: Throwable) {
+            Log.d("P2PlayStore", "Failed to get dao vote threshold")
+            return 0
+        }
     }
 
     /**
@@ -90,11 +97,17 @@ class P2playApp(val block: TrustChainBlock) {
      * Returns the amount of members the DAO for this app has.
      */
     fun getEntranceFee(): Long {
-        if (block.type == JOIN_BLOCK) {
-            return (daoData as JoinDoaData).SW_ENTRANCE_FEE
+        try {
+            if (block.type == JOIN_BLOCK) {
+                return (daoData as JoinDoaData).SW_ENTRANCE_FEE
+            }
+            val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
+            return data.SW_ENTRANCE_FEE
         }
-        val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
-        return data.SW_ENTRANCE_FEE
+        catch (err: Throwable) {
+            Log.d("P2PlayStore", "Failed to load entrance fee")
+            return 0
+        }
     }
 
     /**
