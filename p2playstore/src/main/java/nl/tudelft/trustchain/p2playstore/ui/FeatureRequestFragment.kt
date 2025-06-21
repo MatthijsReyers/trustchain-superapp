@@ -11,6 +11,7 @@ import nl.tudelft.trustchain.p2playstore.databinding.FragmentFeatureRequestBindi
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.util.taproot.CTransaction
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 
@@ -18,6 +19,7 @@ class FeatureRequestFragment : BaseFragment() {
     private var _binding: FragmentFeatureRequestBinding? = null
     private val binding get() = _binding!!
 
+    private lateinit var app: P2playApp
     private lateinit var daoBlockId: String
     private lateinit var daoUniqueId: String
 
@@ -33,8 +35,11 @@ class FeatureRequestFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        daoBlockId = arguments?.getString("blockId") ?: ""
-        daoUniqueId = arguments?.getString("daoUniqueId") ?: ""
+        val daoId = arguments?.getString("daoId") as String
+        this.app = P2playApp.findByDoaId(daoId)!!
+
+        this.daoBlockId = this.app.block.blockId
+        this.daoUniqueId = daoId
 
         if (daoUniqueId.isEmpty()) {
             android.util.Log.e("FeatureRequestFragment", "daoUniqueId is empty. Cannot submit feature request.")
@@ -57,72 +62,70 @@ class FeatureRequestFragment : BaseFragment() {
     }
 
     private fun submitFeatureRequest() {
-            val title = binding.etFeatureTitle.text.toString().trim()
-            val description = binding.etFeatureDescription.text.toString().trim()
-            val reward = binding.etReward.text.toString().toLongOrNull() ?: 0L
-//        val requesterBitcoinAddress = binding.etRequesterBitcoinAddress.text.toString().trim()
+        val title = binding.etFeatureTitle.text.toString().trim()
+        val description = binding.etFeatureDescription.text.toString().trim()
+        val reward = binding.etReward.text.toString().toLongOrNull() ?: 0L
 
+        if (title.isEmpty()) {
+            Toast.makeText(context, "Please enter a feature title", Toast.LENGTH_SHORT).show()
+            return
+        }
 
-            if (title.isEmpty()) {
-                Toast.makeText(context, "Please enter a feature title", Toast.LENGTH_SHORT).show()
-                return
-            }
+        if (description.isEmpty()) {
+            Toast.makeText(context, "Please enter a feature description", Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
 
-            if (description.isEmpty()) {
-                Toast.makeText(context, "Please enter a feature description", Toast.LENGTH_SHORT)
-                    .show()
-                return
-            }
+        if (reward <= 0) {
+            Toast.makeText(context, "Please enter a valid reward amount", Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+        val daowalletBalance =
+            try {
+                val latestDaoWalletBlock =
+                    p2playStore.fetchLatestSharedWalletBlockByDaoId(daoUniqueId)
+                if (latestDaoWalletBlock != null) {
+                    val serializedTx = when (latestDaoWalletBlock.type) {
+                        P2pStoreCommunity.JOIN_BLOCK -> JoinDaoTransactionData(
+                            latestDaoWalletBlock.transaction
+                        ).getData().SW_TRANSACTION_SERIALIZED
 
-            if (reward <= 0) {
-                Toast.makeText(context, "Please enter a valid reward amount", Toast.LENGTH_SHORT)
-                    .show()
-                return
-            }
-            val daowalletBalance =
-                try {
-                    val latestDaoWalletBlock =
-                        p2playStore.fetchLatestSharedWalletBlockByDaoId(daoUniqueId)
-                    if (latestDaoWalletBlock != null) {
-                        val serializedTx = when (latestDaoWalletBlock.type) {
-                            P2pStoreCommunity.JOIN_BLOCK -> JoinDaoTransactionData(
-                                latestDaoWalletBlock.transaction
-                            ).getData().SW_TRANSACTION_SERIALIZED
+                        P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(
+                            latestDaoWalletBlock.transaction
+                        ).getData().SW_TRANSACTION_SERIALIZED
 
-                            P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(
-                                latestDaoWalletBlock.transaction
-                            ).getData().SW_TRANSACTION_SERIALIZED
-
-                            else -> null
-                        }
-                        if (serializedTx != null) {
-                            CTransaction().deserialize(serializedTx.hexToBytes()).vout.find { it.scriptPubKey.size == 35 }?.nValue
-                                ?: 0L
-                        } else {
-                            0L // Serialized transaction is null
-                        }
-                    } else {
-                        0L // No latest block found
+                        else -> null
                     }
-                } catch (e: Exception) {
-                    android.util.Log.e(
-                        "FeatureVotingFragment",
-                        "Error fetching DAO balance for sufficient funds check: ${e.message}"
-                    )
-                    0L // Assume 0 if fetching fails, to prevent transfer
-            }
-            if (daowalletBalance < reward) {
-                Toast.makeText(
-                    context,
-                    "Fee is higher than the funds in shared wallet your request might be to expensive ($reward satoshis).",
-                    Toast.LENGTH_LONG
-                ).show()
-                android.util.Log.w(
-                    "FeatureRequestFragment",
-                    "Insufficient personal funds ($daowalletBalance) for requested reward ($reward). Request aborted."
+                    if (serializedTx != null) {
+                        CTransaction().deserialize(serializedTx.hexToBytes()).vout.find { it.scriptPubKey.size == 35 }?.nValue
+                            ?: 0L
+                    } else {
+                        0L // Serialized transaction is null
+                    }
+                } else {
+                    0L // No latest block found
+                }
+            } catch (e: Exception) {
+                android.util.Log.e(
+                    "FeatureVotingFragment",
+                    "Error fetching DAO balance for sufficient funds check: ${e.message}"
                 )
-                return
-            }
+                0L // Assume 0 if fetching fails, to prevent transfer
+        }
+        if (daowalletBalance < reward) {
+            Toast.makeText(
+                context,
+                "Fee is higher than the funds in shared wallet your request might be to expensive ($reward satoshis).",
+                Toast.LENGTH_LONG
+            ).show()
+            android.util.Log.w(
+                "FeatureRequestFragment",
+                "Insufficient personal funds ($daowalletBalance) for requested reward ($reward). Request aborted."
+            )
+            return
+        }
         try {
             p2playStore.createFeatureRequest(
                 daoId = daoUniqueId,

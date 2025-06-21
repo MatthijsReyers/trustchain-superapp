@@ -8,18 +8,13 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-import nl.tudelft.ipv8.attestation.trustchain.BlockListener
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
-import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
@@ -33,20 +28,12 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_NO_BLO
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BLOCK
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.TorrentManager
-import nl.tudelft.trustchain.p2playstore.databinding.PollPreviewBinding
-import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestData
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
-import nl.tudelft.trustchain.p2playstore.models.Poll
-import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
 
 import java.io.File
-import kotlin.math.max
-import kotlin.math.roundToInt
 
 class AppDetails : BaseFragment() {
     private lateinit var torrentManager: TorrentManager
@@ -54,12 +41,11 @@ class AppDetails : BaseFragment() {
     private var _binding: FragmentAppDetailsBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var daoBlock: TrustChainBlock
-
     private lateinit var app: P2playApp
 
     private var joinPoll: PollPreviewHolder? = null
     private var updatePoll: PollPreviewHolder? = null
+    private var lastestFeatureRequest: FeatureRequestPreviewHolder? = null
 
     /**
      * Integer between 0-100, this indicates how far along the torrent download for this apps
@@ -85,8 +71,8 @@ class AppDetails : BaseFragment() {
         try {
             // Actually retrieve the block
             val community = this.getTrustChainCommunity()
-            this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
-            this.app = P2playApp(this.daoBlock)
+            val daoBlock = community.database.get(publicKey, sequenceNumber)!!
+            this.app = P2playApp(daoBlock)
         }
         catch (e: Throwable) {
             Log.e("P2PlayStore", "Error loading DAO details: ${e.message}")
@@ -116,7 +102,7 @@ class AppDetails : BaseFragment() {
 
         this.setupClickListeners()
         this.setupTorrentDownloadStatus()
-        this.setupPollPreviews()
+        this.setupPreviews()
 
         this.updateAppMetaData()
         this.updateDownloadButton()
@@ -144,8 +130,7 @@ class AppDetails : BaseFragment() {
         when (block.type) {
             // Was a new version of the app released?
             JOIN_BLOCK, UPDATE_ACCEPTED_BLOCK -> {
-                this.daoBlock = block
-                this.app = P2playApp(this.daoBlock)
+                this.app = P2playApp(block)
                 requireActivity().runOnUiThread {
                     updateAppMetaData()
                     updateDownloadButton()
@@ -156,6 +141,7 @@ class AppDetails : BaseFragment() {
             // Did someone create a new poll/proposal?
             JOIN_REQUEST_BLOCK, PROPOSE_UPDATE_BLOCK -> {
                 this.updatePolls()
+                this.updateFeatureRequests()
             }
             // Did someone create a new feature request?
             FEATURE_REQUEST_BLOCK -> {
@@ -164,6 +150,7 @@ class AppDetails : BaseFragment() {
             // Did someone vote in a poll?
             VOTE_YES_BLOCK, VOTE_NO_BLOCK -> {
                 this.updatePolls()
+                this.updateFeatureRequests()
                 // Check if this user requested to join the DAO and has collected enough votes now.
                 this.finalizeJoinRequest()
             }
@@ -267,8 +254,8 @@ class AppDetails : BaseFragment() {
         try {
             lifecycleScope.launch {
                 val mostRecentSWBlock =
-                    getP2pStoreCommunity().fetchLatestSharedWalletBlock(daoBlock.calculateHash())
-                        ?: daoBlock
+                    getP2pStoreCommunity().fetchLatestSharedWalletBlock(app.block.calculateHash())
+                        ?: app.block
                 try {
                     getP2pStoreCommunity().proposeJoinWallet(mostRecentSWBlock).getData()
                 } catch (t: Throwable) {
@@ -347,8 +334,20 @@ class AppDetails : BaseFragment() {
         }
     }
 
+    /**
+     * Updates the open feature request preview by getting the latest one.
+     */
     private fun updateFeatureRequests() {
-        // TODO:
+        val requests = this.app.getFeatureRequests()
+        val openRequest = requests.find { r -> !r.hasBeenFulfilled() }
+        if (openRequest != null) {
+            this.lastestFeatureRequest?.bind(openRequest)
+            binding.tvNoPendingFeatureRequests.visibility = View.GONE
+        }
+        else {
+            this.lastestFeatureRequest?.hide()
+            binding.tvNoPendingFeatureRequests.visibility = View.VISIBLE
+        }
     }
 
     /**
@@ -427,7 +426,7 @@ class AppDetails : BaseFragment() {
             this.binding.installOpenBtn.text = "Joining.."
 
             getP2pStoreCommunity().joinBitcoinWallet(
-                daoBlock.transaction,
+                app.block.transaction,
                 myPoll.daoData,
                 signatures,
                 requireContext()
@@ -449,7 +448,10 @@ class AppDetails : BaseFragment() {
         }
     }
 
-    private fun setupPollPreviews() {
+    /**
+     * Sets up the Holder classes for the poll and feature request previews.
+     */
+    private fun setupPreviews() {
         this.joinPoll = PollPreviewHolder(
             binding.joinProposal,
             R.id.action_appDetailsFragment_to_featureVotingFragment
@@ -458,6 +460,10 @@ class AppDetails : BaseFragment() {
             binding.updateProposal,
             R.id.action_appDetailsFragment_to_featureVotingFragment
         );
+        this.lastestFeatureRequest = FeatureRequestPreviewHolder(
+            binding.latestFeatureRequest,
+            R.id.action_appDetailsFragment_to_featureSolutionFragment
+        )
     }
 
     /**
@@ -477,34 +483,26 @@ class AppDetails : BaseFragment() {
             }
         }
 
-//        // Navigate to DAO Wallet fragment
-//        binding.daoWalletInfoLayout.setOnClickListener {
-//            Log.d("AppDetails", "Navigating to DAO Wallet Fragment for DAO ${app.daoId}")
-//            val bundle = Bundle().apply {
-//                putString("daoUniqueId", app.daoId)
-//            }
-//            findNavController().navigate(R.id.action_appDetailsFragment_to_daoWalletFragment, bundle)
-//        }
-
-
         binding.btnFeatureRequest.setOnClickListener {
             if (this.app.isDaoMember()) {
-                val bundle = Bundle().apply {
-                    putString("blockId", daoBlock.blockId)
-                    putString("daoUniqueId", app.daoId)
-                }
                 findNavController()
-                    .navigate(R.id.action_appDetailsFragment_to_featureListFragment, bundle)
+                    .navigate(
+                        R.id.action_appDetailsFragment_to_featureListFragment,
+                        Bundle().apply {
+                            putString("daoId", app.daoId)
+                        }
+                    )
             }
         }
 
-        // btnSeeAllVotes click listener (Existing) - Navigate to AllVotingPollsFragment
         binding.btnSeeAllVotes.setOnClickListener {
-            val bundle = Bundle().apply {
-                putString("daoId", app.daoId)
-            }
             findNavController()
-                .navigate(R.id.action_appDetailsFragment_to_allVotingPollsFragment, bundle)
+                .navigate(
+                    R.id.action_appDetailsFragment_to_allVotingPollsFragment,
+                    Bundle().apply {
+                        putString("daoId", app.daoId)
+                    }
+                )
         }
 
         binding.btnSeeAllFeatures.setOnClickListener {
@@ -514,20 +512,5 @@ class AppDetails : BaseFragment() {
             findNavController()
                 .navigate(R.id.action_appDetailsFragment_to_featureListFragment, bundle)
         }
-
-//        binding.joinProposalContainer.setOnClickListener {
-//            Log.d("P2PlayStore", "Navigating to join poll")
-//            val joinPolls = this.app.getOpenDaoJoinPolls();
-//            if (joinPolls.isNotEmpty()) {
-//                findNavController()
-//                    .navigate(
-//                        R.id.action_appDetailsFragment_to_featureVotingFragment,
-//                        Bundle().apply {
-//                            putString("proposalId", joinPolls[0].proposalId)
-//                            putString("pollType", "join")
-//                        }
-//                    )
-//            }
-//        }
     }
 }

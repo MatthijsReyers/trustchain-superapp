@@ -201,20 +201,11 @@ class P2playApp(val block: TrustChainBlock) {
      * Returns a list of all feature requests for this app, including the ones for which an
      * update/implementation has already been proposed and accepted.
      */
-    fun getFeatureRequests(): List<TrustChainBlock> {
+    fun getFeatureRequests(): List<FeatureRequest> {
         val blocks = trustChain.database.getBlocksWithType(FEATURE_REQUEST_BLOCK)
-        return blocks.filter { block ->
-            try {
-                val data = FeatureRequestTransactionData(block.transaction).getData()
-                data.DAO_ID == this.daoId
-            } catch (e: Exception) {
-                Log.e(
-                    "P2PlayStore.AppHelper",
-                    "Failed to parse FeatureRequest block: ${e.message}"
-                )
-                false
-            }
-        }
+        return blocks
+            .mapNotNull { b -> try { FeatureRequest(b) } catch (e: Throwable) { null } }
+            .filter { b -> b.doaId == this.daoId }
     }
 
     /**

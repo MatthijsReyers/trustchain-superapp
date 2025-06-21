@@ -227,6 +227,7 @@ class DAOTransferFundsHelper {
         // Create an UPDATE_ACCEPTED_BLOCK for the successful transfer with app metadata
         val updateAcceptedData = UpdateAcceptedTransactionData(
             latestJoinBlockData.DAO_ID,
+            proposalData.FEATURE_REQUEST_ID,
             serializedTransaction,
             proposalData.SW_TRANSFER_FUNDS_AMOUNT,
             latestJoinBlockData.SW_TRUSTCHAIN_PKS,

@@ -8,15 +8,12 @@ import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 data class FeatureRequestData(
     override var DAO_ID: String,
-    var FEATURE_REQUEST_ID: String,
+    override var FEATURE_REQUEST_ID: String,
     var FEATURE_TITLE: String,
     var FEATURE_DESCRIPTION: String,
     var FEATURE_REWARD: Long,
     var REQUESTER_PUBLIC_KEY: String,
-//    var REQUESTER_BITCOIN_ADDRESS: String,
-    var FEATURE_STATUS: String = "OPEN"
-
-) : BaseData
+) : BaseFeatureRequestData
 
 class FeatureRequestTransactionData(data: JsonObject) : BlockTransactionData(
     data,
@@ -31,7 +28,6 @@ class FeatureRequestTransactionData(data: JsonObject) : BlockTransactionData(
         reward: Long,
         requesterPublicKey: String,
 //        requesterBitcoinAddress: String,
-        status: String = "OPEN"
     ) : this(
         BlockUtils.objectToJsonObject(
             FeatureRequestData(
@@ -42,7 +38,6 @@ class FeatureRequestTransactionData(data: JsonObject) : BlockTransactionData(
                 reward,
                 requesterPublicKey,
 //                requesterBitcoinAddress,
-                status
             )
         )
     )
