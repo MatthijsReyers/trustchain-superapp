@@ -13,7 +13,7 @@ import nl.tudelft.trustchain.p2playstore.databinding.FragmentFeatureListBinding
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 
-class FeatureListFragment : BaseFragment() {
+class AllFeatureRequestsFragment : BaseFragment() {
     private var _binding: FragmentFeatureListBinding? = null
     private val binding
         get() = _binding!!
