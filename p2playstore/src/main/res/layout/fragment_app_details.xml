@@ -9,8 +9,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
         android:orientation="vertical">
-
 
 
         <LinearLayout
@@ -258,7 +258,7 @@
             android:paddingBottom="16dp"
             android:text="This is a decentralized application that provides feature X and Y"
             android:textColor="@android:color/black" />
-        
+
         <!-- Recent Update Voting -->
         <RelativeLayout
             android:layout_width="match_parent"
@@ -343,80 +343,19 @@
         </RelativeLayout>
 
         <!-- Latest Feature Request Preview Card -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/latest_feature_request_preview_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?android:attr/selectableItemBackground">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/tv_latest_feature_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Feature Title"
-                    android:textColor="@android:color/black"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:id="@+id/tv_latest_feature_description"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Feature description..."
-                    android:textColor="@android:color/black"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="8dp"
-                    android:maxLines="2"
-                    android:ellipsize="end" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:id="@+id/tv_latest_feature_reward"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Reward: 1000 sats"
-                        android:textColor="#1E88E5"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_latest_feature_solution_count"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0 solution(s)"
-                        android:textColor="@android:color/darker_gray"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        <include
+            android:id="@+id/latest_feature_request"
+            layout="@layout/feature_request_preview"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
         <!-- No Pending Feature Requests Message -->
         <TextView
             android:id="@+id/tv_no_pending_feature_requests"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
             android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="16dp"
             android:gravity="center"

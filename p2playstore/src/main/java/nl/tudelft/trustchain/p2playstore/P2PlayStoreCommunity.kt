@@ -393,35 +393,36 @@ class P2pStoreCommunity : Community() {
      * Get all feature requests for a DAO
      */
     fun getFeatureRequestsForDao(daoId: String): List<FeatureRequestData> {
-    val blocks = getTrustChainCommunity().database.getBlocksWithType(FEATURE_REQUEST_BLOCK)
+        val blocks = getTrustChainCommunity().database.getBlocksWithType(FEATURE_REQUEST_BLOCK)
 
-    return blocks
-        .mapNotNull { block ->
+        return blocks
+            .mapNotNull { block ->
+                try {
+                    FeatureRequestTransactionData(block.transaction).getData()
+                } catch (e: Exception) {
+                    Log.e("P2PlayStoreCommunity", "Failed to parse FeatureRequest block: ${e.message}")
+                    null
+                }
+            }
+            .filter{it.DAO_ID == daoId}.distinctBy { it.FEATURE_REQUEST_ID }
+        }
+
+        /**
+         * Fetches all feature request blocks for a specific DAO.
+         * Returns a list of TrustChainBlock.
+         */
+        fun getFeatureRequestBlocksForDao(daoId: String): List<TrustChainBlock> {
+        val blocks = getTrustChainCommunity().database.getBlocksWithType(FEATURE_REQUEST_BLOCK)
+        return blocks.filter { block ->
             try {
-                FeatureRequestTransactionData(block.transaction).getData()
+                FeatureRequestTransactionData(block.transaction).getData().DAO_ID == daoId
             } catch (e: Exception) {
-                Log.e("P2PlayStoreCommunity", "Failed to parse FeatureRequest block: ${e.message}")
-                null
+                Log.e("P2PlayStoreCommunity", "Failed to parse FeatureRequest block in getFeatureRequestBlocksForDao: ${e.message}")
+                false
             }
         }
-        .filter{it.DAO_ID == daoId}.distinctBy { it.FEATURE_REQUEST_ID }
     }
 
-    /**
-     * Fetches all feature request blocks for a specific DAO.
-     * Returns a list of TrustChainBlock.
-     */
-    fun getFeatureRequestBlocksForDao(daoId: String): List<TrustChainBlock> {
-    val blocks = getTrustChainCommunity().database.getBlocksWithType(FEATURE_REQUEST_BLOCK)
-    return blocks.filter { block ->
-        try {
-            FeatureRequestTransactionData(block.transaction).getData().DAO_ID == daoId
-        } catch (e: Exception) {
-            Log.e("P2PlayStoreCommunity", "Failed to parse FeatureRequest block in getFeatureRequestBlocksForDao: ${e.message}")
-            false
-        }
-    }
-}
     /**
      * Get all feature solutions for a DAO
      */
