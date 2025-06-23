@@ -522,6 +522,17 @@ class AppDetails : BaseFragment() {
             }
         }
 
+
+        binding.btnOpenWallet.setOnClickListener {
+            findNavController()
+                .navigate(
+                    R.id.action_appDetailsFragment_to_daoWalletFragment,
+                    Bundle().apply {
+                        putString("daoId", app.daoId)
+                    }
+                )
+        }
+
         binding.btnSeeAllVotes.setOnClickListener {
             findNavController()
                 .navigate(
