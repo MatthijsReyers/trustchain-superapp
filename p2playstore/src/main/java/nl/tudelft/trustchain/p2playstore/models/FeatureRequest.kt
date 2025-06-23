@@ -4,13 +4,16 @@ import UpdateProposalPoll
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
+import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestData
 import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
+import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 /**
  * This class represents a single feature request for an app
@@ -22,14 +25,13 @@ class FeatureRequest(val block: TrustChainBlock) {
         assert(block.type == FEATURE_REQUEST_BLOCK)
     }
 
-    val daoData: FeatureRequestData = FeatureRequestTransactionData(block.transaction).getData()
+    val blockData: FeatureRequestData = FeatureRequestTransactionData(block.transaction).getData()
 
-    val featureRequestId = daoData.FEATURE_REQUEST_ID
-    val description = daoData.FEATURE_DESCRIPTION
-    val title = daoData.FEATURE_TITLE
-    val reward = daoData.FEATURE_REWARD
-
-    val doaId = daoData.DAO_ID
+    val doaId = blockData.DAO_ID
+    val featureRequestId = blockData.FEATURE_REQUEST_ID
+    val description = blockData.FEATURE_DESCRIPTION
+    val title = blockData.FEATURE_TITLE
+    val reward = blockData.FEATURE_REWARD
 
     fun hasBeenFulfilled(): Boolean {
         val updates = trustChain.database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
@@ -58,6 +60,57 @@ class FeatureRequest(val block: TrustChainBlock) {
                 catch (e: Throwable) { false }
             }
             .map { b -> UpdateProposalPoll(b) }
+    }
+
+    /**
+     * Submit a solution (i.e. create an update proposal) for this specific feature request.
+     */
+    fun submitSolution(
+        title: String,
+        description: String,
+        magnetLink: String,
+        developerBitcoinAddress: String
+    ) {
+        val app = P2playApp.findByDoaId(this.doaId)!!
+        val latestDaoBlock = app.getLatestJoin()
+        val daoData = JoinDaoTransactionData(latestDaoBlock.transaction).getData()
+
+        val proposalId = BlockUtils.randomUUID()
+        val requiredSignatures = BlockUtils.percentageToIntThreshold(
+            daoData.SW_BITCOIN_PKS.size,
+            daoData.SW_VOTING_THRESHOLD
+        )
+
+        // Send proposal to all DAO members
+        for (memberPk in daoData.SW_TRUSTCHAIN_PKS) {
+            val memberSpecificProposal = ProposeUpdateTransactionData(
+                daoId = this.doaId,
+                featureRequestId = this.featureRequestId,
+                solutionTitle = title,
+                solutionDescription = description,
+                developerPublicKey = trustChain.myPeer.publicKey.pub().toString(),
+                apkMagnetLink = magnetLink,
+                previousWalletBlockHash = latestDaoBlock.calculateHash().toHex(),
+                requiredSignatures = requiredSignatures,
+                rewardAmount = this.blockData.FEATURE_REWARD,
+                bitcoinPks = daoData.SW_BITCOIN_PKS,
+                developerBitcoinAddress = developerBitcoinAddress,
+                receiverPk = memberPk, // Set specific receiver
+                uniqueProposalId = proposalId,
+                transactionSerialized = daoData.SW_TRANSACTION_SERIALIZED,
+                appName = daoData.APP_NAME,
+                appDescription = daoData.APP_DESCRIPTION,
+                appCategory = daoData.APP_CATEGORY,
+                appIcon = daoData.APP_ICON
+            )
+
+            val transaction = memberSpecificProposal.getTransactionData()
+            this.trustChain.createProposalBlock(
+                memberSpecificProposal.blockType,
+                transaction,
+                this.trustChain.myPeer.publicKey.keyToBin()
+            )
+        }
     }
 
     companion object {
