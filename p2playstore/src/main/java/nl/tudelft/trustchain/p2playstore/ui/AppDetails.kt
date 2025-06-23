@@ -427,7 +427,7 @@ class AppDetails : BaseFragment() {
 
             getP2pStoreCommunity().joinBitcoinWallet(
                 app.block.transaction,
-                myPoll.daoData,
+                myPoll.blockData,
                 signatures,
                 requireContext()
             )

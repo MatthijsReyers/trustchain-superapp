@@ -1,15 +1,11 @@
 package nl.tudelft.trustchain.p2playstore.models
 
-import android.content.Context
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
-import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
-import nl.tudelft.trustchain.p2playstore.utils.DAOJoinHelper
 
 class DaoJoinPoll(block: TrustChainBlock): Poll(block) {
 
@@ -17,13 +13,14 @@ class DaoJoinPoll(block: TrustChainBlock): Poll(block) {
         assert(block.type == P2pStoreCommunity.JOIN_REQUEST_BLOCK)
     }
 
-    val daoData = JoinRequestTransactionData(block.transaction).getData()
+    val blockData = JoinRequestTransactionData(block.transaction).getData()
 
     // See `Poll` class
-    override val daoId = daoData.DAO_ID
-    override val proposalId = daoData.SW_UNIQUE_PROPOSAL_ID
+    override val daoId = blockData.DAO_ID
+    override val proposalId = blockData.SW_UNIQUE_PROPOSAL_ID
     override val requestingUser = block.publicKey.toHex()
-    override val votesRequired: Int = daoData.SW_SIGNATURES_REQUIRED
+    override val votesRequired: Int = blockData.SW_SIGNATURES_REQUIRED
+    override val receivingUser = blockData.SW_RECEIVER_PK
 
     companion object {
         /**

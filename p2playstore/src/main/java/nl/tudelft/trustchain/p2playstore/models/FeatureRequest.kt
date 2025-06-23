@@ -51,15 +51,28 @@ class FeatureRequest(val block: TrustChainBlock) {
      * Gets a list of all the solutions (i.e. software updates) that have been proposed for this
      */
     fun getSolutions(): List<UpdateProposalPoll> {
-        return trustChain.database.getBlocksWithType(PROPOSE_UPDATE_BLOCK)
-            .filter { b ->
-                try {
-                    val data = ProposeUpdateTransactionData(b.transaction).getData()
-                    data.DAO_ID == doaId && data.FEATURE_REQUEST_ID == featureRequestId
-                }
-                catch (e: Throwable) { false }
+        // This contains one proposal block for every DAO member which still need to be filtered
+        // out in order to not return the same proposal multiple times.
+        val allProposals = trustChain.database.getBlocksWithType(PROPOSE_UPDATE_BLOCK)
+            .mapNotNull { b ->
+                try { UpdateProposalPoll(b) }
+                catch (e: Throwable) { null }
             }
-            .map { b -> UpdateProposalPoll(b) }
+            .filter { p -> p.daoId == this.doaId && p.featureRequestId == this.featureRequestId }
+
+        // Find the actual unique proposals
+        val proposals = allProposals.distinctBy { p -> p.proposalId }
+
+        // Find all the proposals which this user was requested to vote in.
+        val myKey = trustChain.myPeer.publicKey.keyToBin().toHex()
+        val myProposals = allProposals.filter { p -> p.receivingUser == myKey }
+
+        // Find all the proposals which this user cannot vote in
+        val otherProposals = proposals.filter {
+            p -> myProposals.none { prop -> p.proposalId == prop.proposalId }
+        }
+
+        return (myProposals + otherProposals).sortedBy { p -> p.block.insertTime!! }
     }
 
     /**

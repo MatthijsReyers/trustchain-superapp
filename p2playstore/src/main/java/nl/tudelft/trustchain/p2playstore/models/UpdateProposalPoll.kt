@@ -1,16 +1,10 @@
-import android.content.Context
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
-import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
-import nl.tudelft.trustchain.p2playstore.models.DaoJoinPoll
 import nl.tudelft.trustchain.p2playstore.models.Poll
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
-import nl.tudelft.trustchain.p2playstore.utils.DAOJoinHelper
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 
@@ -20,18 +14,20 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
         assert(block.type == P2pStoreCommunity.PROPOSE_UPDATE_BLOCK)
     }
 
-    private val daoData = ProposeUpdateTransactionData(block.transaction).getData()
+    private val blockData = ProposeUpdateTransactionData(block.transaction).getData()
 
     // See `Poll` class
-    override val daoId = daoData.DAO_ID
-    override val proposalId = daoData.SW_UNIQUE_PROPOSAL_ID
+    override val daoId = blockData.DAO_ID
+    override val proposalId = blockData.SW_UNIQUE_PROPOSAL_ID
     override val requestingUser = block.publicKey.toHex()
-    override val votesRequired: Int = daoData.SW_SIGNATURES_REQUIRED
+    override val votesRequired: Int = blockData.SW_SIGNATURES_REQUIRED
+    override val receivingUser = blockData.SW_RECEIVER_PK
 
-    val name: String = daoData.APP_NAME;
-    val description: String = daoData.APP_DESCRIPTION;
-    val category: String = daoData.APP_CATEGORY;
-    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(daoData.APP_MAGNET_LINK);
+    val name: String = blockData.APP_NAME;
+    val description: String = blockData.APP_DESCRIPTION;
+    val category: String = blockData.APP_CATEGORY;
+    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(blockData.APP_MAGNET_LINK);
+    val featureRequestId = blockData.FEATURE_REQUEST_ID
 
     companion object {
         /**
