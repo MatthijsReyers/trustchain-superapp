@@ -42,7 +42,7 @@ class P2playApp(val block: TrustChainBlock) {
     val name: String get() = this.daoData.APP_NAME
     val description: String get() = this.daoData.APP_DESCRIPTION
     val category: String get() = this.daoData.APP_CATEGORY
-    val icon: Int get() = iconFromIconId(this.block.transaction["iconIndex"])
+    val icon: Int get() = iconFromIconId(this.daoData.APP_ICON)
     val magnetLink: MagnetLink = MagnetUtils.parseMagnet(this.daoData.APP_MAGNET_LINK)
 
     /**
