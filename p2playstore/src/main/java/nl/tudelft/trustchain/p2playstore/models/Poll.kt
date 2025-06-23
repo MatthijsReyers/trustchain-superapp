@@ -163,14 +163,25 @@ abstract class Poll(val block: TrustChainBlock) {
     suspend fun submitVote(isYes: Boolean, context: Context) {
         android.util.Log.d("P2PlayStore", "Voting $isYes on proposal $proposalId")
 
-        // Only members are allowed to vote on proposals for the DAO
-        val app = this.getApp()
-        if (!app.isDaoMember()) return
+        // Users are only allowed to vote on proposal blocks for which they are the recipient
+        if (!this.isReceivingUser) {
+            Log.w(
+                "P2PlayStore",
+                "Bug found! User tried to vote on a block for which they are not the recipient"
+            )
+            return
+        }
 
         // Only create one vote block per user/peer
-        if (this.hasVoted()) return
+        if (this.hasVoted()) {
+            Log.w(
+                "P2PlayStore",
+                "Bug found! Ignoring vote because user has already voted"
+            )
+            return
+        }
 
-        val joinBlock = app.getLatestJoin()
+        val joinBlock = this.getApp().getLatestJoin()
         val data = JoinDaoTransactionData(joinBlock.transaction).getData()
 
         val myPublicKey = trustChain.myPeer.publicKey.keyToBin()
