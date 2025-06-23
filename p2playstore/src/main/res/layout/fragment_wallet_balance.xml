@@ -100,7 +100,7 @@
                                     android:layout_height="24dp"
                                     android:layout_gravity="center"
                                     android:src="@drawable/ic_account_balance_wallet_black_24dp"
-                                    android:tint="#1E88E5" />
+                                    app:tint="#1E88E5" />
                             </androidx.cardview.widget.CardView>
 
                             <LinearLayout
