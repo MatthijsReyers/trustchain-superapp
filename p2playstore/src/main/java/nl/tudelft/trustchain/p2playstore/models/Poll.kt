@@ -2,26 +2,20 @@ package nl.tudelft.trustchain.p2playstore.models
 
 import android.content.Context
 import android.util.Log
-import android.widget.Toast
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
-import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.VotingPollType
 import nl.tudelft.trustchain.p2playstore.utils.DAOJoinHelper
 import nl.tudelft.trustchain.p2playstore.utils.DAOTransferFundsHelper
 
@@ -58,7 +52,7 @@ abstract class Poll(val block: TrustChainBlock) {
     /**
      * Amount of people/peers that have voted in this poll.
      */
-    val votes: Int get() = getUpVotes().size + getDownVotes().size
+    val votes: Int get() = getYesVotes().size + getNoVotes().size
 
     /**
      * Is this user the receiver of this proposal? I.e. is the user even allowed to respond to this
@@ -75,21 +69,21 @@ abstract class Poll(val block: TrustChainBlock) {
      */
     val pendingVotes: Int get() = votesRequired - votes
 
-    val yesPercentage: Float get() = (getUpVotes().size) / votesRequired.toFloat()
+    val yesPercentage: Float get() = (getYesVotes().size) / votesRequired.toFloat()
 
-    val noPercentage: Float get() = (getDownVotes().size) / votesRequired.toFloat()
+    val noPercentage: Float get() = (getNoVotes().size) / votesRequired.toFloat()
 
     val pendingPercentage: Float get() = (pendingVotes) / votesRequired.toFloat()
 
     /**
      * Checks if the poll/request has been accepted/approved by the community.
      */
-    val isApproved: Boolean get() = getUpVotes().size >= this.votesRequired
+    val isApproved: Boolean get() = getYesVotes().size >= this.votesRequired
 
     /**
      * Checks if the join request has been denied
      */
-    val isDenied: Boolean get() = getDownVotes().size >= this.votesRequired
+    val isDenied: Boolean get() = getNoVotes().size >= this.votesRequired
 
     /**
      * Checks if the request is still pending (i.e. waiting for users to vote before a final
@@ -121,23 +115,27 @@ abstract class Poll(val block: TrustChainBlock) {
     /**
      * Gets all the agreement signatures/votes.
      */
-    fun getUpVotes(): List<TrustChainBlock> {
+    fun getYesVotes(): List<VoteYesData> {
         val votes = trustChain.database.getBlocksWithType(P2pStoreCommunity.VOTE_YES_BLOCK)
-        return votes.filter { vote ->
-            val data = VoteYesTransactionData(vote.transaction).getData()
-            data.SW_UNIQUE_PROPOSAL_ID == proposalId
-        }
+        return votes
+            .mapNotNull { vote ->
+                try { VoteYesTransactionData(vote.transaction).getData() }
+                catch (err: Throwable) { null }
+            }
+            .filter { vote -> vote.SW_UNIQUE_PROPOSAL_ID == proposalId }
     }
 
     /**
      * Gets all the disagreement/denied votes.
      */
-    fun getDownVotes(): List<TrustChainBlock> {
+    fun getNoVotes(): List<VoteNoData> {
         val votes = trustChain.database.getBlocksWithType(P2pStoreCommunity.VOTE_NO_BLOCK)
-        return votes.filter { vote ->
-            val data = VoteNoTransactionData(vote.transaction).getData()
-            data.SW_UNIQUE_PROPOSAL_ID == proposalId
-        }
+        return votes
+            .mapNotNull { vote ->
+                try { VoteNoTransactionData(vote.transaction).getData() }
+                catch (err: Throwable) { null }
+            }
+            .filter { vote -> vote.SW_UNIQUE_PROPOSAL_ID == proposalId }
     }
 
     /**
@@ -153,7 +151,7 @@ abstract class Poll(val block: TrustChainBlock) {
         return P2playApp.findByDoaId(this.daoId)!!
     }
 
-    fun getAllVotes() = (this.getUpVotes() + this.getDownVotes())
+    fun getAllVotes() = (this.getYesVotes() + this.getNoVotes())
 
     /**
      * Submit a vote for the poll, note that calling this function if you are not a member will do
