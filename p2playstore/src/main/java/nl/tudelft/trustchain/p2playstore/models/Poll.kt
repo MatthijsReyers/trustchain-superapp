@@ -46,6 +46,11 @@ abstract class Poll(val block: TrustChainBlock) {
     abstract val requestingUser: String;
 
     /**
+     * Public key of the user which needs to vote yes/no on this specific block.
+     */
+    abstract val receivingUser: String;
+
+    /**
      * Number of votes required for the proposal in this poll to go through.
      */
     abstract val votesRequired: Int
@@ -161,7 +166,8 @@ abstract class Poll(val block: TrustChainBlock) {
 
         val myPublicKey = trustChain.myPeer.publicKey.keyToBin()
 
-        // Use the community method to create the vote block (runs on IO dispatcher due to withContext)
+        // Use the community method to create the vote block
+        // (runs on IO dispatcher due to withContext)
         withContext(Dispatchers.IO) {
             when (block.type) {
                 JOIN_REQUEST_BLOCK -> {

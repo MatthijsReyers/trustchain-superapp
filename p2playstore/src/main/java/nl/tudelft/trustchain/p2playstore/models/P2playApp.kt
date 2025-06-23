@@ -27,7 +27,7 @@ import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 class P2playApp(val block: TrustChainBlock) {
     private val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
 
-    val daoData: AppMetaData = when(block.type) {
+    private val daoData: AppMetaData = when(block.type) {
         JOIN_BLOCK -> JoinDaoTransactionData(block.transaction).getData()
         UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(block.transaction).getData()
         PROPOSE_UPDATE_BLOCK -> ProposeUpdateTransactionData(block.transaction).getData()
@@ -43,6 +43,7 @@ class P2playApp(val block: TrustChainBlock) {
     val name: String get() = this.daoData.APP_NAME
     val description: String get() = this.daoData.APP_DESCRIPTION
     val category: String get() = this.daoData.APP_CATEGORY
+    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(this.daoData.APP_MAGNET_LINK)
     val icon: Int get() = iconFromIconId(
         try {
             this.block.transaction["iconIndex"]
@@ -51,7 +52,6 @@ class P2playApp(val block: TrustChainBlock) {
             3 // Default icon index
         }
     )
-    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(this.daoData.APP_MAGNET_LINK)
 
     /**
      * Unique number to identify a specific update/version of the app, note that these numbers are
@@ -138,8 +138,39 @@ class P2playApp(val block: TrustChainBlock) {
                 val data = JoinRequestTransactionData(b.transaction).getData()
                 data.DAO_ID == this.daoId
             }
-            .maxByOrNull { b -> b.insertTime!! }!!
+            .maxByOrNull { b -> b.insertTime!! }
         return P2playApp(latest!!)
+    }
+
+    /**
+     * This helper method helps with finding polls and does all of the work necessary to return
+     * for each poll only the blocks for which the current user is the receiver.
+     * Unless no such block exists (for example, if the user is not a member of the DAO) in which
+     * case any random proposal block will be used for the poll model since the user cannot vote
+     * in that poll then anyway.
+     */
+    private fun <P : Poll> getPolls(
+        blockType: String,
+        pollFactory: (TrustChainBlock) -> P?
+    ): List<P> {
+        // Note that for a single proposal multiple proposal blocks are created for every DAO
+        // member which need to be filtered in order not to return duplicate proposals
+        val allPolls = trustChain.database.getBlocksWithType(blockType)
+            .mapNotNull { b -> try { pollFactory(b) } catch (err: Throwable) { null } }
+            .filter { poll -> poll.daoId == this.daoId }
+        val polls = allPolls.distinctBy { poll -> poll.proposalId }
+
+        // Get all proposal blocks addressed to me
+        val myKey = trustChain.myPeer.publicKey.keyToBin().toHex()
+        val myPolls = allPolls.filter { poll -> poll.receivingUser == myKey }
+
+        // Get all proposals created before I was a member of the DAO
+        val otherPolls = polls.filter {
+                poll -> myPolls.none { p -> p.proposalId == poll.proposalId }
+        }
+
+        return (myPolls + otherPolls)
+            .sortedBy { poll -> poll.block.insertTime!! }
     }
 
     /**
@@ -147,9 +178,7 @@ class P2playApp(val block: TrustChainBlock) {
      * already concluded.
      */
     fun getAllDaoJoinPolls(): List<DaoJoinPoll> {
-        val blocks = trustChain.database.getBlocksWithType(JOIN_REQUEST_BLOCK)
-            .filter { b -> ProposeUpdateTransactionData(b.transaction).getData().DAO_ID == daoId }
-        return blocks.map { b -> DaoJoinPoll(b) }
+        return this.getPolls(JOIN_REQUEST_BLOCK, ::DaoJoinPoll)
     }
 
     /**
@@ -161,7 +190,7 @@ class P2playApp(val block: TrustChainBlock) {
     }
 
     /**
-     * Gets the lastest DAO join
+     * Gets the latest DAO join poll/proposal created by this user.
      */
     fun getMyDaoJoinPoll(): DaoJoinPoll? {
         val myKey = trustChain.myPeer.publicKey.keyToBin()
@@ -179,15 +208,7 @@ class P2playApp(val block: TrustChainBlock) {
      * Gets all the update proposal polls that have ever been proposed for this app.
      */
     fun getAllUpdatePolls(): List<UpdateProposalPoll> {
-        val blocks = trustChain.database.getBlocksWithType(PROPOSE_UPDATE_BLOCK)
-            .filter { b ->
-                try {
-                    ProposeUpdateTransactionData(b.transaction).getData().DAO_ID == daoId
-                } catch (err: Throwable) {
-                    false
-                }
-            }
-        return blocks.map { b -> UpdateProposalPoll(b) }
+        return this.getPolls(PROPOSE_UPDATE_BLOCK, ::UpdateProposalPoll)
     }
 
     /**
@@ -200,7 +221,7 @@ class P2playApp(val block: TrustChainBlock) {
     /**
      * Returns a list of all feature requests for this app, including the ones for which an
      * update/implementation has already been proposed and accepted.
-     * 
+     *
      * Note that the returned list is ordered by creation date with the newest fearure request
      * always being the first item in the list.
      */
