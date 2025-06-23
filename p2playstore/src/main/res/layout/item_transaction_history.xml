@@ -30,8 +30,9 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_gravity="center"
+                android:contentDescription="Bitcoin logo icon"
                 android:src="@drawable/ic_bitcoin"
-                android:tint="#1E88E5" />
+                app:tint="#1E88E5" />
         </androidx.cardview.widget.CardView>
 
         <!-- Transaction Details -->
