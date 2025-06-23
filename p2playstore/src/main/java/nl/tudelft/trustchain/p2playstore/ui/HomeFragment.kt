@@ -13,8 +13,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
@@ -23,8 +26,8 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    private var allDaoAdapter: DaoAdapter? = null
-    private var myDaoAdapter: DaoAdapter? = null
+    private var allDaoAdapter: AppPreviewsAdapter? = null
+    private var myDaoAdapter: AppPreviewsAdapter? = null
 
     /**
      * This background job tries to find new apps on the trustchain at a set time interval.
@@ -59,6 +62,23 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
             while (true) {
                 discoverNewApps()
                 delay(60_000 * 5)
+            }
+        }
+
+//        val wallet = WalletManagerAndroid.getInstance()
+//        val amountBTC: Double = 0.05
+//        val destination = "mgVz64BgaRMpKosY1fj1QCzETo2qMoLNpE"
+//        val address = Address.fromString(wallet.params, destination)
+//        val amountToSend = Coin.parseCoin(amountBTC.toString())
+//        val sendRequest = SendRequest.to(address, amountToSend)
+//        val sendResult = wallet.kit.wallet().sendCoins(sendRequest)
+    }
+
+    override suspend fun onChainUpdated(block: TrustChainBlock) {
+        when (block.type) {
+            // Did a new app (verion) just release?
+            JOIN_BLOCK, UPDATE_ACCEPTED_BLOCK -> {
+                this.updateAppsLists()
             }
         }
     }
@@ -246,13 +266,13 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                 }
 
                 binding.allApps.text = "All apps (${allApps.size})"
-                allDaoAdapter = DaoAdapter(allApps)
+                allDaoAdapter = AppPreviewsAdapter(allApps)
                 binding.rvTopApps.adapter = allDaoAdapter
 
                 val myApps = allApps.filter { app -> app.isDaoMember() }
 
                 binding.installedApps.text = "Installed apps (${myApps.size})"
-                myDaoAdapter = DaoAdapter(myApps)
+                myDaoAdapter = AppPreviewsAdapter(myApps)
                 binding.rvRecommended.adapter = myDaoAdapter
             }
             catch (e: Exception) {

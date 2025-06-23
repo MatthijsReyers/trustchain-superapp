@@ -1,6 +1,8 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
 import android.os.Bundle
+import android.text.Editable
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,10 +17,14 @@ import org.bitcoinj.params.MainNetParams
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.params.TestNet3Params
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid // Import WalletManagerAndroid
+import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid // Import WalletManagerAndroid
+import nl.tudelft.trustchain.p2playstore.models.FeatureRequest
 
 class FeatureSolutionFragment : BaseFragment() {
     private var _binding: FragmentFeatureSolutionBinding? = null
     private val binding get() = _binding!!
+
+    private lateinit var featureRequest: FeatureRequest
 
     private lateinit var featureId: String
     private lateinit var daoUniqueId: String
@@ -34,24 +40,27 @@ class FeatureSolutionFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        featureId = arguments?.getString("featureId") ?: ""
-        daoUniqueId = arguments?.getString("daoUniqueId") ?: ""
-
-
-        setupUI()
-        setupClickListeners()
+        try {
+            val featureRequestId = arguments?.getString("featureRequestId") as String
+            this.featureRequest = FeatureRequest.findById(featureRequestId)!!
+            updateFeatureRequestPreview()
+            setupClickListeners()
+        }
+        catch (err: Throwable) {
+            android.util.Log.e("P2PlayStore", "Failed to load feature request: $err")
+            findNavController().navigateUp()
+        }
     }
 
-    private fun setupUI() {
-        // Load feature request details to show context
-        val featureTitle = arguments?.getString("featureTitle") ?: "Unknown Feature"
-        val featureDescription = arguments?.getString("featureDescription") ?: ""
+    private fun updateFeatureRequestPreview() {
+        binding.title.text = this.featureRequest.title
+        binding.description.text = this.featureRequest.description
 
-        binding.tvFeatureTitle.text = featureTitle
-        binding.tvFeatureDescription.text = featureDescription
-
-         binding.etDeveloperBitcoinAddress.hint = "Enter your Bitcoin address for reward"
+        val manager = WalletManagerAndroid.getInstance()
+        binding.etDeveloperBitcoinAddress.hint = "Enter your Bitcoin address for reward"
+        binding.etDeveloperBitcoinAddress.text = Editable.Factory.getInstance().newEditable(
+            manager.protocolAddress().toString()
+        )
     }
 
     private fun setupClickListeners() {
@@ -66,11 +75,13 @@ class FeatureSolutionFragment : BaseFragment() {
         }
     }
 
-
     suspend private fun submitSolution() {
+        Log.d("P2PlayStore", "Submitting solution")
+
         val title = binding.etSolutionTitle.text.toString().trim()
         val description = binding.etSolutionDescription.text.toString().trim()
         val magnetLink = binding.etMagnetLink.text.toString().trim()
+        val developerBitcoinAddress = binding.etDeveloperBitcoinAddress.text.toString().trim()
 
 //        val developerBitcoinAddress = "mty7WcvBbEYXKuwW86KJwatpMXcm7NMitX"
          val developerBitcoinAddress = binding.etDeveloperBitcoinAddress.text.toString().trim()
@@ -107,24 +118,23 @@ class FeatureSolutionFragment : BaseFragment() {
             return
         }
 
-
         try {
-            // Use the community method to create the block
-            p2playStore.createFeatureSolution(
-                daoId = daoUniqueId,
-                featureRequestId = featureId,
-                solutionTitle = title,
-                solutionDescription = description,
-                apkMagnetLink = magnetLink,
+            this.featureRequest.submitSolution(
+                title = title,
+                description = description,
+                magnetLink = magnetLink,
                 developerBitcoinAddress = developerBitcoinAddress,
             )
 
-            Toast.makeText(context, "Solution submitted successfully! DAO members can now vote.", Toast.LENGTH_LONG).show()
-            android.util.Log.d("FeatureSolutionFragment", "Solution submitted: $title for Feature $featureId in DAO ${daoUniqueId}Id")
+            Toast.makeText(
+                context,
+                "Solution submitted successfully!",
+                Toast.LENGTH_LONG
+            ).show()
             findNavController().navigateUp()
 
         } catch (e: Exception) {
-            android.util.Log.e("FeatureSolutionFragment", "Error submitting solution: ${e.message}")
+            android.util.Log.e("P2PlayStore", "Error submitting solution: ${e.message}")
             Toast.makeText(context, "Error submitting solution", Toast.LENGTH_SHORT).show()
         }
     }

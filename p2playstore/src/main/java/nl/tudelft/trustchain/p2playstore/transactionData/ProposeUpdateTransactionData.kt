@@ -23,12 +23,11 @@ data class ProposeUpdateData(
     override var APP_CATEGORY: String,
     override var APP_ICON: Int,
     override var APP_MAGNET_LINK: String,
-
-    var FEATURE_REQUEST_ID: String? = null,
-    var SOLUTION_TITLE: String? = null,
-    var SOLUTION_DESCRIPTION: String? = null,
-    var DEVELOPER_PUBLIC_KEY: String? = null
-) : AppMetaData
+    override var FEATURE_REQUEST_ID: String,
+    var SOLUTION_TITLE: String,
+    var SOLUTION_DESCRIPTION: String,
+    var DEVELOPER_PUBLIC_KEY: String
+) : AppMetaData, BaseFeatureRequestData
 
 class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
     data,
@@ -46,39 +45,49 @@ class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
 
     // Constructor for regular fund transfers
     constructor(
-        uniqueId: String,
+        daoId: String,
+        featureRequestId: String,
+        solutionTitle: String,
+        solutionDescription: String,
+        developerPublicKey: String,
+        apkMagnetLink: String,
+
         previousWalletBlockHash: String,
         requiredSignatures: Int,
-        satoshiAmount: Long,
+        rewardAmount: Long,
         bitcoinPks: List<String>,
         noncePks: ArrayList<String>,
         transferFundsAddressSerialized: String,
         receiverPk: String,
         uniqueProposalId: String,
         transactionSerialized: String,
-        name: String,
-        description: String,
-        category: String,
-        icon: Int,
-        magnetLink: String,
+
+        appName: String,
+        appDescription: String,
+        appCategory: String,
+        appIcon: Int
     ) : this(
         BlockUtils.objectToJsonObject(
             ProposeUpdateData(
-                uniqueId,
+                daoId,
                 uniqueProposalId,
                 previousWalletBlockHash,
                 bitcoinPks,
                 noncePks,
                 requiredSignatures,
-                satoshiAmount,
-                transferFundsAddressSerialized,
+                rewardAmount,
+                developerBitcoinAddress,
                 receiverPk,
                 transactionSerialized,
-                name,
-                description,
-                category,
-                icon,
-                magnetLink,
+                appName,
+                appDescription,
+                appCategory,
+                appIcon,
+                apkMagnetLink,
+                featureRequestId,
+                solutionTitle,
+                solutionDescription,
+                developerPublicKey
             )
         )
     )

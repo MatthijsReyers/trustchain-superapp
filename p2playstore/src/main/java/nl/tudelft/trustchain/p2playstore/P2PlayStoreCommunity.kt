@@ -25,9 +25,9 @@ class P2pStoreCommunity : Community() {
                 ?: throw IllegalStateException("TrustChainCommunity is not configured")
     }
 
-    private val daoCreateHelper = DAOCreateHelper()
-    private val daoJoinHelper = DAOJoinHelper()
-    private val daoTransferFundsHelper = DAOTransferFundsHelper()
+    val daoCreateHelper = DAOCreateHelper()
+    val daoJoinHelper = DAOJoinHelper()
+    val daoTransferFundsHelper = DAOTransferFundsHelper()
 
     /**
      * Create a bitcoin genesis wallet and broadcast the result on trust chain. The bitcoin
@@ -95,30 +95,6 @@ class P2pStoreCommunity : Community() {
     ) {
         daoJoinHelper.joinBitcoinWallet(myPeer, walletBlockData, blockData, responses, context)
     }
-
-//    /**
-//     * 3.1 Send a proposal block on trustchain to ask for the signatures. Assumed that people agreed
-//     * to the transfer.
-//     * @param walletBlock
-//     * - TrustChainBlock, describes the wallet where the transfer is from
-//     * @param receiverAddressSerialized
-//     * - String, the address where the transaction needs to go
-//     * @param satoshiAmount
-//     * - Long, the amount that needs to be transferred
-//     * @return the proposal block
-//     */
-//    fun proposeTransferFunds(
-//            walletBlock: TrustChainBlock,
-//            receiverAddressSerialized: String,
-//            satoshiAmount: Long
-//    ): ProposeUpdateTransactionData {
-//        return daoTransferFundsHelper.proposeTransferFunds(
-//                myPeer,
-//                walletBlock,
-//                receiverAddressSerialized,
-//                satoshiAmount
-//        )
-//    }
 
     /**
      * 3.2 Transfer funds from an existing shared wallet to a third-party. Broadcast bitcoin
@@ -392,8 +368,7 @@ class P2pStoreCommunity : Community() {
     }
 
     /**
-     * Given a shared wallet proposal block, calculate the signature and respond with a trust chain
-     * block.
+     * Create a feature request proposal block on trust chain.
      */
     fun joinAskBlockReceived(
         block: TrustChainBlock,
@@ -988,8 +963,7 @@ class P2pStoreCommunity : Community() {
             val sequenceNumber = parts[1].toUInt()
             getTrustChainCommunity().database.get(publicKey, sequenceNumber)
         } catch (e: Exception) {
-            Log.e("P2PlayStoreCommunity", "Error getting DAO block $blockId: ${e.message}")
-            null
+            false
         }
     }
 //

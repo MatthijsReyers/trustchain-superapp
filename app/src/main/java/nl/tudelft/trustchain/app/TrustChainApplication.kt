@@ -208,30 +208,6 @@ class TrustChainApplication : Application() {
                 }
             }
         )
-
-        trustchain.addListener(
-            P2pStoreCommunity.JOIN_BLOCK,
-            object : BlockListener {
-                override fun onBlockReceived(block: TrustChainBlock) {
-                    Log.d(
-                        "P2pStore",
-                        "onBlockReceived: ${block.blockId} ${block.transaction}"
-                    )
-                }
-            }
-        )
-
-        trustchain.addListener(
-            P2pStoreCommunity.JOIN_REQUEST_BLOCK,
-            object : BlockListener {
-                override fun onBlockReceived(block: TrustChainBlock) {
-                    Log.d(
-                        "P2pStore",
-                        "onBlockReceived: ${block.blockId} ${block.transaction}"
-                    )
-                }
-            }
-        )
     }
 
     private fun createWalletCommunity(): OverlayConfiguration<AttestationCommunity> {
