@@ -45,7 +45,7 @@ class DaoWalletFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         // Get the DAO unique ID from arguments
-        daoUniqueId = arguments?.getString("daoUniqueId") ?: ""
+        daoUniqueId = arguments?.getString("daoId")!!
 
         if (daoUniqueId.isEmpty()) {
             Log.e("DaoWalletFragment", "DAO Unique ID not provided.")
@@ -58,7 +58,6 @@ class DaoWalletFragment : BaseFragment() {
         // Update UI titles to be DAO-specific
         binding.totalBalance.text = getString(R.string.loading)
         binding.daoWalletCount.text = getString(R.string.loading)
-
 
         setupRecyclerView()
         loadWalletData()
