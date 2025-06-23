@@ -344,7 +344,7 @@ class AppDetails : BaseFragment() {
      */
     private fun updateFeatureRequests() {
         val requests = this.app.getFeatureRequests()
-        val openRequest = requests.find { r -> !r.hasBeenFulfilled() }
+        val openRequest = requests.find { r -> !r.solutionAccepted() }
         if (openRequest != null) {
             this.lastestFeatureRequest?.bind(openRequest)
             binding.tvNoPendingFeatureRequests.visibility = View.GONE

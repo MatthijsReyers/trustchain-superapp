@@ -31,6 +31,7 @@ class FeatureRequestPreviewHolder(
         }
 
         val open = solutions.any { s -> !s.isPending } || solutions.isEmpty()
+        val open = !request.solutionAccepted()
         binding.submitBtn.isEnabled = open
         binding.submitBtn.alpha = if (open) { 1.0f } else { 0.3f }
         binding.submitBtn.setOnClickListener {
