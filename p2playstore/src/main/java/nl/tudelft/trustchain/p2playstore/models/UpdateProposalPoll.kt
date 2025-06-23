@@ -96,8 +96,6 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
             context,
             activity
         )
-
-
     }
 
     /**
