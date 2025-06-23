@@ -205,6 +205,18 @@ class P2playApp(val block: TrustChainBlock) {
     }
 
     /**
+     * Gets all the update proposal polls created by this user.
+     */
+    fun getMyUpdateProposals(): List<UpdateProposalPoll> {
+        val myKey = trustChain.myPeer.publicKey.keyToBin()
+        return trustChain.database.getBlocksWithType(PROPOSE_UPDATE_BLOCK)
+            .filter { b -> b.publicKey.contentEquals(myKey) }
+            .mapNotNull { b -> try { UpdateProposalPoll(b) } catch (err: Throwable) { null } }
+            .filter { poll -> poll.daoId == this.daoId }
+            .distinctBy { poll -> poll.proposalId }
+    }
+
+    /**
      * Gets all the update proposal polls that have ever been proposed for this app.
      */
     fun getAllUpdatePolls(): List<UpdateProposalPoll> {

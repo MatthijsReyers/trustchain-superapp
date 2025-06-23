@@ -111,6 +111,7 @@ class AppDetails : BaseFragment() {
         this.updateFeatureRequests()
 
         this.finalizeJoinRequest()
+        this.finalizeUpdate()
     }
 
     /**
@@ -153,6 +154,7 @@ class AppDetails : BaseFragment() {
                 this.updateFeatureRequests()
                 // Check if this user requested to join the DAO and has collected enough votes now.
                 this.finalizeJoinRequest()
+                this.finalizeUpdate()
             }
         }
     }
@@ -445,6 +447,31 @@ class AppDetails : BaseFragment() {
         }
         catch (t: Throwable) {
             Log.e("Coin", "Joining failed. ${t.message ?: "No further information"}.")
+        }
+    }
+
+    /**
+     *
+     */
+    private fun finalizeUpdate() {
+        // Have I proposed any updates that have since been accepted but for which no update block
+        // has been released yet?
+        val acceptedUpdate = this.app.getMyUpdateProposals()
+            .filter { p -> p.isApproved && !p.hasBeenReleased() }
+            .maxByOrNull { p -> p.block.insertTime!! }
+
+        // Looks like there is nothing to do.
+        if (acceptedUpdate == null) return
+
+        Log.d("P2PlayStore", "Finalizing update because enough votes have been cast")
+        acceptedUpdate.publishUpdate(
+            requireContext(),
+            requireActivity()
+        )
+
+        val latestApp = this.app.getLatestVersion()
+        lifecycleScope.launch(Dispatchers.Main) {
+            onChainUpdated(latestApp.block)
         }
     }
 

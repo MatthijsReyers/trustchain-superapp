@@ -157,14 +157,14 @@ class PollDetailsFragment : BaseFragment() {
      * Updates the card on the bottom
      */
     private fun updateBottomCard() {
-        val yes = poll.getUpVotes().size
+        val yes = poll.getYesVotes().size
         val required = poll.votesRequired
         if (poll.isApproved) {
             binding.votesRequiredText.text = "Proposal was approved with $yes of " +
                 "${required} required votes"
         }
         else if (poll.isDenied) {
-            val no = poll.getDownVotes().size
+            val no = poll.getNoVotes().size
             binding.votesRequiredText.text = "Proposal was denied with $no no votes"
         }
         else {
