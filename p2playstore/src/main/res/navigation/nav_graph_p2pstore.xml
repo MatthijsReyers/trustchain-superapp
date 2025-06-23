@@ -38,7 +38,9 @@
         tools:layout="@layout/fragment_home">
         <action
             android:id="@+id/action_homeFragment_to_appDetails"
-            app:destination="@id/appDetails" />
+            app:destination="@id/appDetails"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
     </fragment>
 
     <fragment
@@ -52,21 +54,35 @@
             />
         <action
             android:id="@+id/action_appDetailsFragment_to_featureListFragment"
-            app:destination="@id/featureListFragment" />
+            app:destination="@id/featureListFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
         <action
             android:id="@+id/action_appDetailsFragment_to_featureVotingFragment"
-            app:destination="@id/featureVotingFragment" />
+            app:destination="@id/featureVotingFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
 
         <action
             android:id="@+id/action_appDetailsFragment_to_allVotingPollsFragment"
-            app:destination="@id/allVotingPollsFragment" />
-        <action android:id="@+id/action_appDetailsFragment_to_featureSolutionFragment"
-            app:destination="@id/featureSolutionFragment"/>
+            app:destination="@id/allVotingPollsFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+        <action
+            android:id="@+id/action_appDetailsFragment_to_featureSolutionFragment"
+            app:destination="@id/featureSolutionFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+        <action
+            android:id="@+id/action_appDetailsFragment_to_daoWalletFragment"
+            app:destination="@id/daoWalletFragment" 
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
     </fragment>
 
     <fragment
         android:id="@+id/featureListFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.ui.FeatureListFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.AllFeatureRequestsFragment"
         android:label="Feature Requests"
         tools:layout="@layout/fragment_feature_list">
         <argument
@@ -77,13 +93,20 @@
             app:argType="string" />
         <action
             android:id="@+id/action_featureListFragment_to_featureRequestFragment"
-            app:destination="@id/featureRequestFragment" />
+            app:destination="@id/featureRequestFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
+
         <action
             android:id="@+id/action_featureListFragment_to_featureSolutionFragment"
-            app:destination="@id/featureSolutionFragment" />
+            app:destination="@id/featureSolutionFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
         <action
             android:id="@+id/action_featureListFragment_to_featureVotingFragment"
-            app:destination="@id/featureVotingFragment" />
+            app:destination="@id/featureVotingFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
     </fragment>
 
     <fragment
@@ -123,42 +146,24 @@
 
     <fragment
         android:id="@+id/featureVotingFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.ui.FeatureVotingFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.PollDetailsFragment"
         android:label="Vote on Feature"
-        tools:layout="@layout/fragment_feature_voting">
+        tools:layout="@layout/fragment_poll_details">
         <argument
             android:name="blockId"
             app:argType="string" />
         <argument
-            android:name="solutionId"
+            android:name="proposalId"
             app:argType="string" />
         <argument
             android:name="daoUniqueId"
             app:argType="string" />
     </fragment>
-
-<!--    <fragment-->
-<!--        android:id="@+id/allVotesFragment"-->
-<!--        android:name="nl.tudelft.trustchain.p2playstore.ui.AllVotesFragment"-->
-<!--        android:label="All Votes"-->
-<!--        tools:layout="@layout/fragment_all_votes">-->
-<!--        <action-->
-<!--            android:id="@+id/action_allVotesFragment_to_featureVotingFragment"-->
-<!--            app:destination="@id/featureVotingFragment" />-->
-<!--    </fragment>-->
-
-<!--    <fragment-->
-<!--        android:id="@+id/proposalsFragment"-->
-<!--        android:name="nl.tudelft.trustchain.p2playstore.ui.ProposalsFragment"-->
-<!--        android:label="Proposals"-->
-<!--        tools:layout="@layout/fragment_proposals">-->
-<!--    </fragment>-->
-
     <fragment
         android:id="@+id/allVotingPollsFragment"
-        android:name="nl.tudelft.trustchain.p2playstore.ui.AllVotingPollsFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.AllPollsFragment"
         android:label="All Voting Polls"
-        tools:layout="@layout/fragment_all_voting_polls">
+        tools:layout="@layout/fragment_all_polls">
         <argument
             android:name="blockId"
             app:argType="string" />
@@ -167,35 +172,11 @@
             app:argType="string" />
         <action
             android:id="@+id/action_allVotingPollsFragment_to_featureVotingFragment"
-            app:destination="@id/featureVotingFragment" />
+            app:destination="@id/featureVotingFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim" />
     </fragment>
 
-
-    <!--<navigation xmlns:android="http://schemas.android.com/apk/res/android"-->
-<!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
-<!--    xmlns:tools="http://schemas.android.com/tools"-->
-<!--    android:id="@+id/nav_graph"-->
-<!--    app:startDestination="@+id/homeFragment">-->
-
-
-<!--    <fragment-->
-<!--        android:id="@+id/proposalsFragment"-->
-<!--        android:name="nl.tudelft.trustchain.p2playstore.Proposals"-->
-<!--        android:label="Proposals"-->
-<!--        tools:layout="@layout/fragment_proposals"/>-->
-
-    <!--    <fragment-->
-    <!--        android:id="@+id/myDaosFragment"-->
-    <!--        android:name="nl.tudelft.trustchain.p2playstore.ui.mydaos.MyDaosFragment"-->
-    <!--        android:label="My DAOs"-->
-    <!--        tools:layout="@layout/fragment_home">-->
-    <!--        <action-->
-    <!--            android:id="@+id/action_myDaosFragment_to_createJoinDaoFragment"-->
-    <!--            app:destination="@+id/createJoinDaoFragment" />-->
-    <!--        <action-->
-    <!--            android:id="@+id/action_myDaosFragment_to_daoDetailsFragment"-->
-    <!--            app:destination="@+id/daoDetailsFragment" />-->
-    <!--    </fragment>-->
 
     <!--    <fragment-->
     <!--        android:id="@+id/createJoinDaoFragment"-->
@@ -209,24 +190,15 @@
     <!--            app:popUpToInclusive="true" />-->
     <!--    </fragment>-->
 
-    <!--    <fragment-->
-    <!--        android:id="@+id/daoDetailsFragment"-->
-    <!--        android:name="nl.tudelft.trustchain.p2playstore.ui.daodetails.DaoDetailsFragment"-->
-    <!--        android:label="DAO Details"-->
-    <!--        tools:layout="@layout/fragment_dao_details">-->
-    <!--        <argument-->
-    <!--            android:name="daoId"-->
-    <!--            app:argType="string" />-->
-    <!--        <action-->
-    <!--            android:id="@+id/action_daoDetailsFragment_to_proposeUpdateFragment"-->
-    <!--            app:destination="@+id/proposeUpdateFragment" />-->
-    <!--        <action-->
-    <!--            android:id="@+id/action_daoDetailsFragment_to_voteOnUpdateFragment"-->
-    <!--            app:destination="@+id/voteOnUpdateFragment" />-->
-    <!--        <action-->
-    <!--            android:id="@+id/action_daoDetailsFragment_to_acceptedUpdatesFragment"-->
-    <!--            app:destination="@+id/acceptedUpdatesFragment" />-->
-    <!--    </fragment>-->
+    <fragment
+        android:id="@+id/daoWalletFragment"
+        android:name="nl.tudelft.trustchain.p2playstore.ui.DaoWalletFragment"
+        android:label="DAO Wallet"
+        tools:layout="@layout/fragment_wallet_balance">
+        <argument
+            android:name="daoUniqueId"
+            app:argType="string" />
+    </fragment>
 
     <!--    <fragment-->
     <!--        android:id="@+id/proposeUpdateFragment"-->

@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="@android:color/white">
+    android:background="@android:color/white"
+    android:padding="0dp">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -13,16 +14,21 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_margin="0dp"
             android:orientation="vertical">
 
-            <!-- Implementation Info Card -->
+
             <androidx.cardview.widget.CardView
+                android:id="@+id/join_request_card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_margin="16dp"
                 android:layout_marginBottom="24dp"
+                android:visibility="gone"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
+                app:cardElevation="4dp"
+                tools:visibility="visible">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -31,23 +37,100 @@
                     android:padding="20dp">
 
                     <TextView
-                        android:id="@+id/original_feature_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Dark Mode Support"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"
+                        android:text="Join request"
                         android:textColor="#1976D2"
-                        android:layout_marginBottom="8dp" />
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/implementation_description"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Added dark theme toggle in settings with automatic switching based on system preference."
-                        android:textSize="14sp"
+                        android:layout_marginBottom="16dp"
+                        android:text="A new user has requested to let them join the app's DAO and the shared developer wallet, by letting them join they will obtain voting rights and pay a one-time joining fee."
                         android:textColor="#666"
-                        android:layout_marginBottom="16dp" />
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="User: "
+                            android:textColor="#999"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/join_request_peer"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="abc123..."
+                            android:textColor="#666"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Join fee:"
+                            android:textColor="#999"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/fee_amount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="10000 sats"
+                            android:textColor="#4CAF50"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/update_proposal_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:layout_marginBottom="24dp"
+                android:visibility="gone"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:id="@+id/update_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="Dark Mode Support"
+                        android:textColor="#1976D2"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/update_description"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="Added dark theme toggle in settings with automatic switching based on system preference."
+                        android:textColor="#666"
+                        android:textSize="14sp" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -58,8 +141,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Developer: "
-                            android:textSize="12sp"
-                            android:textColor="#999" />
+                            android:textColor="#999"
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/developer_name"
@@ -67,24 +150,24 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="abc123..."
-                            android:textSize="12sp"
-                            android:textColor="#666" />
+                            android:textColor="#666"
+                            android:textSize="12sp" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Reward: "
-                            android:textSize="12sp"
-                            android:textColor="#999" />
+                            android:textColor="#999"
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/reward_amount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="10000 sats"
+                            android:textColor="#4CAF50"
                             android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:textColor="#4CAF50" />
+                            android:textStyle="bold" />
 
                     </LinearLayout>
 
@@ -97,84 +180,71 @@
                 android:id="@+id/btn_download_apk"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
+                android:layout_marginBottom="24dp"
+                android:backgroundTint="#1976D2"
                 android:text="Download APK to Test"
                 android:textColor="@android:color/white"
-                android:backgroundTint="#1976D2"
-                android:layout_marginBottom="24dp" />
+                android:visibility="gone" />
 
             <!-- Voting Question -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Does this implementation work correctly and appear safe?"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="#333"
-                android:layout_marginBottom="8dp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Test the APK and vote"
-                android:textSize="14sp"
-                android:textColor="#666"
-                android:layout_marginBottom="24dp" />
 
             <!-- Voting Progress Options -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginBottom="24dp">
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="24dp"
+                android:orientation="vertical">
 
                 <!-- Yes Option - Progress Bar Style -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginBottom="16dp">
+                    android:layout_marginBottom="16dp"
+                    android:orientation="vertical">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="8dp">
+                        android:layout_marginBottom="8dp"
+                        android:orientation="horizontal">
 
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Yes"
-                            android:textSize="16sp"
-                            android:textColor="#333" />
+                            android:textColor="#333"
+                            android:textSize="16sp" />
 
                         <TextView
                             android:id="@+id/percentage_yes"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="75%"
-                            android:textSize="16sp"
                             android:textColor="#4CAF50"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
 
                     </LinearLayout>
 
                     <FrameLayout
+                        android:id="@+id/yes_progress_bar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
 
                         <View
                             android:layout_width="match_parent"
                             android:layout_height="8dp"
-                            android:background="#EEEEEE"
-                            android:layout_gravity="center_vertical" />
+                            android:layout_gravity="center_vertical"
+                            android:background="#EEEEEE" />
 
                         <View
                             android:id="@+id/yes_progress"
                             android:layout_width="0dp"
                             android:layout_height="8dp"
-                            android:background="#4CAF50"
-                            android:layout_gravity="center_vertical" />
+                            android:layout_gravity="center_vertical"
+                            android:background="#4CAF50" />
 
                     </FrameLayout>
 
@@ -184,50 +254,51 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginBottom="16dp">
+                    android:layout_marginBottom="16dp"
+                    android:orientation="vertical">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="8dp">
+                        android:layout_marginBottom="8dp"
+                        android:orientation="horizontal">
 
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="No"
-                            android:textSize="16sp"
-                            android:textColor="#333" />
+                            android:textColor="#333"
+                            android:textSize="16sp" />
 
                         <TextView
                             android:id="@+id/percentage_no"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="20%"
-                            android:textSize="16sp"
                             android:textColor="#F44336"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
 
                     </LinearLayout>
 
                     <FrameLayout
+                        android:id="@+id/no_progress_bar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
 
                         <View
                             android:layout_width="match_parent"
                             android:layout_height="8dp"
-                            android:background="#EEEEEE"
-                            android:layout_gravity="center_vertical" />
+                            android:layout_gravity="center_vertical"
+                            android:background="#EEEEEE" />
 
                         <View
                             android:id="@+id/no_progress"
                             android:layout_width="0dp"
                             android:layout_height="8dp"
-                            android:background="#F44336"
-                            android:layout_gravity="center_vertical" />
+                            android:layout_gravity="center_vertical"
+                            android:background="#F44336" />
 
                     </FrameLayout>
 
@@ -242,44 +313,45 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="8dp">
+                        android:layout_marginBottom="8dp"
+                        android:orientation="horizontal">
 
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Pending"
-                            android:textSize="16sp"
-                            android:textColor="#333" />
+                            android:textColor="#333"
+                            android:textSize="16sp" />
 
                         <TextView
                             android:id="@+id/percentage_pending"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="5%"
-                            android:textSize="16sp"
                             android:textColor="#9E9E9E"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
 
                     </LinearLayout>
 
                     <FrameLayout
+                        android:id="@+id/pending_progress_bar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
 
                         <View
                             android:layout_width="match_parent"
                             android:layout_height="8dp"
-                            android:background="#EEEEEE"
-                            android:layout_gravity="center_vertical" />
+                            android:layout_gravity="center_vertical"
+                            android:background="#EEEEEE" />
 
                         <View
                             android:id="@+id/pending_progress"
                             android:layout_width="0dp"
                             android:layout_height="8dp"
-                            android:background="#9E9E9E"
-                            android:layout_gravity="center_vertical" />
+                            android:layout_gravity="center_vertical"
+                            android:background="#9E9E9E" />
 
                     </FrameLayout>
 
@@ -292,29 +364,32 @@
                 android:id="@+id/voting_buttons_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:layout_marginHorizontal="12dp"
                 android:layout_marginBottom="16dp"
+                android:orientation="horizontal"
                 android:visibility="visible">
 
                 <Button
                     android:id="@+id/btn_vote_yes"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="0dp"
+                    android:layout_marginRight="4dp"
                     android:layout_weight="1"
-                    android:text="Vote Yes"
-                    android:textColor="@android:color/white"
                     android:backgroundTint="#4CAF50"
-                    android:layout_marginEnd="8dp" />
+                    android:text="Vote Yes"
+                    android:textColor="@android:color/white" />
 
                 <Button
                     android:id="@+id/btn_vote_no"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="0dp"
+                    android:layout_marginLeft="4dp"
                     android:layout_weight="1"
-                    android:text="Vote No"
-                    android:textColor="@android:color/white"
                     android:backgroundTint="#F44336"
-                    android:layout_marginStart="8dp" />
+                    android:text="Vote No"
+                    android:textColor="@android:color/white" />
 
             </LinearLayout>
             <!-- Claim Reward Button (Hidden by default) -->
@@ -322,10 +397,10 @@
                 android:id="@+id/btn_claim_reward"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:backgroundTint="#007BFF"
                 android:text="Claim Reward"
                 android:textColor="@android:color/white"
-                android:backgroundTint="#007BFF"
-                android:layout_marginBottom="16dp"
                 android:visibility="gone" />
 
 
@@ -333,9 +408,11 @@
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#F8F9FA"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="#F8F9FA">
+                app:cardElevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -347,21 +424,21 @@
                         android:id="@+id/votes_required_text"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="3 of 5 votes needed for approval"
-                        android:textSize="14sp"
-                        android:textColor="#666"
+                        android:layout_marginBottom="8dp"
                         android:gravity="center"
-                        android:layout_marginBottom="8dp" />
+                        android:text="3 of 5 votes needed for approval"
+                        android:textColor="#666"
+                        android:textSize="14sp" />
 
                     <TextView
                         android:id="@+id/already_voted_text"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="✓ You have already voted"
-                        android:textSize="14sp"
-                        android:textColor="#4CAF50"
-                        android:textStyle="bold"
                         android:gravity="center"
+                        android:text="✓ You have already voted"
+                        android:textColor="#4CAF50"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
                         android:visibility="gone" />
 
                 </LinearLayout>
