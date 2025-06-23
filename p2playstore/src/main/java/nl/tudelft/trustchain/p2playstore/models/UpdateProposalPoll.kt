@@ -30,6 +30,13 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
     val magnetLink: MagnetLink = MagnetUtils.parseMagnet(blockData.APP_MAGNET_LINK);
     val featureRequestId = blockData.FEATURE_REQUEST_ID
 
+    /**
+     * How much does the developer get transferred to their wallet (in Satoshi's) if this update is
+     * accepted? Note that this should be identical to the reward amount in the corresponding
+     * feature request.
+     */
+    val rewardAmount = blockData.SW_TRANSFER_FUNDS_AMOUNT
+
     companion object {
         /**
          * Tries to find a join proposal with the given proposal ID.

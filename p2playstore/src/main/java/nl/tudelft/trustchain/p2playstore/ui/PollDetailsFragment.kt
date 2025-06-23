@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
+import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_NO_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BLOCK
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentPollDetailsBinding
@@ -141,9 +142,14 @@ class PollDetailsFragment : BaseFragment() {
             binding.joinRequestCard.visibility = View.VISIBLE
             binding.joinRequestPeer.text = this.joinPoll!!.requestingUser.substring(0, 8)
             binding.feeAmount.text = "${this.app.getEntranceFee()} sats"
-        } else {
+        }
+        else {
             binding.updateProposalCard.visibility = View.VISIBLE
             binding.joinRequestCard.visibility = View.GONE
+            binding.developerName.text = updatePoll!!.block.publicKey.toHex().substring(0, 8)
+            binding.rewardAmount.text = "${updatePoll!!.rewardAmount} sats"
+            binding.updateName.text = updatePoll!!.name
+            binding.updateDescription.text = updatePoll!!.description
         }
     }
 
