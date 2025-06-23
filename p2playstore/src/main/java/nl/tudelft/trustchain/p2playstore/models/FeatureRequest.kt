@@ -4,6 +4,7 @@ import UpdateProposalPoll
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestData
@@ -14,8 +15,12 @@ import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransacti
 /**
  * This class represents a single feature request for an app
  */
-class FeatureRequest(private val block: TrustChainBlock) {
+class FeatureRequest(val block: TrustChainBlock) {
     private val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
+
+    init {
+        assert(block.type == FEATURE_REQUEST_BLOCK)
+    }
 
     val daoData: FeatureRequestData = FeatureRequestTransactionData(block.transaction).getData()
 
@@ -53,5 +58,21 @@ class FeatureRequest(private val block: TrustChainBlock) {
                 catch (e: Throwable) { false }
             }
             .map { b -> UpdateProposalPoll(b) }
+    }
+
+    companion object {
+        /**
+         * Tries to find a feature request with the given ID
+         */
+        fun findById(featureRequestId: String): FeatureRequest? {
+            val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
+            val block = trustChain.database.getBlocksWithType(FEATURE_REQUEST_BLOCK)
+                .find { b ->
+                    val data = FeatureRequestTransactionData(b.transaction).getData()
+                    data.FEATURE_REQUEST_ID == featureRequestId
+                }
+            if (block == null) return null
+            return FeatureRequest(block)
+        }
     }
 }
