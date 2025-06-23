@@ -200,12 +200,17 @@ class P2playApp(val block: TrustChainBlock) {
     /**
      * Returns a list of all feature requests for this app, including the ones for which an
      * update/implementation has already been proposed and accepted.
+     * 
+     * Note that the returned list is ordered by creation date with the newest fearure request
+     * always being the first item in the list.
      */
     fun getFeatureRequests(): List<FeatureRequest> {
         val blocks = trustChain.database.getBlocksWithType(FEATURE_REQUEST_BLOCK)
         return blocks
             .mapNotNull { b -> try { FeatureRequest(b) } catch (e: Throwable) { null } }
             .filter { b -> b.doaId == this.daoId }
+            .sortedBy { b -> b.block.insertTime }
+            .reversed()
     }
 
     /**
