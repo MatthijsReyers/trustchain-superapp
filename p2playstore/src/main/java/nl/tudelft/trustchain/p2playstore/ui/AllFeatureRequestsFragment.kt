@@ -57,7 +57,6 @@ class AllFeatureRequestsFragment : BaseFragment() {
         }
         catch (e: Throwable) {
             Log.e("P2PlayStore", "Error updating UI after new block: ${e.message}")
-            findNavController().navigateUp()
         }
     }
 
