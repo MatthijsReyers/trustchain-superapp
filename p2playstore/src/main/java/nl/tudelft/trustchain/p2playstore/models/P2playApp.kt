@@ -43,15 +43,8 @@ class P2playApp(val block: TrustChainBlock) {
     val name: String get() = this.daoData.APP_NAME
     val description: String get() = this.daoData.APP_DESCRIPTION
     val category: String get() = this.daoData.APP_CATEGORY
+    val icon: Int get() = iconFromIconId(this.daoData.APP_ICON)
     val magnetLink: MagnetLink = MagnetUtils.parseMagnet(this.daoData.APP_MAGNET_LINK)
-    val icon: Int get() = iconFromIconId(
-        try {
-            this.block.transaction["iconIndex"]
-        } catch (e: Exception) {
-            Log.w("P2playApp", "Could not get iconIndex from block transaction: ${e.message}")
-            3 // Default icon index
-        }
-    )
 
     /**
      * Unique number to identify a specific update/version of the app, note that these numbers are
