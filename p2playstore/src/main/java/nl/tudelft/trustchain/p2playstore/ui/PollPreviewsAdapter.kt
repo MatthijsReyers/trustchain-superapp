@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import nl.tudelft.trustchain.p2playstore.databinding.PollPreviewBinding
+import nl.tudelft.trustchain.p2playstore.databinding.ItemPollPreviewBinding
 import nl.tudelft.trustchain.p2playstore.models.Poll
 
 class PollPreviewsAdapter()
@@ -19,7 +19,7 @@ class PollPreviewsAdapter()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PollPreviewHolder {
-        val binding = PollPreviewBinding.inflate(
+        val binding = ItemPollPreviewBinding.inflate(
             LayoutInflater.from(parent.context),
             parent,
             false

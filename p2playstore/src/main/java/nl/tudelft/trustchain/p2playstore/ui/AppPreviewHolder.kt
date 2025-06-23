@@ -4,10 +4,10 @@ import android.os.Bundle
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import nl.tudelft.trustchain.p2playstore.R
-import nl.tudelft.trustchain.p2playstore.databinding.AppPreviewBinding
+import nl.tudelft.trustchain.p2playstore.databinding.ItemAppPreviewBinding
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 
-class AppPreviewHolder(private val binding: AppPreviewBinding)
+class AppPreviewHolder(private val binding: ItemAppPreviewBinding)
     : RecyclerView.ViewHolder(binding.root)
 {
     fun bind(app: P2playApp) {

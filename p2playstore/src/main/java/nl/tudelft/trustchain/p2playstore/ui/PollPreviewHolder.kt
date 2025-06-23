@@ -6,14 +6,14 @@ import android.view.View
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import nl.tudelft.trustchain.p2playstore.R
-import nl.tudelft.trustchain.p2playstore.databinding.PollPreviewBinding
+import nl.tudelft.trustchain.p2playstore.databinding.ItemPollPreviewBinding
 import nl.tudelft.trustchain.p2playstore.models.DaoJoinPoll
 import nl.tudelft.trustchain.p2playstore.models.Poll
 import kotlin.math.max
 import kotlin.math.roundToInt
 
 class PollPreviewHolder(
-    private val binding: PollPreviewBinding,
+    private val binding: ItemPollPreviewBinding,
     private val dest: Int = R.id.action_allVotingPollsFragment_to_featureVotingFragment
 ) : RecyclerView.ViewHolder(binding.root) {
 

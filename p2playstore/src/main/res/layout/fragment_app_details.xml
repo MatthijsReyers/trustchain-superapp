@@ -290,14 +290,14 @@
         <!-- Voting Progress Card -->
         <include
             android:id="@+id/join_proposal"
-            layout="@layout/poll_preview"
+            layout="@layout/item_poll_preview"
             android:visibility="gone"
             tools:visibility="visible" />
 
         <!-- Pending Feature Requests -->
         <include
             android:id="@+id/update_proposal"
-            layout="@layout/poll_preview"
+            layout="@layout/item_poll_preview"
             android:visibility="gone"
             tools:visibility="visible" />
 

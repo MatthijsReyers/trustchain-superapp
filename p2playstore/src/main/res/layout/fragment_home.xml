@@ -65,7 +65,7 @@
             android:paddingStart="0dp"
             android:paddingEnd="16dp"
             tools:itemCount="4"
-            tools:listitem="@layout/app_preview" />
+            tools:listitem="@layout/item_app_preview" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -94,7 +94,7 @@
             android:paddingStart="0dp"
             android:paddingEnd="16dp"
             tools:itemCount="3"
-            tools:listitem="@layout/app_preview" >
+            tools:listitem="@layout/item_app_preview" >
 
         </androidx.recyclerview.widget.RecyclerView>
     </LinearLayout>
