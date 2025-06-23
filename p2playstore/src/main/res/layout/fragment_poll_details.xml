@@ -196,20 +196,14 @@
                 android:layout_marginBottom="24dp"
                 android:orientation="vertical">
 
-                <TextView
-                    android:layout_width="40dp"
+                <!-- Yes Option - Progress Bar Style -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     android:orientation="vertical">
 
-                <FrameLayout
-                    android:layout_width="0dp"
-                    android:layout_height="8dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:layout_marginEnd="12dp">
-
-                    <View
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
@@ -314,19 +308,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="No"
-                    android:textColor="#F44336"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:orientation="vertical">
 
-                <FrameLayout
-                    android:layout_width="0dp"
-                    android:layout_height="8dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:layout_marginEnd="12dp">
-
-                    <View
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
@@ -349,22 +333,12 @@
                             android:textSize="16sp"
                             android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/no_percentage"
-                    android:layout_width="40dp"
-                    android:layout_height="wrap_content"
-                    android:text="15%"
-                    android:textColor="#F44336"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:gravity="end" />
-            </LinearLayout>
+                    </LinearLayout>
 
                     <FrameLayout
                         android:id="@+id/pending_progress_bar"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="#E0E0E0" />
+                        android:layout_height="wrap_content">
 
                         <View
                             android:layout_width="match_parent"
@@ -383,15 +357,6 @@
 
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/pending_percentage"
-                    android:layout_width="40dp"
-                    android:layout_height="wrap_content"
-                    android:text="10%"
-                    android:textColor="#9E9E9E"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:gravity="end" />
             </LinearLayout>
 
             <!-- Vote Buttons -->
