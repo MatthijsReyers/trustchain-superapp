@@ -98,7 +98,7 @@ class DAOJoinHelper {
      *  - It takes some time before the shared wallet is accepted on the bitcoin blockchain.
      * @param sharedWalletData data of the shared wallet that you want to join.
      */
-    private fun createBitcoinSharedWalletForJoining(sharedWalletData: JoinDaoData): String {
+    private fun createBitcoinSharedWalletForJoining(sharedWalletData: JoinDoaData): String {
         val walletManager = WalletManagerAndroid.getInstance()
 
         val oldTransaction = sharedWalletData.SW_TRANSACTION_SERIALIZED
@@ -207,7 +207,7 @@ class DAOJoinHelper {
         fun joinAskBlockReceived(
             oldTransactionSerialized: String,
             block: TrustChainBlock,
-            joinBlock: JoinDaoData,
+            joinBlock: JoinDoaData,
             myPublicKey: ByteArray,
             votedInFavor: Boolean,
             context: Context

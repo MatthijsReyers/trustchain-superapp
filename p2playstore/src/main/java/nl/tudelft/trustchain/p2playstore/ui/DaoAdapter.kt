@@ -17,9 +17,9 @@ class DaoAdapter(private val daoList: List<P2playApp>)
     {
         fun bind(app: P2playApp) {
             binding.appName.text = app.name
-            binding.appDeveloper.text = "${app.getDaoMemberCount()} members"
+            binding.appDeveloper.text = "${app.getDoaMemberCount()} members"
             binding.appEntranceFee.text = "Fee: ${app.getEntranceFee()}"
-            binding.appVotingThreshold.text = "Threshold: ${app.getDaoVoteThreshold()}%"
+            binding.appVotingThreshold.text = "Threshold: ${app.getDoaVoteThreshold()}%"
             binding.appIcon.setImageResource(app.icon)
             itemView.setOnClickListener {
                 val bundle = Bundle().apply {

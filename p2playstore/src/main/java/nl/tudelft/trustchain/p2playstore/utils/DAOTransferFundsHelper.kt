@@ -108,7 +108,7 @@ class DAOTransferFundsHelper {
      */
     fun transferFunds(
         myPeer: Peer,
-        walletData: JoinDaoData,
+        walletData: JoinDoaData,
         walletBlockData: TrustChainTransaction,
         blockData: ProposeUpdateData,
         responses: List<VoteYesData>,
@@ -168,7 +168,7 @@ class DAOTransferFundsHelper {
      */
     private fun broadcastTransferFundSuccessful(
         myPeer: Peer,
-        walletData: JoinDaoData,
+        walletData: JoinDoaData,
         oldBlockData: UpdateAcceptedTransactionData,
         serializedTransaction: String
     ) {
