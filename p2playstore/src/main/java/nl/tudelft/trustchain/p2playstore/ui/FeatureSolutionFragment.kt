@@ -43,7 +43,7 @@ class FeatureSolutionFragment : BaseFragment() {
             setupClickListeners()
         }
         catch (err: Throwable) {
-            android.util.Log.e("P2PlayStore", "Failed to load feature request: $err")
+            Log.e("P2PlayStore", "Failed to load feature request: $err")
             findNavController().navigateUp()
         }
     }
@@ -71,7 +71,7 @@ class FeatureSolutionFragment : BaseFragment() {
         }
     }
 
-    suspend private fun submitSolution() {
+    private fun submitSolution() {
         Log.d("P2PlayStore", "Submitting solution")
 
         val title = binding.etSolutionTitle.text.toString().trim()
@@ -96,7 +96,7 @@ class FeatureSolutionFragment : BaseFragment() {
 
         if (developerBitcoinAddress.isEmpty()) {
             Toast.makeText(context, "Please enter your Bitcoin address to receive the reward.", Toast.LENGTH_LONG).show()
-            android.util.Log.e("FeatureSolutionFragment", "Developer Bitcoin address is missing or a placeholder!")
+            Log.e("FeatureSolutionFragment", "Developer Bitcoin address is missing or a placeholder!")
             return
         }
 
@@ -106,27 +106,28 @@ class FeatureSolutionFragment : BaseFragment() {
             Address.fromString(params, developerBitcoinAddress)
         } catch (e: Exception) {
             Toast.makeText(context, "Invalid Bitcoin address format.", Toast.LENGTH_LONG).show()
-            android.util.Log.e("FeatureSolutionFragment", "Invalid Bitcoin address format: ${e.message}")
+            Log.e("FeatureSolutionFragment", "Invalid Bitcoin address format: ${e.message}")
             return
         }
 
+
         try {
-            this.featureRequest.submitSolution(
-                title = title,
-                description = description,
-                magnetLink = magnetLink,
+            // Use the community method to create the block
+            p2playStore.createFeatureSolution(
+                daoId = daoUniqueId,
+                featureRequestId = featureId,
+                solutionTitle = title,
+                solutionDescription = description,
+                apkMagnetLink = magnetLink,
                 developerBitcoinAddress = developerBitcoinAddress,
             )
 
-            Toast.makeText(
-                context,
-                "Solution submitted successfully!",
-                Toast.LENGTH_LONG
-            ).show()
+            Toast.makeText(context, "Solution submitted successfully! DAO members can now vote.", Toast.LENGTH_LONG).show()
+            Log.d("FeatureSolutionFragment", "Solution submitted: $title for Feature $featureId in DAO ${daoUniqueId}Id")
             findNavController().navigateUp()
 
         } catch (e: Exception) {
-            android.util.Log.e("P2PlayStore", "Error submitting solution: ${e.message}")
+            Log.e("FeatureSolutionFragment", "Error submitting solution: ${e.message}")
             Toast.makeText(context, "Error submitting solution", Toast.LENGTH_SHORT).show()
         }
     }

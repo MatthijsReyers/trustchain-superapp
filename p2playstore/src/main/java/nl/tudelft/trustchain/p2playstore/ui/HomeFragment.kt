@@ -64,14 +64,6 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                 delay(60_000 * 5)
             }
         }
-
-//        val wallet = WalletManagerAndroid.getInstance()
-//        val amountBTC: Double = 0.05
-//        val destination = "mgVz64BgaRMpKosY1fj1QCzETo2qMoLNpE"
-//        val address = Address.fromString(wallet.params, destination)
-//        val amountToSend = Coin.parseCoin(amountBTC.toString())
-//        val sendRequest = SendRequest.to(address, amountToSend)
-//        val sendResult = wallet.kit.wallet().sendCoins(sendRequest)
     }
 
     override suspend fun onChainUpdated(block: TrustChainBlock) {

@@ -27,7 +27,6 @@ class FeatureRequestTransactionData(data: JsonObject) : BlockTransactionData(
         description: String,
         reward: Long,
         requesterPublicKey: String,
-//        requesterBitcoinAddress: String,
     ) : this(
         BlockUtils.objectToJsonObject(
             FeatureRequestData(
@@ -37,7 +36,6 @@ class FeatureRequestTransactionData(data: JsonObject) : BlockTransactionData(
                 description,
                 reward,
                 requesterPublicKey,
-//                requesterBitcoinAddress,
             )
         )
     )

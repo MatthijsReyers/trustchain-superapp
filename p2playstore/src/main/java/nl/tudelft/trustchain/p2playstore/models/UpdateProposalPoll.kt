@@ -18,11 +18,12 @@ import nl.tudelft.trustchain.p2playstore.models.Poll
 import nl.tudelft.trustchain.p2playstore.transactionData.BaseData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
-import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.VotingPollType
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
+import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import org.bitcoinj.core.Address
@@ -43,17 +44,18 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
     override val requestingUser = block.publicKey.toHex()
     override val votesRequired: Int = blockData.SW_SIGNATURES_REQUIRED
     override val receivingUser = blockData.SW_RECEIVER_PK
+    override val pollType = VotingPollType.FEATURE_SOLUTION
 
-    val name: String = blockData.APP_NAME;
-    val description: String = blockData.APP_DESCRIPTION;
-    val category: String = blockData.APP_CATEGORY;
-    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(blockData.APP_MAGNET_LINK);
+    val name: String = blockData.APP_NAME
+    val description: String = blockData.APP_DESCRIPTION
+    val category: String = blockData.APP_CATEGORY
+    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(blockData.APP_MAGNET_LINK)
     val featureRequestId = blockData.FEATURE_REQUEST_ID
 
     /**
      * A bitcoin wallet address? Where the reward funds should end up after this transaction.
      */
-    val rewardDestination = blockData.SW_TRANSFER_FUNDS_TARGET_SERIALIZED
+    private val rewardDestination = blockData.SW_TRANSFER_FUNDS_TARGET_SERIALIZED
 
     /**
      * How much does the developer get transferred to their wallet (in Satoshi's) if this update is
@@ -61,6 +63,10 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
      * feature request.
      */
     val rewardAmount = blockData.SW_TRANSFER_FUNDS_AMOUNT
+
+    override fun isUserDeveloper(): Boolean {
+        return trustChain.myPeer.publicKey.pub().toString() == blockData.DEVELOPER_PUBLIC_KEY
+    }
 
     /**
      * Checks if there has actually an UPDATE_ACCEPTED block been created for this proposal. Note
@@ -78,6 +84,118 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
             }
             .filter { app -> app.daoId == this.daoId }
             .any { app -> app.magnetLink == this.magnetLink }
+    }
+
+    /**
+     * Publishes the update by initiating the Bitcoin transfer of reward funds.
+     * This method contains the core logic for the transfer process.
+     */
+    fun triggerRewardTransfer(
+        context: Context,
+        activity: Activity
+    ) {
+        Log.d("UpdateProposalPoll", "triggerRewardTransfer called for poll ${proposalId}")
+
+        val walletManager = WalletManagerAndroid.getInstance()
+        val p2pStoreCommunity = P2pStoreCommunity()
+
+        // Get votes
+        val yesVotes = p2pStoreCommunity.fetchProposalResponses(daoId, proposalId)
+        val noVotes = p2pStoreCommunity.fetchNegativeProposalResponses(daoId, proposalId)
+        val allVoteResponses: List<BaseData> = yesVotes + noVotes
+
+        // Get latest JOIN block for DAO state
+        val latestJoinBlock = p2pStoreCommunity.fetchLatestJoinBlockByDaoId(daoId)
+            ?: run {
+                Log.e("UpdateProposalPoll", "Cannot find latest JOIN block for DAO $daoId")
+                activity.runOnUiThread {
+                    Toast.makeText(context, "Error: Could not find latest DAO join state.", Toast.LENGTH_SHORT).show()
+                }
+                throw IllegalStateException("Latest JOIN block not found")
+            }
+
+        val daoWalletStateForTransfer = JoinDaoTransactionData(latestJoinBlock.transaction).getData()
+        val totalDaoMembers = daoWalletStateForTransfer.SW_TRUSTCHAIN_PKS.size
+        val votingThresholdPercentage = daoWalletStateForTransfer.SW_VOTING_THRESHOLD
+        val requiredSignaturesForApproval = BlockUtils.percentageToIntThreshold(totalDaoMembers, votingThresholdPercentage)
+
+        // Verify enough votes
+        if (yesVotes.size < requiredSignaturesForApproval) {
+            Log.w("UpdateProposalPoll", "Insufficient YES votes. Needed: $requiredSignaturesForApproval, Have: ${yesVotes.size}")
+            activity.runOnUiThread {
+                Toast.makeText(context, "Reward transfer not yet possible. Need $requiredSignaturesForApproval YES votes, have ${yesVotes.size}.", Toast.LENGTH_LONG).show()
+            }
+            throw IllegalStateException("Insufficient YES votes for approval")
+        }
+
+        // Check DAO balance
+        val currentDaoBalance = try {
+            val latestDaoWalletBlock = p2pStoreCommunity.fetchLatestSharedWalletBlockByDaoId(daoId)
+            if (latestDaoWalletBlock != null) {
+                val serializedTx = when (latestDaoWalletBlock.type) {
+                    P2pStoreCommunity.JOIN_BLOCK -> JoinDaoTransactionData(latestDaoWalletBlock.transaction).getData().SW_TRANSACTION_SERIALIZED
+                    UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(latestDaoWalletBlock.transaction).getData().SW_TRANSACTION_SERIALIZED
+                    P2pStoreCommunity.PROPOSE_UPDATE_BLOCK -> ProposeUpdateTransactionData(latestDaoWalletBlock.transaction).getData().SW_TRANSACTION_SERIALIZED // For robustness
+                    else -> null
+                }
+                if (serializedTx != null) {
+                    nl.tudelft.trustchain.currencyii.util.taproot.CTransaction().deserialize(serializedTx.hexToBytes()).vout.find { it.scriptPubKey.size == 35 }?.nValue ?: 0L
+                } else {
+                    0L
+                }
+            } else {
+                0L
+            }
+        } catch (e: Exception) {
+            Log.e("UpdateProposalPoll", "Error fetching DAO balance: ${e.message}")
+            0L
+        }
+
+        if (currentDaoBalance < rewardAmount) {
+            Log.w("UpdateProposalPoll", "Insufficient DAO funds. Current: $currentDaoBalance, Needed: $rewardAmount")
+            activity.runOnUiThread {
+                Toast.makeText(context, "DAO wallet has insufficient funds ($currentDaoBalance satoshis) to pay the reward ($rewardAmount satoshis).", Toast.LENGTH_LONG).show()
+            }
+            throw IllegalStateException("Insufficient DAO funds for reward")
+        }
+
+        // Validate Bitcoin address
+        try {
+            val params = walletManager.params
+            Address.fromString(params, rewardDestination)
+        } catch (e: Exception) {
+            Log.e("UpdateProposalPoll", "Invalid Bitcoin address: ${e.message}")
+            activity.runOnUiThread {
+                Toast.makeText(context, "Invalid developer Bitcoin address format.", Toast.LENGTH_LONG).show()
+            }
+            throw IllegalArgumentException("Invalid Bitcoin address format")
+        }
+
+        // Execute transfer
+        val overallLatestDaoBlock = p2pStoreCommunity.fetchLatestSharedWalletBlockByDaoId(daoId)
+            ?: run {
+                Log.e("UpdateProposalPoll", "Cannot find overall latest DAO block")
+                activity.runOnUiThread {
+                    Toast.makeText(context, "Error: Could not find overall latest DAO state.", Toast.LENGTH_SHORT).show()
+                }
+                throw IllegalStateException("Overall latest DAO block not found")
+            }
+
+        p2pStoreCommunity.transferFunds(
+            walletData = daoWalletStateForTransfer,
+            walletBlockData = overallLatestDaoBlock.transaction,
+            blockData = blockData,
+            voteResponses = allVoteResponses,
+            receiverAddress = rewardDestination,
+            satoshiAmount = rewardAmount,
+            context = context,
+            activity = activity
+        )
+
+        Log.i("UpdateProposalPoll", "DAO fund transfer for reward initiated successfully for proposal $proposalId")
+        activity.runOnUiThread {
+            Toast.makeText(context, "Reward transfer from DAO wallet initiated.", Toast.LENGTH_LONG).show()
+        }
     }
 
     fun publishUpdate(
@@ -204,7 +322,6 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
         // Create an UPDATE_ACCEPTED_BLOCK for the successful transfer with app metadata
         val updateAcceptedData = UpdateAcceptedTransactionData(
             this.daoId,
-            this.featureRequestId,
             serializedTransaction,
             this.rewardAmount,
             latestJoinBlockData.SW_TRUSTCHAIN_PKS,

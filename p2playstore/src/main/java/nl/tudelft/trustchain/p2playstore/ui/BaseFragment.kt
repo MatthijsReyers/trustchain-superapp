@@ -13,10 +13,7 @@ import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.BlockListener
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
-import nl.tudelft.trustchain.common.DemoCommunity
-import nl.tudelft.trustchain.common.MarketCommunity
 import nl.tudelft.trustchain.common.util.TrustChainHelper
-import nl.tudelft.trustchain.currencyii.sharedWallet.SWJoinBlockTransactionData
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 
 abstract class BaseFragment(

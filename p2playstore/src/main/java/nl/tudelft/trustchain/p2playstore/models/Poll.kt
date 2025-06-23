@@ -1,23 +1,17 @@
 package nl.tudelft.trustchain.p2playstore.models
 
-import android.content.Context
-import android.util.Log
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import android.content.res.Resources
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.VotingPollType
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
-import nl.tudelft.trustchain.p2playstore.utils.DAOJoinHelper
-import nl.tudelft.trustchain.p2playstore.utils.DAOTransferFundsHelper
 
 abstract class Poll(val block: TrustChainBlock) {
     protected val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
@@ -37,17 +31,22 @@ abstract class Poll(val block: TrustChainBlock) {
     /**
      * Public key of the user/ipv8 peer that created this poll
      */
-    abstract val requestingUser: String;
+    abstract val requestingUser: String
 
     /**
      * Public key of the user which needs to vote yes/no on this specific block.
      */
-    abstract val receivingUser: String;
+    abstract val receivingUser: String
 
     /**
      * Number of votes required for the proposal in this poll to go through.
      */
     abstract val votesRequired: Int
+
+    /**
+     * The type of voting poll.
+     */
+    abstract val pollType: VotingPollType
 
     /**
      * Amount of people/peers that have voted in this poll.
@@ -67,7 +66,7 @@ abstract class Poll(val block: TrustChainBlock) {
      *
      * Note: remember not everyone needs to vote in order for a vote to go through.
      */
-    val pendingVotes: Int get() = votesRequired - votes
+    private val pendingVotes: Int get() = votesRequired - votes
 
     val yesPercentage: Float get() = (getYesVotes().size) / votesRequired.toFloat()
 
@@ -103,14 +102,14 @@ abstract class Poll(val block: TrustChainBlock) {
             data.SW_UNIQUE_PROPOSAL_ID == proposalId
         }
 
-        val myKey = trustChain.myPeer.publicKey.keyToBin();
+        val myKey = trustChain.myPeer.publicKey.keyToBin()
         return votes.firstOrNull { b -> b.publicKey.contentEquals(myKey) }
     }
 
     /**
      * Has this user already voted in the poll?
      */
-    fun hasVoted(): Boolean = this.getMyVote() != null
+    fun hasUserVoted(): Boolean = this.getMyVote() != null
 
     /**
      * Gets all the agreement signatures/votes.
@@ -153,64 +152,34 @@ abstract class Poll(val block: TrustChainBlock) {
 
     fun getAllVotes() = (this.getYesVotes() + this.getNoVotes())
 
-    /**
-     * Submit a vote for the poll, note that calling this function if you are not a member will do
-     * nothing but if you call it rapidly many times while the chain is still updating you can
-     * create multiple vote blocks.
-     */
-    suspend fun submitVote(isYes: Boolean, context: Context) {
-        android.util.Log.d("P2PlayStore", "Voting $isYes on proposal $proposalId")
+    fun isUserMember(): Boolean {
+        val myPublicKey = trustChain.myPeer.publicKey.keyToBin().toHex()
+        // Get the latest P2playApp instance to get the most up-to-date member list
+        val latestApp = getApp().getLatestVersion()
+        return latestApp.isDaoMember()
+    }
 
-        // Users are only allowed to vote on proposal blocks for which they are the recipient
-        if (!this.isReceivingUser) {
-            Log.w(
-                "P2PlayStore",
-                "Bug found! User tried to vote on a block for which they are not the recipient"
-            )
-            return
+    open fun isUserDeveloper(): Boolean = false // Default for general polls
+
+    fun canUserVote(): Boolean {
+        return isReceivingUser && isPending && !hasUserVoted() && !isUserDeveloper()
+    }
+
+    fun getPollStatusText(resources: Resources): String {
+        return when {
+            isApproved -> "Approved"
+            isDenied -> "Voting Closed - Not Approved"
+            hasUserVoted() -> "✓ You voted ${if (getMyVote()?.type == P2pStoreCommunity.VOTE_YES_BLOCK) "Yes" else "No"}"
+            isUserMember() -> "${votes} of ${getApp().getDoaMemberCount()} members voted"
+            else -> "${votes} of ${getApp().getDoaMemberCount()} members voted"
         }
+    }
 
-        // Only create one vote block per user/peer
-        if (this.hasVoted()) {
-            Log.w(
-                "P2PlayStore",
-                "Bug found! Ignoring vote because user has already voted"
-            )
-            return
-        }
-
-        val joinBlock = this.getApp().getLatestJoin()
-        val data = JoinDaoTransactionData(joinBlock.transaction).getData()
-
-        val myPublicKey = trustChain.myPeer.publicKey.keyToBin()
-
-        // Use the community method to create the vote block
-        // (runs on IO dispatcher due to withContext)
-        withContext(Dispatchers.IO) {
-            when (block.type) {
-                JOIN_REQUEST_BLOCK -> {
-                    val oldTransaction = data.SW_TRANSACTION_SERIALIZED
-                    DAOJoinHelper.joinAskBlockReceived(
-                        oldTransaction,
-                        block,
-                        data,
-                        myPublicKey,
-                        isYes,
-                        context
-                    )
-                }
-                PROPOSE_UPDATE_BLOCK -> {
-                    DAOTransferFundsHelper.transferFundsBlockReceived(
-                        block,
-                        data,
-                        myPublicKey,
-                        isYes,
-                        context,
-                        trustChain
-                    )
-                }
-                else -> throw IllegalArgumentException("Unknown proposal type: ${block.type}")
-            }
+    fun getPollStatusColor(resources: Resources): Int {
+        return when {
+            isApproved || hasUserVoted() -> resources.getColor(android.R.color.holo_green_dark, null)
+            isDenied -> resources.getColor(android.R.color.darker_gray, null)
+            else -> resources.getColor(android.R.color.darker_gray, null)
         }
     }
 }

@@ -54,7 +54,7 @@ class AllPollsFragment : BaseFragment() {
         }
         catch (err: Throwable) {
             Log.e("P2PlayStore", "Failed to load polls: $err")
-         }
+        }
     }
 
     override fun onDestroyView() {
@@ -82,4 +82,3 @@ class AllPollsFragment : BaseFragment() {
         }
     }
 }
-

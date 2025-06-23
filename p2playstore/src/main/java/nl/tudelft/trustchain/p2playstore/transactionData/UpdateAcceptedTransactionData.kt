@@ -8,7 +8,6 @@ import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 data class UpdateAcceptedData(
     override var DAO_ID: String,
-    override var FEATURE_REQUEST_ID: String,
     var SW_UNIQUE_PROPOSAL_ID: String,
     var SW_TRANSACTION_SERIALIZED: String,
     var SW_TRUSTCHAIN_PKS: ArrayList<String>,
@@ -21,7 +20,7 @@ data class UpdateAcceptedData(
     override var APP_CATEGORY: String,
     override var APP_ICON: Int,
     override var APP_MAGNET_LINK: String
-) : AppMetaData, BaseFeatureRequestData
+) : AppMetaData
 
 class UpdateAcceptedTransactionData(data: JsonObject) : BlockTransactionData(
     data,
@@ -57,7 +56,6 @@ class UpdateAcceptedTransactionData(data: JsonObject) : BlockTransactionData(
 
     constructor(
         uniqueId: String,
-        featureRequest: String,
         transactionSerialized: String,
         satoshiAmount: Long,
         trustChainPks: ArrayList<String>,
@@ -74,7 +72,6 @@ class UpdateAcceptedTransactionData(data: JsonObject) : BlockTransactionData(
         BlockUtils.objectToJsonObject(
             UpdateAcceptedData(
                 uniqueId,
-                featureRequest,
                 uniqueProposalId,
                 transactionSerialized,
                 trustChainPks,

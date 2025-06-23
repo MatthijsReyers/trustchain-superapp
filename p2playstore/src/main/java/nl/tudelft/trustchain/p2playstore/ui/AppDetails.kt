@@ -14,6 +14,7 @@ import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
@@ -29,8 +30,7 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BL
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
-import nl.tudelft.trustchain.p2playstore.utils.AppUtils
+import nl.tudelft.trustchain.p2playstore.transactionData.*
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
 
 import java.io.File
@@ -41,6 +41,7 @@ class AppDetails : BaseFragment() {
     private var _binding: FragmentAppDetailsBinding? = null
     private val binding get() = _binding!!
 
+    private lateinit var daoBlock: TrustChainBlock
     private lateinit var app: P2playApp
 
     private var joinPoll: PollPreviewHolder? = null
@@ -51,7 +52,7 @@ class AppDetails : BaseFragment() {
      * Integer between 0-100, this indicates how far along the torrent download for this apps
      * APK file is.
      */
-    private var downloadProgress: Int? = null;
+    private var downloadProgress: Int? = null
 
     /**
      * Has the torrent with the APK file for this app finished downloading yet?
@@ -64,7 +65,7 @@ class AppDetails : BaseFragment() {
         super.onCreate(bundle)
 
         // The previous fragment (home) tells us which block/app/version to show
-        val args = this.requireArguments();
+        val args = this.requireArguments()
         val publicKey = args.getByteArray("publicKey")!!
         val sequenceNumber = args.getInt("sequenceNumber").toUInt()
 
@@ -80,7 +81,7 @@ class AppDetails : BaseFragment() {
         }
 
         torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
-        this.downloadProgress = torrentManager.downloadProgress(this.app);
+        this.downloadProgress = torrentManager.downloadProgress(this.app)
     }
 
     override fun onCreateView(
@@ -119,14 +120,14 @@ class AppDetails : BaseFragment() {
      * we want to update the whole UI since votes/version updates might have changed.
      */
     override suspend fun onChainUpdated(block: TrustChainBlock) {
-        if (this._binding == null) return;
+        if (this._binding == null) return
 
         // TODO: Replace with BaseTransactionData class for better type safety, since there
         // is really no guarantee that it will be this kind of block.
         val data = JoinDaoTransactionData(block.transaction).getData()
 
         // Is the new block relevant for this app?
-        if (data.DAO_ID != app.daoId) return;
+        if (data.DAO_ID != app.daoId) return
 
         when (block.type) {
             // Was a new version of the app released?
@@ -166,7 +167,7 @@ class AppDetails : BaseFragment() {
     */
     private fun onInstallApp() {
         if (this.app.isDaoMember()) {
-            AppUtils.printToast(requireContext(), "You are already a member of this DAO.")
+            printToast(requireContext(), "You are already a member of this DAO.")
             Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but is already a member.")
             updateDownloadButton()
             updateUIBasedOnMembership()
@@ -174,7 +175,7 @@ class AppDetails : BaseFragment() {
         }
 
         if (this.app.isWaitingToJoin()) {
-            AppUtils.printToast(requireContext(), "You have a pending request to join this DAO.")
+            printToast(requireContext(), "You have a pending request to join this DAO.")
             Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but has a pending request.")
             updateDownloadButton()
             updateUIBasedOnMembership()
@@ -278,7 +279,7 @@ class AppDetails : BaseFragment() {
      * changes so we can update the UI.
      */
     private fun setupTorrentDownloadStatus() {
-        this.downloadProgress = torrentManager.downloadProgress(this.app);
+        this.downloadProgress = torrentManager.downloadProgress(this.app)
         if (!this.downloadFinished()) {
             lifecycleScope.launch {
                 torrentManager.onStarted.collect { link ->
@@ -319,6 +320,8 @@ class AppDetails : BaseFragment() {
         binding.appLatestVersion.text = this.app.version.toString()
         binding.appDescription.text = this.app.description
         binding.daoIcon.setImageResource(this.app.icon)
+
+        binding.daoDeveloper.text = "Creator: ${this.daoBlock.publicKey.toHex().take(8)}..."
     }
 
     /**
@@ -356,7 +359,7 @@ class AppDetails : BaseFragment() {
      * Updates the list of polls/proposals
      */
     private fun updatePolls() {
-        val joinPolls = this.app.getOpenDaoJoinPolls();
+        val joinPolls = this.app.getOpenDaoJoinPolls()
 
         if (joinPolls.isNotEmpty()) {
             this.joinPoll?.bind(joinPolls[0])
@@ -364,7 +367,7 @@ class AppDetails : BaseFragment() {
             this.joinPoll?.hide()
         }
 
-       val updatePolls = this.app.getOpenUpdatePolls();
+       val updatePolls = this.app.getOpenUpdatePolls()
        if (updatePolls.isNotEmpty()) {
            this.updatePoll?.bind(updatePolls[0])
        } else {
@@ -411,7 +414,7 @@ class AppDetails : BaseFragment() {
      */
     private fun finalizeJoinRequest() {
         // User is already a DAO member; do nothing.
-        if (this.app.isDaoMember()) return;
+        if (this.app.isDaoMember()) return
 
         // Has the user even created a join request/poll?
         val myPoll = this.app.getMyDaoJoinPoll() ?: return
@@ -482,11 +485,11 @@ class AppDetails : BaseFragment() {
         this.joinPoll = PollPreviewHolder(
             binding.joinProposal,
             R.id.action_appDetailsFragment_to_featureVotingFragment
-        );
+        )
         this.updatePoll = PollPreviewHolder(
             binding.updateProposal,
             R.id.action_appDetailsFragment_to_featureVotingFragment
-        );
+        )
         this.lastestFeatureRequest = FeatureRequestPreviewHolder(
             binding.latestFeatureRequest,
             R.id.action_appDetailsFragment_to_featureSolutionFragment
@@ -500,7 +503,7 @@ class AppDetails : BaseFragment() {
         binding.installOpenBtn.setOnClickListener {
             if (this.app.isDaoMember()) {
                 if (this.downloadProgress == null) {
-                    this.onRestartDownload();
+                    this.onRestartDownload()
                 }
                 else if (this.downloadFinished()) {
                     this.onOpenApp()

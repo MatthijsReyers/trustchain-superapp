@@ -132,7 +132,6 @@ class FeatureRequestFragment : BaseFragment() {
                 title = title,
                 description = description,
                 reward = reward,
-//                requesterBitcoinAddress = requesterBitcoinAddress
             )
 
             Toast.makeText(context, "Feature request submitted successfully! DAO members can now propose solutions.", Toast.LENGTH_SHORT).show()

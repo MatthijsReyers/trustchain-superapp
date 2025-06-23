@@ -6,6 +6,7 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.VotingPollType
 
 class DaoJoinPoll(block: TrustChainBlock): Poll(block) {
 
@@ -21,6 +22,7 @@ class DaoJoinPoll(block: TrustChainBlock): Poll(block) {
     override val requestingUser = block.publicKey.toHex()
     override val votesRequired: Int = blockData.SW_SIGNATURES_REQUIRED
     override val receivingUser = blockData.SW_RECEIVER_PK
+    override val pollType = VotingPollType.JOIN_REQUEST
 
     companion object {
         /**

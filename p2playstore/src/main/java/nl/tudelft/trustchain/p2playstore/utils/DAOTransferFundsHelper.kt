@@ -12,7 +12,6 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWResponseSignatureBlockTD
-import nl.tudelft.trustchain.currencyii.TrustChainHelper
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.currencyii.util.taproot.MuSig
 import nl.tudelft.trustchain.p2playstore.transactionData.*
@@ -29,98 +28,6 @@ class DAOTransferFundsHelper {
 
     private val community: TrustChainCommunity by lazy { getTrustChainCommunity() }
 
-//    /**
-//     * 3.1 Send a proposal block on trustchain to ask for the signatures.
-//     * Assumed that people agreed to the transfer.
-//     * @param myPeer - Peer, the user that wants to join the wallet
-//     * @param mostRecentWalletBlock - TrustChainBlock, describes the wallet where the transfer is from
-//     * @param receiverAddressSerialized - String, the address where the transaction needs to go
-//     * @param satoshiAmount - Long, the amount that needs to be transferred
-//     * @return the proposal block
-//     */
-//    fun proposeTransferFunds(
-//        myPeer: Peer,
-//        mostRecentWalletBlock: TrustChainBlock,
-//        receiverAddressSerialized: String,
-//        satoshiAmount: Long,
-//        // Parameters specific to Feature Solutions
-//        featureRequestId: String? = null,
-//        solutionTitle: String? = null,
-//        solutionDescription: String? = null,
-//        developerPublicKey: String? = null,
-//        apkMagnetLink: String? = null,
-//        appName: String,
-//        appDescription: String,
-//        appCategory: String,
-//        appIcon: Int
-//    ): ProposeUpdateTransactionData {
-//        val mostRecentBlockHash = mostRecentWalletBlock.calculateHash().toHex()
-//        val blockData = JoinDaoTransactionData(mostRecentWalletBlock.transaction).getData()
-//
-//        val total = blockData.SW_BITCOIN_PKS.size
-//        val requiredSignatures =
-//            BlockUtils.percentageToIntThreshold(total, blockData.SW_VOTING_THRESHOLD)
-//
-//
-//        val proposalID = BlockUtils.randomUUID()
-//
-//        var askSignatureBlockDataTemplate =
-//            ProposeUpdateTransactionData(
-//                uniqueId = blockData.DAO_ID,
-//                previousWalletBlockHash = mostRecentBlockHash,
-//                requiredSignatures = requiredSignatures,
-//                satoshiAmount = satoshiAmount,
-//                bitcoinPks = blockData.SW_BITCOIN_PKS,
-//                transferFundsAddressSerialized = receiverAddressSerialized,
-//                receiverPk = "",
-//                uniqueProposalId = proposalID,
-//                transactionSerialized = blockData.SW_TRANSACTION_SERIALIZED,
-//                name = appName,
-//                appDescription = appDescription,
-//                appCategory = appCategory,
-//                appIcon = appIcon,
-//                apkMagnetLink = apkMagnetLink ?: "",
-//            )
-//
-//
-//        for (swParticipantPk in blockData.SW_TRUSTCHAIN_PKS) {
-//            Log.i(
-//                "Coin",
-//                "Sending TRANSFER proposal (total: ${blockData.SW_TRUSTCHAIN_PKS.size}) to $swParticipantPk"
-//            )
-//
-//            // Create a copy for each recipient to set their specific receiverPk
-//            val askSignatureBlockData = ProposeUpdateTransactionData(
-//                daoId = askSignatureBlockDataTemplate.getData().DAO_ID,
-//                previousWalletBlockHash = askSignatureBlockDataTemplate.getData().SW_PREVIOUS_BLOCK_HASH,
-//                requiredSignatures = askSignatureBlockDataTemplate.getData().SW_SIGNATURES_REQUIRED,
-//                rewardAmount = askSignatureBlockDataTemplate.getData().SW_TRANSFER_FUNDS_AMOUNT,
-//                bitcoinPks = askSignatureBlockDataTemplate.getData().SW_BITCOIN_PKS,
-//                developerBitcoinAddress = askSignatureBlockDataTemplate.getData().SW_TRANSFER_FUNDS_TARGET_SERIALIZED,
-//                receiverPk = swParticipantPk, // Set specific receiver
-//                uniqueProposalId = askSignatureBlockDataTemplate.getData().SW_UNIQUE_PROPOSAL_ID,
-//                transactionSerialized = askSignatureBlockDataTemplate.getData().SW_TRANSACTION_SERIALIZED,
-//                appName = askSignatureBlockDataTemplate.getData().APP_NAME,
-//                appDescription = askSignatureBlockDataTemplate.getData().APP_DESCRIPTION,
-//                appCategory = askSignatureBlockDataTemplate.getData().APP_CATEGORY,
-//                appIcon = askSignatureBlockDataTemplate.getData().APP_ICON,
-//                apkMagnetLink = askSignatureBlockDataTemplate.getData().APP_MAGNET_LINK,
-//                featureRequestId = askSignatureBlockDataTemplate.getData().FEATURE_REQUEST_ID,
-//                solutionTitle = askSignatureBlockDataTemplate.getData().SOLUTION_TITLE,
-//                solutionDescription = askSignatureBlockDataTemplate.getData().SOLUTION_DESCRIPTION,
-//                developerPublicKey = askSignatureBlockDataTemplate.getData().DEVELOPER_PUBLIC_KEY
-//            )
-//
-//
-//            val transaction = mapOf("message" to askSignatureBlockData.getJsonString())
-//            community.createProposalBlock(
-//                askSignatureBlockData.blockType,
-//                transaction,
-//                myPeer.publicKey.keyToBin()
-//            )
-//        }
-//        return askSignatureBlockDataTemplate
-//    }
 
     /**
      * 3.2 Transfer funds from an existing shared wallet to a third-party. Broadcast bitcoin transaction.
@@ -227,7 +134,6 @@ class DAOTransferFundsHelper {
         // Create an UPDATE_ACCEPTED_BLOCK for the successful transfer with app metadata
         val updateAcceptedData = UpdateAcceptedTransactionData(
             latestJoinBlockData.DAO_ID,
-            proposalData.FEATURE_REQUEST_ID,
             serializedTransaction,
             proposalData.SW_TRANSFER_FUNDS_AMOUNT,
             latestJoinBlockData.SW_TRUSTCHAIN_PKS,
@@ -257,32 +163,35 @@ class DAOTransferFundsHelper {
          */
         fun transferFundsBlockReceived(
             block: TrustChainBlock, // This is the PROPOSE_UPDATE_BLOCK (Feature Solution Proposal)
-            latestDaoData: JoinDoaData, // Pass the latest DAO state data (should be JoinDoaData from latest JOIN block)
+            latestDaoData: ProposeUpdateData, // Pass the latest DAO state data (should be JoinDoaData from latest JOIN block)
             myPublicKey: ByteArray,
             votedInFavor: Boolean, // Indicates if the voter agreed with the proposal, not the Bitcoin transaction itself
             context: Context,
             community: TrustChainCommunity
         ) {
-            android.util.Log.d("P2PlayStore", "transferFundsBlockReceived")
-
             val blockData = ProposeUpdateTransactionData(block.transaction).getData()
 
             Log.i("P2P.DAOTransfer", "Signature request for transfer funds: ${blockData.SW_RECEIVER_PK}, me: ${myPublicKey.toHex()}")
-
-            if (blockData.SW_RECEIVER_PK != myPublicKey.toHex()) {
-                return
-            }
+//
+//            if (blockData.SW_RECEIVER_PK == myPublicKey.toHex()) {
+//                return
+//            }
 
             Log.i("P2P.DAOTransfer", "Signing transfer funds transaction: $blockData")
 
             val walletManager = WalletManagerAndroid.getInstance()
 
             // Determine the transaction and member data based on the latest DAO state block type
-            val (daoBitcoinPks, daoNoncePks, oldTransactionSerialized) = Triple(
-                latestDaoData.SW_BITCOIN_PKS,
-                latestDaoData.SW_NONCE_PKS,
-                latestDaoData.SW_TRANSACTION_SERIALIZED
-            )
+            val daoBitcoinPks = latestDaoData.SW_BITCOIN_PKS.mapNotNull { try { ECKey.fromPublicOnly(it.hexToBytes()) } catch (e: Exception) { Log.e("P2P.DAOTransfer", "Invalid Bitcoin PK from latest DAO state: $it", e); null } }
+            val daoNoncePks = latestDaoData.SW_NONCE_PKS.mapNotNull { try { ECKey.fromPublicOnly(it.hexToBytes()) } catch (e: Exception) { Log.e("P2P.DAOTransfer", "Invalid Nonce PK from latest DAO state: $it", e); null } }
+            val oldTransactionSerialized = latestDaoData.SW_TRANSACTION_SERIALIZED
+
+            if (daoBitcoinPks.size != latestDaoData.SW_BITCOIN_PKS.size || daoNoncePks.size != latestDaoData.SW_NONCE_PKS.size) {
+                Log.e("P2P.DAOTransfer", "transferFundsBlockReceived: Failed to parse all member PKs or Nonce PKs from latest DAO state. Cannot sign.")
+                // Optionally broadcast a negative vote due to data inconsistency? Or just log and return.
+                return
+            }
+
             if (oldTransactionSerialized.isNullOrEmpty()) {
                 Log.e("P2P.DAOTransfer", "Old transaction serialized data is null or empty. Cannot sign transfer.")
                 return // Cannot sign if we don't have the old transaction data
@@ -296,9 +205,12 @@ class DAOTransferFundsHelper {
             Log.d("P2P.DAOTransfer", "  receiverAddress: ${blockData.SW_TRANSFER_FUNDS_TARGET_SERIALIZED}")
             Log.d("P2P.DAOTransfer", "  satoshiAmount: ${blockData.SW_TRANSFER_FUNDS_AMOUNT}")
 
-            // Generate a new nonce regardless of vote outcome, as this nonce is specific to this vote block
-            val nonce = walletManager.addNewNonceKey(blockData.DAO_ID, context)
-            Log.d("P2P.DAOTransfer", "  nonce: ${nonce.second.getEncoded(true).toHex()}")
+            // Generate a new nonce *for this vote block*. This is distinct from the nonces in SW_NONCE_PKS.
+            // addNewNonceKey stores this new nonce key locally and returns the key pair.
+            val newVoteNonceKeyPair = walletManager.addNewNonceKey(blockData.DAO_ID, context)
+            val newVoteNoncePointHex = walletManager.nonceECPointHex(newVoteNonceKeyPair)
+            Log.d("P2P.DAOTransfer", "transferFundsBlockReceived: Generated new nonce for vote block: ${newVoteNoncePointHex}")
+
 
             // Generate the Bitcoin signature for the proposed transfer transaction.
             // This signature is required regardless of whether the voter votes YES or NO on the proposal,
@@ -306,16 +218,16 @@ class DAOTransferFundsHelper {
             val signature =
                 walletManager.safeSigningTransactionFromMultiSig(
                     oldTransactionSerialized, // The serialized transaction from the latest DAO state
-                    daoBitcoinPks.map { ECKey.fromPublicOnly(it.hexToBytes()) }, // Bitcoin PKs of all current DAO members
-                    daoNoncePks.map { ECKey.fromPublicOnly(it.hexToBytes()) }, // Nonce PKs of all current DAO members
+                    daoBitcoinPks, // Bitcoin PKs of all current DAO members (from latest JOIN)
+                    daoNoncePks, // Nonce PKs of all current DAO members (from latest JOIN)
                     walletManager.protocolECKey(), // My Bitcoin ECKey
-                    Address.fromString(walletManager.params, blockData.SW_TRANSFER_FUNDS_TARGET_SERIALIZED), // The recipient address from the proposal
+                    Address.fromString(walletManager.params,blockData.SW_TRANSFER_FUNDS_TARGET_SERIALIZED), // The recipient address from the proposal
                     blockData.SW_TRANSFER_FUNDS_AMOUNT, // The amount to transfer from the proposal
                     blockData.DAO_ID, // The DAO ID
-                    context // Context for nonce key management
+                    context // Context for nonce key management (needed by safeSigningTransactionFromMultiSig internally)
                 )
-            Log.d("P2P.DAOTransfer", "  signature: ${signature.toByteArray().toHex()}")
             val signatureSerialized = signature.toByteArray().toHex()
+            Log.d("P2P.DAOTransfer", "transferFundsBlockReceived: Generated Bitcoin signature: ${signatureSerialized.take(64)}...")
 
             // Create the appropriate vote block based on how the user voted on the proposal.
             // This block contains their signature for the underlying Bitcoin transfer transaction.
@@ -327,7 +239,7 @@ class DAOTransferFundsHelper {
                     blockData.SW_UNIQUE_PROPOSAL_ID,
                     signatureSerialized,
                     walletManager.protocolECKey().publicKeyAsHex,
-                    walletManager.nonceECPointHex(nonce)
+                    newVoteNoncePointHex
                 ).getTransactionData()
             } else {
                 VoteNoTransactionData(
@@ -335,7 +247,7 @@ class DAOTransferFundsHelper {
                     blockData.SW_UNIQUE_PROPOSAL_ID,
                     signatureSerialized,
                     walletManager.protocolECKey().publicKeyAsHex,
-                    walletManager.nonceECPointHex(nonce)
+                    newVoteNoncePointHex
                 ).getTransactionData()
             }
 

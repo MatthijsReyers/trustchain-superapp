@@ -10,7 +10,6 @@ import com.frostwire.jlibtorrent.alerts.TorrentFinishedAlert
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.foc.util.ExtensionUtils.Companion.TORRENT_EXTENSION
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
@@ -54,7 +53,7 @@ class TorrentManager(cacheDir: File) {
     /**
      * List of all torrents the manager knows about/manages.
      */
-    private val torrentInfos = ArrayList<TorrentInfo>();
+    private val torrentInfos = ArrayList<TorrentInfo>()
 
     /**
      * Actually starts the torrent manager and loads previously started/downloaded torrents and
@@ -82,13 +81,13 @@ class TorrentManager(cacheDir: File) {
         try {
             val tmp = this.sessionManager.find(info?.infoHash())
             if (tmp.status().isFinished) {
-                return 100;
+                return 100
             }
-            return (tmp.status().progress() * 100).toInt();
+            return (tmp.status().progress() * 100).toInt()
         }
         catch (err: Throwable) {
             Log.e("P2P.TorrentManager", "Failed to find torrent handle: $err")
-            return null;
+            return null
         }
     }
 
@@ -120,10 +119,10 @@ class TorrentManager(cacheDir: File) {
         for (info in this.torrentInfos) {
             val knownHash = MagnetUtils.parseMagnet(info.makeMagnetUri())
             if (knownHash.infoHash == magnetLink.infoHash) {
-                return info;
+                return info
             }
         }
-        return null;
+        return null
     }
 
     /**
@@ -162,7 +161,7 @@ class TorrentManager(cacheDir: File) {
                             Log.d("P2P.TorrentManager", "Download finished for ${a.torrentName()}")
                             val link = MagnetUtils.parseMagnet(a.handle().makeMagnetUri())
                             scope.launch {
-                                _onFinished.emit(link);
+                                _onFinished.emit(link)
                             }
                         }
                         else -> {
@@ -202,14 +201,14 @@ class TorrentManager(cacheDir: File) {
         Log.d("P2P.TorrentManager", "Downloading app: ${app.magnetLink.infoHash}")
 
         // Have we already downloaded this app?
-        var torrentInfo = this.findTorrentInfo(app.magnetLink);
+        var torrentInfo = this.findTorrentInfo(app.magnetLink)
         if (torrentInfo != null) {
             Log.d("P2P.TorrentManager", "Magnet link was already known")
             // TODO: Maybe check if it was actually finished or restart if there was a failure?
-            return;
+            return
         }
 
-        this.waitFor100Nodes();
+        this.waitFor100Nodes()
 
         torrentInfo = this.downloadTorrentInfo(app.magnetLink)
         this.torrentInfos.add(torrentInfo)
@@ -237,7 +236,7 @@ class TorrentManager(cacheDir: File) {
         }
         catch (err: Throwable) {
             Log.e("P2P.TorrentManager", "Failed to download torrent info: $err")
-            throw Exception("Failed to download torrent info");
+            throw Exception("Failed to download torrent info")
         }
     }
 

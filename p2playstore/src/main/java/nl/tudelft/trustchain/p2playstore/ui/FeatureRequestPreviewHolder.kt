@@ -11,7 +11,6 @@ import nl.tudelft.trustchain.p2playstore.models.FeatureRequest
 class FeatureRequestPreviewHolder(
     private val binding: FeatureRequestPreviewBinding,
     private val destBtn: Int = R.id.action_featureListFragment_to_featureSolutionFragment,
-    // private val dest: Int = R.id.action_featureListFragment_to_featureSolutionFragment,
 ) : RecyclerView.ViewHolder(binding.root) {
 
     fun hide() {
@@ -30,17 +29,6 @@ class FeatureRequestPreviewHolder(
         } else {
             binding.solutionCount.text = "${solutions.size} solutions"
         }
-
-        // binding.card.setOnClickListener {
-        //     itemView.findNavController()
-        //         .navigate(
-        //             dest,
-        //             Bundle().apply {
-        //                 putString("daoId", request.doaId)
-        //                 putString("featureRequestId", request.featureRequestId)
-        //             }
-        //         )
-        // }
 
         val open = solutions.any { s -> !s.isPending } || solutions.isEmpty()
         binding.submitBtn.isEnabled = open

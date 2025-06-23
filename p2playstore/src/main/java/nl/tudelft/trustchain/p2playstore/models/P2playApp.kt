@@ -11,7 +11,6 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
-import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.AppMetaData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
@@ -67,7 +66,6 @@ class P2playApp(val block: TrustChainBlock) {
             } else if (block.type == PROPOSE_UPDATE_BLOCK
                 && (daoData as ProposeUpdateData).FEATURE_REQUEST_ID != null) {
                 // Feature Solution proposals also contain voting threshold
-    //            TODO:fix this to precentage instead of int signatures
                 return daoData.SW_SIGNATURES_REQUIRED
             }
             val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
