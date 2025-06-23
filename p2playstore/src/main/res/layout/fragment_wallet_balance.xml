@@ -298,7 +298,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="16dp"
                     android:layout_marginTop="8dp"
-                    android:layout_marginBottom="12dp"
+                    android:layout_marginBottom="0dp"
                     android:orientation="horizontal">
 
                     <TextView
@@ -319,7 +319,7 @@
                     android:id="@+id/transactions_recycler_view"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginHorizontal="0dp"
                     android:nestedScrollingEnabled="false" />
 
                 <!-- Empty State for Transactions -->
