@@ -3,6 +3,7 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.models.DaoJoinPoll
 import nl.tudelft.trustchain.p2playstore.models.Poll
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
@@ -35,16 +36,17 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
          */
         fun findByProposalId(proposalId: String): UpdateProposalPoll? {
             val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
-            val blocks = trustChain.database
+            val proposals = trustChain.database
                 .getBlocksWithType(P2pStoreCommunity.PROPOSE_UPDATE_BLOCK)
-                .filter { b ->
-                    val data = ProposeUpdateTransactionData(b.transaction).getData()
-                    data.SW_UNIQUE_PROPOSAL_ID == proposalId
+                .mapNotNull { b ->
+                    try { UpdateProposalPoll(b) }
+                    catch (err: Throwable) { null}
                 }
-            if (blocks.isNotEmpty()) {
-                return UpdateProposalPoll(blocks[0])
-            }
-            return null;
+                .filter { p -> p.proposalId == proposalId }
+
+            // Get the block that this user is allowed to vote on, if one exists.
+            val myProposal = proposals.find { p -> p.isReceivingUser }
+            return myProposal ?: proposals.firstOrNull()
         }
     }
 }

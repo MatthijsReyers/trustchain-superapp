@@ -263,6 +263,8 @@ class DAOTransferFundsHelper {
             context: Context,
             community: TrustChainCommunity
         ) {
+            android.util.Log.d("P2PlayStore", "transferFundsBlockReceived")
+
             val blockData = ProposeUpdateTransactionData(block.transaction).getData()
 
             Log.i("P2P.DAOTransfer", "Signature request for transfer funds: ${blockData.SW_RECEIVER_PK}, me: ${myPublicKey.toHex()}")

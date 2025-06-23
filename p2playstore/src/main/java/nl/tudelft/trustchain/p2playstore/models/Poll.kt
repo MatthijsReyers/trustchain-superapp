@@ -61,6 +61,14 @@ abstract class Poll(val block: TrustChainBlock) {
     val votes: Int get() = getUpVotes().size + getDownVotes().size
 
     /**
+     * Is this user the receiver of this proposal? I.e. is the user even allowed to respond to this
+     * block at all?
+     */
+    val isReceivingUser: Boolean get() {
+        return trustChain.myPeer.publicKey.keyToBin().toHex() == receivingUser
+    }
+
+    /**
      * Amount of people/peers that have not yet voted out of all the people that can vote.
      *
      * Note: remember not everyone needs to vote in order for a vote to go through.
@@ -163,6 +171,7 @@ abstract class Poll(val block: TrustChainBlock) {
         if (this.hasVoted()) return
 
         val joinBlock = app.getLatestJoin()
+        val data = JoinDaoTransactionData(joinBlock.transaction).getData()
 
         val myPublicKey = trustChain.myPeer.publicKey.keyToBin()
 
@@ -171,7 +180,6 @@ abstract class Poll(val block: TrustChainBlock) {
         withContext(Dispatchers.IO) {
             when (block.type) {
                 JOIN_REQUEST_BLOCK -> {
-                    val data = JoinDaoTransactionData(joinBlock.transaction).getData()
                     val oldTransaction = data.SW_TRANSACTION_SERIALIZED
                     DAOJoinHelper.joinAskBlockReceived(
                         oldTransaction,
@@ -183,7 +191,6 @@ abstract class Poll(val block: TrustChainBlock) {
                     )
                 }
                 PROPOSE_UPDATE_BLOCK -> {
-                    val data = JoinDaoTransactionData(joinBlock.transaction).getData()
                     DAOTransferFundsHelper.transferFundsBlockReceived(
                         block,
                         data,

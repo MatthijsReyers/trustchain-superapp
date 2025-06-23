@@ -59,7 +59,7 @@ class PollDetailsFragment : BaseFragment() {
                 "update" -> this.updatePoll = UpdateProposalPoll.findByProposalId(proposalId)!!
                 else -> throw Exception("Unknown poll type: $pollType")
             }
-            this.app = this.poll.getApp()
+            this.app = this.poll.getApp().getLatestVersion()
         }
         catch (err: Throwable) {
             android.util.Log.e("P2PlayStore", "Failed to load poll: $err")
@@ -196,8 +196,8 @@ class PollDetailsFragment : BaseFragment() {
      * to/already has voted in this poll.
      */
     private fun updateVoteButtons() {
-        // Is the user even allowed to vote?
-        if (!this.app.isDaoMember()) {
+        // Is the user even allowed to vote in this poll?
+        if (!this.poll.isReceivingUser) {
             return this.disableVoteButtons()
         }
 

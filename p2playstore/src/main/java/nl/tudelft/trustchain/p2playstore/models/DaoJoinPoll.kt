@@ -28,15 +28,17 @@ class DaoJoinPoll(block: TrustChainBlock): Poll(block) {
          */
         fun findByProposalId(proposalId: String): DaoJoinPoll? {
             val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
-            val blocks = trustChain.database.getBlocksWithType(P2pStoreCommunity.JOIN_REQUEST_BLOCK)
-                .filter { b ->
-                    val data = JoinRequestTransactionData(b.transaction).getData()
-                    data.SW_UNIQUE_PROPOSAL_ID == proposalId
+            val proposals = trustChain.database
+                .getBlocksWithType(P2pStoreCommunity.JOIN_REQUEST_BLOCK)
+                .mapNotNull { b ->
+                    try { DaoJoinPoll(b) }
+                    catch (err: Throwable) { null}
                 }
-            if (blocks.isNotEmpty()) {
-                return DaoJoinPoll(blocks[0])
-            }
-            return null;
+                .filter { p -> p.proposalId == proposalId }
+
+            // Get the block that this user is allowed to vote on, if one exists.
+            val myProposal = proposals.find { p -> p.isReceivingUser }
+            return myProposal ?: proposals.firstOrNull()
         }
     }
 }
