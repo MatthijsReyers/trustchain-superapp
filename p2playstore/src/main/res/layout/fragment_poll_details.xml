@@ -114,7 +114,7 @@
                     android:padding="20dp">
 
                     <TextView
-                        android:id="@+id/original_feature_title"
+                        android:id="@+id/update_name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
@@ -124,7 +124,7 @@
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/implementation_description"
+                        android:id="@+id/update_description"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp"
