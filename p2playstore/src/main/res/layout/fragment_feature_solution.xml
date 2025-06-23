@@ -1,32 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="@android:color/white">
+    android:padding="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Submit Solution"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="16dp"
-            android:gravity="center" />
+        android:orientation="vertical"
+        android:padding="0dp">
 
         <!-- Feature Request Context -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_margin="16dp"
             android:layout_marginBottom="24dp"
             android:elevation="4dp"
-            android:radius="8dp">
+            android:radius="8dp"
+            app:cardCornerRadius="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -37,145 +30,154 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
                     android:text="Feature Request"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
                     android:textColor="@android:color/black"
-                    android:layout_marginBottom="8dp" />
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/tv_feature_title"
+                    android:id="@+id/title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
                     android:text="Dark Mode Support"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
                     android:textColor="#1976D2"
-                    android:layout_marginBottom="8dp" />
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/tv_feature_description"
+                    android:id="@+id/description"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Add dark theme support to the application"
-                    android:textSize="14sp"
-                    android:textColor="@android:color/darker_gray" />
+                    android:textColor="@android:color/darker_gray"
+                    android:textSize="14sp" />
 
             </LinearLayout>
 
         </androidx.cardview.widget.CardView>
 
         <!-- Solution Form -->
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Solution Title"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="8dp" />
+            android:layout_height="match_parent"
+            android:layout_marginHorizontal="16dp"
+            android:orientation="vertical">
 
-        <EditText
-            android:id="@+id/et_solution_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Give title"
-            android:padding="12dp"
-            android:background="@drawable/p2p_border"
-            android:layout_marginBottom="16dp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Solution Title"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Implementation Description"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="8dp" />
+            <EditText
+                android:id="@+id/et_solution_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/p2p_border"
+                android:hint="Give title"
+                android:padding="12dp" />
 
-        <EditText
-            android:id="@+id/et_solution_description"
-            android:layout_width="match_parent"
-            android:layout_height="100dp"
-            android:hint="Describe your implementation, what features you added, how it works..."
-            android:padding="12dp"
-            android:background="@drawable/p2p_border"
-            android:gravity="top"
-            android:inputType="textMultiLine"
-            android:layout_marginBottom="16dp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Implementation Description"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="APK Magnet Link"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="8dp" />
+            <EditText
+                android:id="@+id/et_solution_description"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/p2p_border"
+                android:gravity="top"
+                android:hint="Describe your implementation, what features you added, how it works..."
+                android:inputType="textMultiLine"
+                android:padding="12dp" />
 
-        <EditText
-            android:id="@+id/et_magnet_link"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="magnet:?xt=urn:btih:..."
-            android:padding="12dp"
-            android:background="@drawable/p2p_border"
-            android:inputType="textUri"
-            android:layout_marginBottom="16dp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="APK Magnet Link"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/et_magnet_link"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/p2p_border"
+                android:hint="magnet:?xt=urn:btih:..."
+                android:inputType="textUri"
+                android:padding="12dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Developer Bitcoin Address"
+                android:textColor="@android:color/black"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/et_developer_bitcoin_address"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/p2p_border"
+                android:hint="Enter your Bitcoin address for reward"
+                android:inputType="text"
+                android:padding="12dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:text="Note: Make sure your APK is properly signed and tested. DAO members will download and test your solution before voting."
+                android:textColor="@android:color/darker_gray"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <!-- Developer Bitcoin Address -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Developer Bitcoin Address"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="8dp" />
 
-        <EditText
-            android:id="@+id/et_developer_bitcoin_address"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Enter your Bitcoin address for reward"
-            android:padding="12dp"
-            android:background="@drawable/p2p_border"
-            android:inputType="text"
-            android:layout_marginBottom="16dp" />
-
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Note: Make sure your APK is properly signed and tested. DAO members will download and test your solution before voting."
-            android:textSize="12sp"
-            android:textColor="@android:color/darker_gray"
-            android:layout_marginBottom="24dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:paddingHorizontal="13dp">
 
             <Button
                 android:id="@+id/btn_cancel"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
                 android:layout_weight="1"
-                android:text="Cancel"
-                android:textColor="@android:color/black"
                 android:backgroundTint="@android:color/white"
-                android:layout_marginEnd="8dp" />
+                android:text="Cancel"
+                android:textColor="@android:color/black" />
 
             <Button
                 android:id="@+id/btn_submit_solution"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="Submit Solution"
-                android:textColor="@android:color/white"
                 android:backgroundTint="#4CAF50"
-                android:layout_marginStart="8dp" />
+                android:text="Submit Solution"
+                android:textColor="@android:color/white" />
 
         </LinearLayout>
 
