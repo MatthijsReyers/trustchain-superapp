@@ -23,10 +23,10 @@ data class ProposeUpdateData(
     override var APP_ICON: Int,
     override var APP_MAGNET_LINK: String,
 
-    var FEATURE_REQUEST_ID: String? = null,
-    var SOLUTION_TITLE: String? = null,
-    var SOLUTION_DESCRIPTION: String? = null,
-    var DEVELOPER_PUBLIC_KEY: String? = null
+    var FEATURE_REQUEST_ID: String,
+    var SOLUTION_TITLE: String,
+    var SOLUTION_DESCRIPTION: String,
+    var DEVELOPER_PUBLIC_KEY: String
 ) : AppMetaData
 
 class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
