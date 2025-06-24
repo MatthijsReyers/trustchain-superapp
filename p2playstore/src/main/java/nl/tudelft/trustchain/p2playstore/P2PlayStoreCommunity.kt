@@ -175,7 +175,6 @@ class P2pStoreCommunity : Community() {
         return this.discoverAllApps().filter { app -> app.isDaoMember() }
     }
 
-
     internal fun fetchLatestSharedWalletBlockByDaoId(daoId: String): TrustChainBlock? {
         val joinBlocks = getTrustChainCommunity().database.getBlocksWithType(JOIN_BLOCK)
         val updateBlocks = getTrustChainCommunity().database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
@@ -241,37 +240,6 @@ class P2pStoreCommunity : Community() {
                 JoinDaoTransactionData(it.transaction).getData().DAO_ID == walletId
             }
             .maxByOrNull { it.timestamp.time }
-    }
-    /**
-     * Fetches the latest UPDATE_ACCEPTED_BLOCK for a specific DAO.
-     */
-    fun fetchLatestUpdateAcceptedBlockByDaoId(daoId: String): TrustChainBlock? {
-        return getTrustChainCommunity().database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
-            .filter { block ->
-                try {
-                    UpdateAcceptedTransactionData(block.transaction).getData().DAO_ID == daoId
-                } catch (e: Exception) {
-                    Log.e("P2PlayStore", "Error filtering UPDATE_ACCEPTED block ${block.blockId} by DAO ID: ${e.message}")
-                    false
-                }
-            }
-            .maxByOrNull { it.timestamp }
-    }
-
-    /**
-     * Fetches the latest PROPOSE_UPDATE_BLOCK for a specific DAO.
-     */
-    fun fetchLatestProposeUpdateBlockByDaoId(daoId: String): TrustChainBlock? {
-        return getTrustChainCommunity().database.getBlocksWithType(PROPOSE_UPDATE_BLOCK)
-            .filter { block ->
-                try {
-                    ProposeUpdateTransactionData(block.transaction).getData().DAO_ID == daoId
-                } catch (e: Exception) {
-                    Log.e("P2PlayStore", "Error filtering PROPOSE_UPDATE block ${block.blockId} by DAO ID: ${e.message}")
-                    false
-                }
-            }
-            .maxByOrNull { it.timestamp }
     }
 
     /**
