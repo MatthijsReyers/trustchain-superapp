@@ -658,7 +658,7 @@ class AppDetails : BaseFragment() {
         binding.btnOpenWallet.setOnClickListener {
             findNavController()
                 .navigate(
-                    R.id.action_appDetailsFragment_to_daoWalletFragment,
+                    R.id.action_appDetails_to_daoWalletFragment,
                     Bundle().apply {
                         putString("daoId", app.daoId)
                     }
