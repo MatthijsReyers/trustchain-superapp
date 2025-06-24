@@ -397,9 +397,6 @@ class AppDetails : BaseFragment() {
             }
             requireActivity().runOnUiThread {
                 updatePolls()
-                joinSharedWalletClicked(daoBlock)
-                loadRecentVotingPoll()
-                loadLatestPendingFeatureRequest()
                 updateDownloadButton()
             }
         } catch (e: Exception) {
