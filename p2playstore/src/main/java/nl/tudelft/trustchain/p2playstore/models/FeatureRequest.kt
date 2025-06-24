@@ -32,8 +32,6 @@ class FeatureRequest(val block: TrustChainBlock) {
     val description = blockData.FEATURE_DESCRIPTION
     val title = blockData.FEATURE_TITLE
     val reward = blockData.FEATURE_REWARD
-<<<<<<< HEAD
-=======
 //
 //    fun hasBeenFulfilled(): Boolean {
 //        val updates = trustChain.database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
@@ -48,7 +46,6 @@ class FeatureRequest(val block: TrustChainBlock) {
 //            }
 //        return updates.isNotEmpty()
 //    }
->>>>>>> 88ef527f (moved it back to old transactiondata)
 
     /**
      * Gets a list of all the solutions (i.e. software updates) that have been proposed for this

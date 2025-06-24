@@ -22,10 +22,6 @@ data class ProposeUpdateData(
     override var APP_CATEGORY: String,
     override var APP_ICON: Int,
     override var APP_MAGNET_LINK: String,
-<<<<<<< HEAD
-
-=======
->>>>>>> 88ef527f (moved it back to old transactiondata)
     var FEATURE_REQUEST_ID: String,
     var SOLUTION_TITLE: String,
     var SOLUTION_DESCRIPTION: String,
