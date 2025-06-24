@@ -225,6 +225,34 @@ class TorrentManager(cacheDir: File) {
         this.sessionManager.download(torrentInfo, destDir)
     }
 
+    fun downloadMagnetLink(magnetLink: MagnetLink) {
+
+        Log.d("P2P.TorrentManager", "Downloading app: ${magnetLink.infoHash}")
+
+        // Have we already downloaded this app?
+        var torrentInfo = this.findTorrentInfo(magnetLink);
+        if (torrentInfo != null) {
+            Log.d("P2P.TorrentManager", "Magnet link was already known")
+            // TODO: Maybe check if it was actually finished or restart if there was a failure?
+            return;
+        }
+
+        this.waitFor100Nodes();
+
+        torrentInfo = this.downloadTorrentInfo(magnetLink)
+        this.torrentInfos.add(torrentInfo)
+
+        // Create a .torrent file for this torrent so we can resume downloading/seeding after
+        // restarting the app without needing to download the torrent info from someone else first.
+        val entry: Entry = torrentInfo.toEntry()
+        val torrentFile = File(this.appsDirectory, "${magnetLink.infoHash}.torrent")
+        FileOutputStream(torrentFile).use { fos -> fos.write(entry.bencode()) }
+
+        // Now finally actually start the download process.
+        val destDir = File(this.appsDirectory, magnetLink.infoHash)
+        this.sessionManager.download(torrentInfo, destDir)
+    }
+
     /**
      * Downloads all the required meta data in order to actually be able to download the torrent
      * the magnet file points to. This is only needed if we have not yet saved this data to the

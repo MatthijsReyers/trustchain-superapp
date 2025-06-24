@@ -67,14 +67,6 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         val navController = findNavController(nl.tudelft.trustchain.common.R.id.navHostFragment)
         val currentDestinationId = navController.currentDestination?.id
         val targetDestinationId = when {
-            !WalletManagerAndroid.isInitialized() -> {
-                Log.d("P2PNav", "Condition: Wallet not initialized. Target: p2pLoginFragment")
-                R.id.p2pLoginFragment
-            }
-            WalletManagerAndroid.getInstance().progress < 100 -> {
-                Log.d("P2PNav", "Condition: Wallet progress < 100 (${WalletManagerAndroid.getInstance().progress}%). Target: p2pblockchainDownloadFragment")
-                R.id.p2pblockchainDownloadFragment
-            }
             else -> {
                 Log.d("P2PNav", "Condition: Wallet initialized and progress >= 100. Target: homeFragment")
                 R.id.homeFragment

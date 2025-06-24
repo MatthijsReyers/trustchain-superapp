@@ -1,5 +1,7 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -16,11 +18,17 @@ import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
+import nl.tudelft.trustchain.p2playstore.ExecutionActivity
+import nl.tudelft.trustchain.p2playstore.P2PlayStoreMainActivity
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
+import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
+import java.io.File
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
     private var _binding: FragmentHomeBinding? = null
@@ -56,6 +64,46 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
 
         binding.btnCreateDao.setOnClickListener {
             showCreateDaoDialog()
+        }
+
+        val testMagnet = "magnet:?xt=urn:btih:9f65cf30a02d654151bd26108a6fe91f7c000409&dn=test-app.apk&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fopen.demonii.com%3A1337%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Ftracker.torrent.eu.org%3A451%2Fannounce&tr=udp%3A%2F%2Fopen.free-tracker.ga%3A6969%2Fannounce&tr=udp%3A%2F%2Fexodus.desync.com%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.dump.cl%3A6969%2Fannounce&tr=udp%3A%2F%2Fopentracker.io%3A6969%2Fannounce&tr=udp%3A%2F%2Fns-1.x-fins.com%3A6969%2Fannounce&tr=udp%3A%2F%2Fexplodie.org%3A6969%2Fannounce&tr=http%3A%2F%2Fwww.torrentsnipe.info%3A2701%2Fannounce&tr=http%3A%2F%2Ftracker810.xyz%3A11450%2Fannounce&tr=http%3A%2F%2Ftracker.xiaoduola.xyz%3A6969%2Fannounce&tr=http%3A%2F%2Ftracker.vanitycore.co%3A6969%2Fannounce&tr=http%3A%2F%2Ftracker.skyts.net%3A6969%2Fannounce&tr=http%3A%2F%2Ftracker.sbsub.com%3A2710%2Fannounce&tr=http%3A%2F%2Ftracker.dmcomic.org%3A2710%2Fannounce&tr=http%3A%2F%2Ftracker.bz%3A80%2Fannounce&tr=http%3A%2F%2Ftracker.bt-hash.com%3A80%2Fannounce&tr=http%3A%2F%2Ft.jaekr.sh%3A6969%2Fannounce"
+
+        val magnetLink = MagnetUtils.parseMagnet(testMagnet)
+
+        (activity as P2PlayStoreMainActivity).torrentManager.downloadMagnetLink(magnetLink)
+
+
+        // Temporary for testing apk files....
+        binding.testBtn.setOnClickListener {
+            val applicationContext = requireContext()
+
+            val apkPath = "${applicationContext.cacheDir}/p2p-apps/${magnetLink.infoHash}" +
+                "/${magnetLink.displayName}"
+            val apkFile = File(apkPath)
+
+            if (!apkFile.exists() || !apkFile.isFile) {
+                Log.e("P2P", "File not found or invalid: $apkFile")
+                printToast(applicationContext, "No APK found connected to this DAO.")
+                return@setOnClickListener
+            }
+
+            val intent = Intent(applicationContext, ExecutionActivity::class.java).apply {
+                putExtra("fileName", apkPath)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            try {
+                applicationContext.startActivity(intent)
+            } catch (e: ActivityNotFoundException) {
+                Log.e("P2P", "No activity found to handle intent for APK: $apkPath", e)
+                printToast(applicationContext, "Unable to open APK – app component not found.")
+            } catch (e: SecurityException) {
+                Log.e("P2P", "Security exception when launching APK: $apkPath", e)
+                printToast(applicationContext, "Permission denied to launch APK.")
+            } catch (e: Exception) {
+                Log.e("P2P", "Unexpected error launching APK: $apkPath", e)
+                printToast(applicationContext, "Something went wrong when opening the APK.")
+            }
         }
 
         this.discoverNewAppsJob = lifecycleScope.launch {
