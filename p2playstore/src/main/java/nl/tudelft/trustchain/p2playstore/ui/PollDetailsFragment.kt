@@ -37,6 +37,7 @@ import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactio
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -99,23 +100,8 @@ class PollDetailsFragment : BaseFragment() {
         if (this._binding == null) return // Fragment view destroyed
 
         try {
-            val data: BaseData = when (block.type) {
-                JOIN_BLOCK -> JoinDaoTransactionData(block.transaction).getData()
-                UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(block.transaction).getData()
-                PROPOSE_UPDATE_BLOCK -> ProposeUpdateTransactionData(block.transaction).getData()
-                JOIN_REQUEST_BLOCK -> JoinDaoTransactionData(block.transaction).getData() // Can be JoinRequestData too, but this is a common base
-                VOTE_YES_BLOCK -> VoteYesTransactionData(block.transaction).getData()
-                VOTE_NO_BLOCK -> VoteNoTransactionData(block.transaction).getData()
-                else -> return // Ignore other block types
-            }
-
-            if (data.DAO_ID != this.poll.daoId) return; // Not relevant for this poll
-
-            if (this.poll == null) {
-                Log.w("PollDetailsFragment", "Poll object became null after chain update for ID: $proposalId")
-                findNavController().navigateUp()
-                return
-            }
+            val updatedDao = AppUtils.getDaoId(block);
+            if (updatedDao != this.poll.daoId) return; // Not relevant for this poll
 
             // Update the UI on the main thread
             requireActivity().runOnUiThread {
@@ -126,15 +112,29 @@ class PollDetailsFragment : BaseFragment() {
 
                 // Trigger reward transfer if it's an approved feature solution and not yet initiated
                 if (poll is UpdateProposalPoll && poll.isApproved && !isTransferInitiated) {
-                    Log.d("PollDetailsFragment", "Approved UpdateProposalPoll detected, triggering reward transfer.")
+                    Log.d(
+                        "PollDetailsFragment",
+                        "Approved UpdateProposalPoll detected, triggering reward transfer."
+                    )
                     isTransferInitiated = true // Set flag to prevent multiple triggers
                     lifecycleScope.launch(Dispatchers.IO) {
                         try {
-                            (poll as UpdateProposalPoll).triggerRewardTransfer(requireContext(), requireActivity())
+                            (poll as UpdateProposalPoll).triggerRewardTransfer(
+                                requireContext(),
+                                requireActivity()
+                            )
                         } catch (e: Exception) {
-                            Log.e("PollDetailsFragment", "Error during reward transfer: ${e.message}", e)
+                            Log.e(
+                                "PollDetailsFragment",
+                                "Error during reward transfer: ${e.message}",
+                                e
+                            )
                             requireActivity().runOnUiThread {
-                                Toast.makeText(context, "Error initiating reward transfer: ${e.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(
+                                    context,
+                                    "Error initiating reward transfer: ${e.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                             isTransferInitiated = false // Allow retry if it failed
                         }
