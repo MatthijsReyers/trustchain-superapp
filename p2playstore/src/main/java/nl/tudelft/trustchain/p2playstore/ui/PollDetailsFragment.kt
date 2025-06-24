@@ -55,7 +55,6 @@ class PollDetailsFragment : BaseFragment() {
     private var updatePoll: UpdateProposalPoll? = null
 
     private var isTransferInitiated: Boolean = false
-    private var voteBlockListener: BlockListener? = null
 
     /**
      * Is the user currently voting? We disable the buttons during this time to prevent them from
@@ -88,7 +87,6 @@ class PollDetailsFragment : BaseFragment() {
             findNavController().navigateUp()
         }
         this.setupClickListeners()
-        this.setupVoteBlockListener()
 
         this.updateVoteButtons()
         this.updateProgressBars()
@@ -163,83 +161,7 @@ class PollDetailsFragment : BaseFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-
-        // Clean up block listener
-        voteBlockListener?.let { listener ->
-            Log.d("PollDetailsFragment", "onDestroyView: Removing block listener.")
-            getTrustChainCommunity().removeListener(listener, VOTE_YES_BLOCK)
-            getTrustChainCommunity().removeListener(listener, VOTE_NO_BLOCK)
-            getTrustChainCommunity().removeListener(listener, UPDATE_ACCEPTED_BLOCK)
-            getTrustChainCommunity().removeListener(listener, PROPOSE_UPDATE_BLOCK)
-            getTrustChainCommunity().removeListener(listener, JOIN_REQUEST_BLOCK)
-        }
-        voteBlockListener = null
-
         _binding = null
-    }
-
-    /**
-     * Setup block listener for real-time updates
-     */
-    private fun setupVoteBlockListener() {
-        // Remove any existing listener first
-        voteBlockListener?.let { listener ->
-            Log.d("PollDetailsFragment", "Removing existing block listener")
-            getTrustChainCommunity().removeListener(listener, VOTE_YES_BLOCK)
-            getTrustChainCommunity().removeListener(listener, VOTE_NO_BLOCK)
-            getTrustChainCommunity().removeListener(listener, UPDATE_ACCEPTED_BLOCK)
-            getTrustChainCommunity().removeListener(listener, PROPOSE_UPDATE_BLOCK)
-            getTrustChainCommunity().removeListener(listener, JOIN_REQUEST_BLOCK)
-        }
-
-        Log.d("PollDetailsFragment", "Setting up vote block listener")
-        val listener = object : BlockListener {
-            override fun onBlockReceived(block: TrustChainBlock) {
-                Log.d("PollDetailsFragment", "Block received: ${block.blockId}, type: ${block.type}")
-
-                val isRelevantVote = try {
-                    when (block.type) {
-                        VOTE_YES_BLOCK -> VoteYesTransactionData(block.transaction).matchesProposal(poll.daoId, poll.proposalId)
-                        VOTE_NO_BLOCK -> VoteNoTransactionData(block.transaction).matchesProposal(poll.daoId, poll.proposalId)
-                        UPDATE_ACCEPTED_BLOCK -> {
-                            val data = UpdateAcceptedTransactionData(block.transaction).getData()
-                            data.DAO_ID == poll.daoId && data.SW_UNIQUE_PROPOSAL_ID == poll.proposalId
-                        }
-                        PROPOSE_UPDATE_BLOCK -> {
-                            val data = ProposeUpdateTransactionData(block.transaction).getData()
-                            data.DAO_ID == poll.daoId && data.SW_UNIQUE_PROPOSAL_ID == poll.proposalId
-                        }
-                        JOIN_REQUEST_BLOCK -> {
-                            val data = JoinDaoTransactionData(block.transaction).getData()
-                            data.DAO_ID == poll.daoId
-                        }
-                        else -> false
-                    }
-                } catch (e: Exception) {
-                    Log.e("PollDetailsFragment", "Error parsing block in listener: ${e.message}")
-                    false
-                }
-
-                if (isRelevantVote) {
-                    Log.d("PollDetailsFragment", "Relevant block received, updating UI")
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        delay(300) // Small delay for database update
-                        updateVoteButtons()
-                        updateProgressBars()
-                        updateBottomCard()
-                    }
-                }
-            }
-        }
-
-        // Register the listener
-        getTrustChainCommunity().addListener(VOTE_YES_BLOCK, listener)
-        getTrustChainCommunity().addListener(VOTE_NO_BLOCK, listener)
-        getTrustChainCommunity().addListener(UPDATE_ACCEPTED_BLOCK, listener)
-        getTrustChainCommunity().addListener(PROPOSE_UPDATE_BLOCK, listener)
-        getTrustChainCommunity().addListener(JOIN_REQUEST_BLOCK, listener)
-        voteBlockListener = listener
-        Log.d("PollDetailsFragment", "Vote block listener setup complete")
     }
 
     /**
