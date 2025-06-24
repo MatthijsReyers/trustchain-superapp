@@ -16,6 +16,7 @@ import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.utils.DAOJoinHelper
 import nl.tudelft.trustchain.p2playstore.utils.DAOTransferFundsHelper
 
@@ -90,6 +91,18 @@ abstract class Poll(val block: TrustChainBlock) {
      * decision can be made).
      */
     val isPending: Boolean get() = !isApproved && !isDenied
+
+    /**
+     * Checks if the poll is still valid or if new members have been added to the shared wallet
+     * since then.
+     */
+    val isOutdated: Boolean get() {
+        val app = P2playApp.findByDoaId(this.daoId)!! // Automatically the latest version
+        val pollUsers = trustChain.database.getBlocksWithType(this.block.type)
+            .filter { b -> AppUtils.getProposalId(b) == this.proposalId }
+            .size
+        return app.getDoaMemberCount() > pollUsers
+    }
 
     /**
      * Tries to find the vote of this user, assuming one exists.
