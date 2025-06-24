@@ -20,6 +20,7 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
+import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
@@ -214,8 +215,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-
-                    p2playStore.createBitcoinGenesisWallet(
+                    P2playApp.createApp(
                         entranceFee,
                         iconIndex,
                         name,

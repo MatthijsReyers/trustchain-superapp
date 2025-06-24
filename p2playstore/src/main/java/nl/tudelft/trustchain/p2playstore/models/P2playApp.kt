@@ -1,6 +1,7 @@
 package nl.tudelft.trustchain.p2playstore.models
 
 import UpdateProposalPoll
+import android.content.Context
 import android.util.Log
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
@@ -19,6 +20,7 @@ import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
+import nl.tudelft.trustchain.p2playstore.utils.DAOCreateHelper
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
@@ -267,6 +269,43 @@ class P2playApp(val block: TrustChainBlock) {
     }
 
     companion object {
+        /**
+         * Taken from curencyii.
+         *
+         * Create a bitcoin genesis wallet and broadcast the result on trust chain. The bitcoin
+         * transaction may take some time to finish.
+         * @throws
+         * - exception if something goes wrong with creating or broadcasting bitcoin transaction.
+         * @param entranceFee
+         * - Long, the entrance fee for joining the DAO.
+         * @param threshold
+         * - Int, the percentage of members that need to vote before allowing someone in the DAO.
+         */
+        fun createApp(
+            entranceFee: Long,
+            iconIndex: Int,
+            name: String,
+            description: String,
+            magnetLink: String,
+            category: String,
+            threshold: Int,
+            context: Context
+        ): JoinDaoTransactionData {
+            val helper = DAOCreateHelper()
+            val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
+            return helper.createBitcoinGenesisWallet(
+                trustChain.myPeer,
+                entranceFee,
+                iconIndex,
+                name,
+                description,
+                magnetLink,
+                category,
+                threshold,
+                context
+            )
+        }
+
         /**
          * Tries to find an app with the given DAO id.
          */

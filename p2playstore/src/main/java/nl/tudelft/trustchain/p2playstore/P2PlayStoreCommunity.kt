@@ -25,42 +25,8 @@ class P2pStoreCommunity : Community() {
             ?: throw IllegalStateException("TrustChainCommunity is not configured")
     }
 
-    val daoCreateHelper = DAOCreateHelper()
     val daoJoinHelper = DAOJoinHelper()
     val daoTransferFundsHelper = DAOTransferFundsHelper()
-
-    /**
-     * Create a bitcoin genesis wallet and broadcast the result on trust chain. The bitcoin
-     * transaction may take some time to finish.
-     * @throws
-     * - exception if something goes wrong with creating or broadcasting bitcoin transaction.
-     * @param entranceFee
-     * - Long, the entrance fee for joining the DAO.
-     * @param threshold
-     * - Int, the percentage of members that need to vote before allowing someone in the DAO.
-     */
-    fun createBitcoinGenesisWallet(
-        entranceFee: Long,
-        iconIndex: Int,
-        name: String,
-        description: String,
-        magnetLink: String,
-        category: String,
-        threshold: Int,
-        context: Context
-    ): JoinDaoTransactionData {
-        return daoCreateHelper.createBitcoinGenesisWallet(
-            myPeer,
-            entranceFee,
-            iconIndex,
-            name,
-            description,
-            magnetLink,
-            category,
-            threshold,
-            context
-        )
-    }
 
     /**
      * 2.1 Send a proposal on the trust chain to join a shared wallet and to collect signatures. The
