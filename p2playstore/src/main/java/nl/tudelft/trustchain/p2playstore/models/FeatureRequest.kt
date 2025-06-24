@@ -72,7 +72,7 @@ class FeatureRequest(val block: TrustChainBlock) {
             p -> myProposals.none { prop -> p.proposalId == prop.proposalId }
         }
 
-        return (myProposals + otherProposals).sortedBy { p -> p.block.insertTime!! }
+        return (myProposals + otherProposals).sortedBy { p -> p.block.timestamp }
     }
 
     /**
