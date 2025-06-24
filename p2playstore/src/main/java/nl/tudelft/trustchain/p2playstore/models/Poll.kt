@@ -7,7 +7,6 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
-import nl.tudelft.trustchain.p2playstore.transactionData.VotingPollType
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
@@ -42,11 +41,6 @@ abstract class Poll(val block: TrustChainBlock) {
      * Number of votes required for the proposal in this poll to go through.
      */
     abstract val votesRequired: Int
-
-    /**
-     * The type of voting poll.
-     */
-    abstract val pollType: VotingPollType
 
     /**
      * Amount of people/peers that have voted in this poll.

@@ -111,16 +111,6 @@ class PollDetailsFragment : BaseFragment() {
 
             if (data.DAO_ID != this.poll.daoId) return; // Not relevant for this poll
 
-            // Reload the poll data to get the latest state
-            when (poll.pollType) {
-                nl.tudelft.trustchain.p2playstore.transactionData.VotingPollType.JOIN_REQUEST -> {
-                    this.joinPoll = DaoJoinPoll.findByProposalId(proposalId)
-                }
-                nl.tudelft.trustchain.p2playstore.transactionData.VotingPollType.FEATURE_SOLUTION -> {
-                    this.updatePoll = UpdateProposalPoll.findByProposalId(proposalId)
-                }
-            }
-
             if (this.poll == null) {
                 Log.w("PollDetailsFragment", "Poll object became null after chain update for ID: $proposalId")
                 findNavController().navigateUp()

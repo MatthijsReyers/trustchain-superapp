@@ -20,7 +20,6 @@ import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.VotingPollType
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
@@ -44,7 +43,6 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
     override val requestingUser = block.publicKey.toHex()
     override val votesRequired: Int = blockData.SW_SIGNATURES_REQUIRED
     override val receivingUser = blockData.SW_RECEIVER_PK
-    override val pollType = VotingPollType.FEATURE_SOLUTION
 
     val name: String = blockData.APP_NAME
     val description: String = blockData.APP_DESCRIPTION
