@@ -111,15 +111,16 @@ class PollDetailsFragment : BaseFragment() {
                 updateVoteButtons()
 
                 // Trigger reward transfer if it's an approved feature solution and not yet initiated
-                if (poll is UpdateProposalPoll && poll.isApproved && !isTransferInitiated) {
+                if (updatePoll != null && updatePoll!!.isApproved && !isTransferInitiated) {
                     Log.d(
                         "PollDetailsFragment",
                         "Approved UpdateProposalPoll detected, triggering reward transfer."
                     )
-                    isTransferInitiated = true // Set flag to prevent multiple triggers
+                    // Set flag to prevent multiple triggers
+                    isTransferInitiated = true
                     lifecycleScope.launch(Dispatchers.IO) {
                         try {
-                            (poll as UpdateProposalPoll).triggerRewardTransfer(
+                            updatePoll!!.triggerRewardTransfer(
                                 requireContext(),
                                 requireActivity()
                             )
