@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import android.widget.FrameLayout
 import androidx.navigation.fragment.findNavController
+import kotlinx.coroutines.CoroutineScope
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -174,44 +175,28 @@ class PollDetailsFragment : BaseFragment() {
         if (!this.isVoting) {
             this.isVoting = true
             try {
-                lifecycleScope.launch {
-                    // Check if user has already voted
-                    val votingPoll = withContext(Dispatchers.IO) {
-                        p2playStore.getVotingPoll(poll.daoId, poll.proposalId)
-                    }
-
-                    if (votingPoll?.hasUserVoted == true) {
-                        Log.d("PollDetailsFragment", "User already voted")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "You have already voted on this proposal.", Toast.LENGTH_SHORT).show()
-                        }
-                        return@launch
-                    }
-
-                    // Disable buttons immediately
-                    withContext(Dispatchers.Main) {
-                        binding.btnVoteYes.isEnabled = false
-                        binding.btnVoteNo.isEnabled = false
-                        binding.btnVoteYes.alpha = 0.5f
-                        binding.btnVoteNo.alpha = 0.5f
-                        Toast.makeText(context, "Vote submitted. Waiting for confirmation...", Toast.LENGTH_SHORT).show()
-                    }
-
-                    // Submit vote using community method
-                    withContext(Dispatchers.IO) {
-                        p2playStore.voteOnProposal(
-                            daoId = poll.daoId,
-                            proposalId = poll.proposalId,
-                            isYes = isYes,
-                            context = requireContext()
-                        )
-                    }
-
-                    Log.d("PollDetailsFragment", "Vote submitted successfully")
+                if (poll.hasUserVoted()) {
+                    printToast("You have already voted on this proposal.")
+                    return
                 }
-            } catch (err: Throwable) {
+
+                // Disable buttons immediately
+                CoroutineScope(Dispatchers.Main).launch {
+                    disableVoteButtons()
+                }
+
+                // Submit vote using community method
+                CoroutineScope(Dispatchers.IO).launch {
+                    poll.submitVote(isYes, requireContext())
+                }
+
+                printToast("Vote submitted successfully")
+            }
+            catch (err: Throwable) {
+                printToast("Voting failed")
                 Log.e("P2PlayStore", "Error occurred during voting: $err")
-            } finally {
+            }
+            finally {
                 this.isVoting = false
             }
         }

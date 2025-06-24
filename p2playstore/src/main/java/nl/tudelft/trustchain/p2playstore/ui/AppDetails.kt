@@ -31,7 +31,6 @@ import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.transactionData.*
-import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
 
 import java.io.File
 
@@ -167,7 +166,7 @@ class AppDetails : BaseFragment() {
     */
     private fun onInstallApp() {
         if (this.app.isDaoMember()) {
-            printToast(requireContext(), "You are already a member of this DAO.")
+            printToast("You are already a member of this DAO.")
             Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but is already a member.")
             updateDownloadButton()
             updateUIBasedOnMembership()
@@ -175,7 +174,7 @@ class AppDetails : BaseFragment() {
         }
 
         if (this.app.isWaitingToJoin()) {
-            printToast(requireContext(), "You have a pending request to join this DAO.")
+            printToast("You have a pending request to join this DAO.")
             Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but has a pending request.")
             updateDownloadButton()
             updateUIBasedOnMembership()
@@ -227,7 +226,7 @@ class AppDetails : BaseFragment() {
 
         if (!apkFile.exists() || !apkFile.isFile) {
             Log.e("P2P", "File not found or invalid: $apkFile")
-            printToast(applicationContext, "No APK found connected to this DAO.")
+            printToast("No APK found connected to this DAO.")
             return
         }
 
@@ -240,13 +239,13 @@ class AppDetails : BaseFragment() {
             applicationContext.startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             Log.e("P2P", "No activity found to handle intent for APK: $apkPath", e)
-            printToast(applicationContext, "Unable to open APK – app component not found.")
+            printToast("Unable to open APK – app component not found.")
         } catch (e: SecurityException) {
             Log.e("P2P", "Security exception when launching APK: $apkPath", e)
-            printToast(applicationContext, "Permission denied to launch APK.")
+            printToast("Permission denied to launch APK.")
         } catch (e: Exception) {
             Log.e("P2P", "Unexpected error launching APK: $apkPath", e)
-            printToast(applicationContext, "Something went wrong when opening the APK.")
+            printToast("Something went wrong when opening the APK.")
         }
     }
 
@@ -529,7 +528,7 @@ class AppDetails : BaseFragment() {
         binding.btnOpenWallet.setOnClickListener {
             findNavController()
                 .navigate(
-                    R.id.action_appDetailsFragment_to_daoWalletFragment,
+                    R.id.action_appDetails_to_daoWalletFragment,
                     Bundle().apply {
                         putString("daoId", app.daoId)
                     }

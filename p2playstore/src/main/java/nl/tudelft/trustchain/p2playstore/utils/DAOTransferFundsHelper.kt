@@ -163,13 +163,13 @@ class DAOTransferFundsHelper {
          */
         fun transferFundsBlockReceived(
             block: TrustChainBlock, // This is the PROPOSE_UPDATE_BLOCK (Feature Solution Proposal)
-            latestDaoData: ProposeUpdateData, // Pass the latest DAO state data (should be JoinDoaData from latest JOIN block)
             myPublicKey: ByteArray,
             votedInFavor: Boolean, // Indicates if the voter agreed with the proposal, not the Bitcoin transaction itself
             context: Context,
             community: TrustChainCommunity
         ) {
             val blockData = ProposeUpdateTransactionData(block.transaction).getData()
+            val latestDaoData = blockData
 
             Log.i("P2P.DAOTransfer", "Signature request for transfer funds: ${blockData.SW_RECEIVER_PK}, me: ${myPublicKey.toHex()}")
 //

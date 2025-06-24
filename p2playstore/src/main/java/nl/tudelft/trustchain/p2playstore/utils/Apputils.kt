@@ -1,8 +1,9 @@
 package nl.tudelft.trustchain.p2playstore.utils
 
 import android.content.Context
-import android.view.View
 import android.widget.Toast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
@@ -15,8 +16,6 @@ import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactio
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
-import kotlin.math.max
-import kotlin.math.roundToInt
 
 object AppUtils {
     /**
