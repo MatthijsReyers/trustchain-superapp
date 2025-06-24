@@ -157,7 +157,7 @@ class P2pStoreCommunity : Community() {
                         JoinDaoTransactionData(b.transaction).getData().DAO_ID == id
                     }
                     // Find the newest block
-                    .maxByOrNull { b -> b.insertTime!! }
+                    .maxByOrNull { b -> b.timestamp }
             }
 
         return latestBlocks
@@ -192,7 +192,7 @@ class P2pStoreCommunity : Community() {
                     false
                 }
             }
-            .maxByOrNull { it.insertTime!! }
+            .maxByOrNull { it.timestamp }
     }
 
     /**
@@ -207,7 +207,7 @@ class P2pStoreCommunity : Community() {
                     false
                 }
             }
-            .maxByOrNull { it.insertTime!! }
+            .maxByOrNull { it.timestamp }
     }
 
 
@@ -255,7 +255,7 @@ class P2pStoreCommunity : Community() {
                     false
                 }
             }
-            .maxByOrNull { it.insertTime!! }
+            .maxByOrNull { it.timestamp }
     }
 
     /**
@@ -271,7 +271,7 @@ class P2pStoreCommunity : Community() {
                     false
                 }
             }
-            .maxByOrNull { it.insertTime!! }
+            .maxByOrNull { it.timestamp }
     }
 
     /**

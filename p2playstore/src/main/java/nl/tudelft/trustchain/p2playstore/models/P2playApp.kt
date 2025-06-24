@@ -111,7 +111,7 @@ class P2playApp(val block: TrustChainBlock) {
                 val data = JoinRequestTransactionData(b.transaction).getData()
                 data.DAO_ID == this.daoId
             }
-            .maxByOrNull { b -> b.insertTime!! }!!
+            .maxByOrNull { b -> b.timestamp }!!
     }
 
     /**
@@ -129,7 +129,7 @@ class P2playApp(val block: TrustChainBlock) {
                 val data = JoinRequestTransactionData(b.transaction).getData()
                 data.DAO_ID == this.daoId
             }
-            .maxByOrNull { b -> b.insertTime!! }
+            .maxByOrNull { b -> b.timestamp }
         return P2playApp(latest!!)
     }
 
@@ -161,7 +161,7 @@ class P2playApp(val block: TrustChainBlock) {
         }
 
         return (myPolls + otherPolls)
-            .sortedBy { poll -> poll.block.insertTime!! }
+            .sortedBy { poll -> poll.block.timestamp }
     }
 
     /**
@@ -190,7 +190,7 @@ class P2playApp(val block: TrustChainBlock) {
                 val data = ProposeUpdateTransactionData(b.transaction).getData()
                 data.DAO_ID == daoId && b.linkPublicKey.contentEquals(myKey)
             }
-        val block = blocks.maxByOrNull { b -> b.insertTime!! }
+        val block = blocks.maxByOrNull { b -> b.timestamp }
         if (block == null) return null
         return DaoJoinPoll(block)
     }
@@ -233,7 +233,7 @@ class P2playApp(val block: TrustChainBlock) {
         return blocks
             .mapNotNull { b -> try { FeatureRequest(b) } catch (e: Throwable) { null } }
             .filter { b -> b.doaId == this.daoId }
-            .sortedBy { b -> b.block.insertTime }
+            .sortedBy { b -> b.block.timestamp }
             .reversed()
     }
 
@@ -281,7 +281,7 @@ class P2playApp(val block: TrustChainBlock) {
                     val data = JoinRequestTransactionData(b.transaction).getData()
                     data.DAO_ID == daoId
                 }
-                .maxByOrNull { b -> b.insertTime!! }
+                .maxByOrNull { b -> b.timestamp }
 
             if (latest == null) return null
             return P2playApp(latest)

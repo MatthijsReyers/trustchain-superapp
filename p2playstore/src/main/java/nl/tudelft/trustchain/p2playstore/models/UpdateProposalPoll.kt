@@ -74,7 +74,7 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
      */
     fun hasBeenReleased(): Boolean {
         return trustChain.database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
-            .filter { b -> b.insertTime!! > this.block.insertTime!! }
+            .filter { b -> b.timestamp > this.block.timestamp }
             .mapNotNull { b ->
                 try {
                     P2playApp(b)

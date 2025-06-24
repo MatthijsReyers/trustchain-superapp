@@ -460,7 +460,7 @@ class AppDetails : BaseFragment() {
         // has been released yet?
         val acceptedUpdate = this.app.getMyUpdateProposals()
             .filter { p -> p.isApproved && !p.hasBeenReleased() }
-            .maxByOrNull { p -> p.block.insertTime!! }
+            .maxByOrNull { p -> p.block.timestamp }
 
         // Looks like there is nothing to do.
         if (acceptedUpdate == null) return
