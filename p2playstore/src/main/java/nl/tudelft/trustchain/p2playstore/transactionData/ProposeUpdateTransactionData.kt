@@ -22,7 +22,10 @@ data class ProposeUpdateData(
     override var APP_CATEGORY: String,
     override var APP_ICON: Int,
     override var APP_MAGNET_LINK: String,
+<<<<<<< HEAD
 
+=======
+>>>>>>> 88ef527f (moved it back to old transactiondata)
     var FEATURE_REQUEST_ID: String,
     var SOLUTION_TITLE: String,
     var SOLUTION_DESCRIPTION: String,
@@ -36,51 +39,6 @@ class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
     fun getData(): ProposeUpdateData {
         return Gson().fromJson(getJsonString(), ProposeUpdateData::class.java)
     }
-
-    fun addNoncePk(publicKey: String) {
-        val data = getData()
-        data.SW_NONCE_PKS.add(publicKey)
-        jsonData = BlockUtils.objectToJsonObject(data)
-    }
-
-    // Constructor for regular fund transfers
-    constructor(
-        uniqueId: String,
-        previousWalletBlockHash: String,
-        requiredSignatures: Int,
-        satoshiAmount: Long,
-        bitcoinPks: List<String>,
-        noncePks: ArrayList<String>,
-        transferFundsAddressSerialized: String,
-        receiverPk: String,
-        uniqueProposalId: String,
-        transactionSerialized: String,
-        name: String,
-        description: String,
-        category: String,
-        icon: Int,
-        magnetLink: String,
-    ) : this(
-        BlockUtils.objectToJsonObject(
-            ProposeUpdateData(
-                uniqueId,
-                uniqueProposalId,
-                previousWalletBlockHash,
-                bitcoinPks,
-                noncePks,
-                requiredSignatures,
-                satoshiAmount,
-                transferFundsAddressSerialized,
-                receiverPk,
-                transactionSerialized,
-                name,
-                description,
-                category,
-                icon,
-                magnetLink,
-            )
-        )
-    )
 
     // Constructor for feature solutions
     constructor(

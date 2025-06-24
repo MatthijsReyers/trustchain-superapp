@@ -32,6 +32,23 @@ class FeatureRequest(val block: TrustChainBlock) {
     val description = blockData.FEATURE_DESCRIPTION
     val title = blockData.FEATURE_TITLE
     val reward = blockData.FEATURE_REWARD
+<<<<<<< HEAD
+=======
+//
+//    fun hasBeenFulfilled(): Boolean {
+//        val updates = trustChain.database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
+//            .filter { b ->
+//                try {
+//                    val data = UpdateAcceptedTransactionData(b.transaction).getData()
+//                    return data.DAO_ID == doaId && data.SW_UNIQUE_PROPOSAL_ID == featureRequestId
+//                }
+//                catch (e: Throwable) {
+//                    return false
+//                }
+//            }
+//        return updates.isNotEmpty()
+//    }
+>>>>>>> 88ef527f (moved it back to old transactiondata)
 
     /**
      * Gets a list of all the solutions (i.e. software updates) that have been proposed for this
@@ -102,7 +119,7 @@ class FeatureRequest(val block: TrustChainBlock) {
                 requiredSignatures = requiredSignatures,
                 rewardAmount = this.blockData.FEATURE_REWARD,
                 bitcoinPks = daoData.SW_BITCOIN_PKS,
-                developerBitcoinAddress = developerBitcoinAddress,
+                noncePks = daoData.SW_NONCE_PKS,                developerBitcoinAddress = developerBitcoinAddress,
                 receiverPk = memberPk, // Set specific receiver
                 uniqueProposalId = proposalId,
                 transactionSerialized = daoData.SW_TRANSACTION_SERIALIZED,

@@ -320,6 +320,7 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
         // Create an UPDATE_ACCEPTED_BLOCK for the successful transfer with app metadata
         val updateAcceptedData = UpdateAcceptedTransactionData(
             this.daoId,
+            this.featureRequestId,
             serializedTransaction,
             this.rewardAmount,
             latestJoinBlockData.SW_TRUSTCHAIN_PKS,
