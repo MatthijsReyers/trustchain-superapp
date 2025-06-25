@@ -160,45 +160,8 @@
 
         </LinearLayout>
         <!-- Feature Request Button -->
-        <Button
-            android:id="@+id/btn_feature_request"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
-            android:backgroundTint="#1E88E5"
-            android:text="Request Feature"
-            android:textColor="@android:color/white" />
 
         <!-- Screenshots -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="8dp"
-            android:text="Latest Update"
-            android:textColor="@android:color/black"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clipToPadding="false"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:scrollbars="none">
-
-            <LinearLayout
-                android:id="@+id/screenshots_container"
-                android:layout_width="wrap_content"
-                android:layout_height="200dp"
-                android:orientation="horizontal"/>
-        </HorizontalScrollView>
-
-        <!-- About this DAO -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -211,18 +174,11 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
-                android:text="About this DAO"
+                android:text="About this application"
                 android:textColor="@android:color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
-            <ImageView
-                android:id="@+id/btn_expand_about"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:src="@drawable/ic_arrow_drop_down_black_16dp" />
         </RelativeLayout>
 
         <TextView
@@ -235,6 +191,36 @@
             android:paddingBottom="16dp"
             android:text="This is a decentralized application that provides feature X and Y"
             android:textColor="@android:color/black" />
+
+        <TextView
+            android:id="@+id/screenshots_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:text="Screenshots"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <HorizontalScrollView
+            android:id="@+id/screenshots"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/screenshots_container"
+                android:layout_width="wrap_content"
+                android:layout_height="200dp"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
+        <!-- About this DAO -->
 
         <!-- Recent Update Voting -->
         <RelativeLayout
@@ -340,16 +326,30 @@
             android:text="No pending feature requests"
             android:textColor="@android:color/darker_gray"
             android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btn_feature_request"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="0dp"
+            android:backgroundTint="#1E88E5"
+            android:text="Request Feature"
+            android:textColor="@android:color/white"
+            android:visibility="visible" />
+
         <Button
             android:id="@+id/btnOpenWallet"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="0dp"
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="8dp"
-            android:text="View DAO Wallet"
             android:backgroundTint="#FF9800"
+            android:text="View DAO Wallet"
             android:textColor="@android:color/white" />
 
     </LinearLayout>
