@@ -79,7 +79,7 @@ class AppDetails : BaseFragment() {
         try {
             // Actually retrieve the block
             val community = this.getTrustChainCommunity()
-            val daoBlock = community.database.get(publicKey, sequenceNumber)!!
+            this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
             this.app = P2playApp(daoBlock)
         }
         catch (e: Throwable) {
@@ -363,8 +363,10 @@ class AppDetails : BaseFragment() {
             return
         }
 
+        val apkPath = apkFile.path
+
         val intent = Intent(applicationContext, ExecutionActivity::class.java).apply {
-            putExtra("fileName", apkFile.path)
+            putExtra("fileName", apkPath)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
