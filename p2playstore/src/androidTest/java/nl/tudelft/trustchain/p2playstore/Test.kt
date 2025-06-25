@@ -5,14 +5,7 @@ import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 import org.junit.Assert.*
 import org.junit.Test
 
-class TestPoll(yesVotes: Int, noVotes: Int, override val votesRequired: Int) : Poll(fakeBlock) {
-    override val daoId = "dao"
-    override val proposalId = "proposal"
-    override val requestingUser = "user"
-    override val receivingUser = "receiver"
-    override fun getYesVotes() = List(yesVotes) { mockk<VoteYesData>() }
-    override fun getNoVotes() = List(noVotes) { mockk<VoteNoData>() }
-}
+
 
 class Test {
 
