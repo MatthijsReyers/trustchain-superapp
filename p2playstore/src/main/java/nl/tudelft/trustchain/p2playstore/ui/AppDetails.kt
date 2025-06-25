@@ -11,7 +11,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 
@@ -36,11 +35,8 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BL
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
-import nl.tudelft.trustchain.p2playstore.transactionData.*
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
-import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.findFilesByExtension
-import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
 
 class AppDetails : BaseFragment() {
     private lateinit var torrentManager: TorrentManager
@@ -339,7 +335,7 @@ class AppDetails : BaseFragment() {
         } catch (e: IllegalArgumentException) {
             e.message?.let {
                 Log.w("P2P", it)
-                printToast(applicationContext,"Directory containing APK not found or invalid.")
+                printToast("Directory containing APK not found or invalid.")
             }
             return
         }
@@ -347,11 +343,11 @@ class AppDetails : BaseFragment() {
         val apkFile: File
         if (apkFiles.isEmpty()) {
             Log.e("P2P", "No APK files found in: ${dir.absolutePath}")
-            printToast(applicationContext,"Could not find APK in the torrent.")
+            printToast("Could not find APK in the torrent.")
             return
         } else if (apkFiles.size > 1) {
             Log.e("P2P", "Multiple APK files found in: ${dir.absolutePath}")
-            printToast(applicationContext,"Found multiple APK's in the torrent.")
+            printToast("Found multiple APK's in the torrent.")
             return
         } else {
             apkFile = apkFiles.first()
