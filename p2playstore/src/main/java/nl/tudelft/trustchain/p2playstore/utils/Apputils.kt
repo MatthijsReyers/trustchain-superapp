@@ -17,7 +17,9 @@ import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransacti
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
 import nl.tudelft.trustchain.p2playstore.R
+import org.bitcoinj.core.Coin
 import java.io.File
+import java.util.Locale
 
 object AppUtils {
     /**
@@ -86,5 +88,24 @@ object AppUtils {
             else -> throw Exception("Not a P2PlayStore block")
         }
         return data.DAO_ID;
+    }
+
+    fun formatDynamicBalance(balance: Coin): String {
+        return when {
+            balance >= Coin.COIN -> {
+                balance.toFriendlyString()
+            }
+            balance >= Coin.CENT -> {
+                val btcValue = balance.value.toDouble() / Coin.COIN.value.toDouble()
+                String.format(Locale.getDefault(), "%.2f BTC", btcValue)
+            }
+            balance >= Coin.MILLICOIN -> {
+                val mbtc = balance.value / Coin.MILLICOIN.value
+                "$mbtc mBTC"
+            }
+            else -> {
+                "${balance.value} sats"
+            }
+        }
     }
 }

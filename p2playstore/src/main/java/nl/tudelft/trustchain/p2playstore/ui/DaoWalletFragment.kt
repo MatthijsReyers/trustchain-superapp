@@ -14,6 +14,7 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.currencyii.util.taproot.CTransaction
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils.formatDynamicBalance
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentWalletBalanceBinding
@@ -23,6 +24,7 @@ import org.bitcoinj.core.Coin
 import org.bitcoinj.params.MainNetParams
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.params.TestNet3Params
+import java.util.Locale
 
 class DaoWalletFragment : BaseFragment() {
 
@@ -180,6 +182,7 @@ class DaoWalletFragment : BaseFragment() {
         }
     }
 
+
     private fun updateUI(
         personalBalance: Coin,
         daoBalance: Coin,
@@ -187,12 +190,12 @@ class DaoWalletFragment : BaseFragment() {
         transactionBlocks: List<TrustChainBlock>
     ) {
         // Update DAO Wallet specific UI
-        binding.totalBalance.text = daoBalance.toFriendlyString() // Show THIS DAO's balance as the main balance
-        binding.daoWalletBalance.text = daoBalance.toFriendlyString()
+        binding.totalBalance.text = formatDynamicBalance(daoBalance) // Show THIS DAO's balance as the main balance
+        binding.daoWalletBalance.text = formatDynamicBalance(daoBalance)
         binding.daoWalletCount.text = "$daoMemberCount ${if (daoMemberCount == 1) "member" else "members"} in DAO" // Use member count here
 
         // Update Personal Wallet UI
-        binding.personalWalletBalance.text = personalBalance.toFriendlyString()
+        binding.personalWalletBalance.text = formatDynamicBalance(personalBalance)
 
         val networkType = when (WalletManagerAndroid.getInstance().params) {
             RegTestParams.get() -> "RegTest Network"
