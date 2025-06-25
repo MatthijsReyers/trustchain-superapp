@@ -26,7 +26,6 @@ class P2pStoreCommunity : Community() {
     }
 
     val daoJoinHelper = DAOJoinHelper()
-    val daoTransferFundsHelper = DAOTransferFundsHelper()
 
     /**
      * 2.1 Send a proposal on the trust chain to join a shared wallet and to collect signatures. The
@@ -60,45 +59,6 @@ class P2pStoreCommunity : Community() {
         context: Context
     ) {
         daoJoinHelper.joinBitcoinWallet(myPeer, walletBlockData, blockData, responses, context)
-    }
-
-    /**
-     * 3.2 Transfer funds from an existing shared wallet to a third-party. Broadcast bitcoin
-     * transaction.
-     * @param walletData
-     * - SWJoinBlockTD, the data about the wallet when joining the wallet
-     * @param walletBlockData
-     * - TrustChainTransaction, describes the wallet where the transfer is from
-     * @param blockData
-     * - SWTransferFundsAskBlockTD, the block where the other users are voting on
-     * @param responses
-     * - List<SWResponseSignatureBlockTD>, the list with positive responses on the voting
-     * @param receiverAddress
-     * - String, the address where the transfer needs to go
-     * @param satoshiAmount
-     * - Long, the amount that needs to be transferred
-     */
-    fun transferFunds(
-        walletData: JoinDoaData,
-        walletBlockData: TrustChainTransaction,
-        blockData: ProposeUpdateData,
-        voteResponses: List<BaseData>,
-        receiverAddress: String,
-        satoshiAmount: Long,
-        context: Context,
-        activity: Activity
-    ) {
-        daoTransferFundsHelper.transferFunds(
-            myPeer,
-            walletData,
-            walletBlockData,
-            blockData,
-            voteResponses,
-            receiverAddress,
-            satoshiAmount,
-            context,
-            activity
-        )
     }
 
     /**
@@ -342,7 +302,7 @@ class P2pStoreCommunity : Community() {
                 previousWalletBlockHash = latestDaoBlock.calculateHash().toHex(), // Use hash of overall latest DAO block
                 requiredSignatures = requiredSignatures, // Calculated based on latest members and threshold
                 rewardAmount = featureRequest.FEATURE_REWARD,
-                bitcoinPks = trustChainPks,
+                bitcoinPks = ArrayList(trustChainPks),
                 noncePks = noncePks,
                 developerBitcoinAddress = developerBitcoinAddress,
                 receiverPk = memberPk,

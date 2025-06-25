@@ -28,7 +28,7 @@ import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 class P2playApp(val block: TrustChainBlock) {
     private val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
 
-    private val daoData: AppMetaData = when(block.type) {
+    val blockData: AppMetaData = when(block.type) {
         JOIN_BLOCK -> JoinDaoTransactionData(block.transaction).getData()
         UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(block.transaction).getData()
         PROPOSE_UPDATE_BLOCK -> ProposeUpdateTransactionData(block.transaction).getData()
@@ -39,13 +39,13 @@ class P2playApp(val block: TrustChainBlock) {
      * Unique identifier for the DAO that belongs to this app, this ID remains the same across all
      * different versions/updates of the app.
      */
-    val daoId = daoData.DAO_ID
+    val daoId = blockData.DAO_ID
 
-    val name: String get() = this.daoData.APP_NAME
-    val description: String get() = this.daoData.APP_DESCRIPTION
-    val category: String get() = this.daoData.APP_CATEGORY
-    val icon: Int get() = iconFromIconId(this.daoData.APP_ICON)
-    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(this.daoData.APP_MAGNET_LINK)
+    val name: String get() = this.blockData.APP_NAME
+    val description: String get() = this.blockData.APP_DESCRIPTION
+    val category: String get() = this.blockData.APP_CATEGORY
+    val icon: Int get() = iconFromIconId(this.blockData.APP_ICON)
+    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(this.blockData.APP_MAGNET_LINK)
 
     /**
      * Unique number to identify a specific update/version of the app, note that these numbers are
@@ -54,9 +54,9 @@ class P2playApp(val block: TrustChainBlock) {
     val version: Int get() = this.block.hashNumber
 
     private fun getSharedWalletPublicKeys(): ArrayList<String> {
-        return when (daoData) {
-            is JoinDoaData -> daoData.SW_TRUSTCHAIN_PKS
-            is UpdateAcceptedData -> daoData.SW_TRUSTCHAIN_PKS
+        return when (blockData) {
+            is JoinDoaData -> blockData.SW_TRUSTCHAIN_PKS
+            is UpdateAcceptedData -> blockData.SW_TRUSTCHAIN_PKS
             else -> arrayListOf()
         }
     }
@@ -64,11 +64,11 @@ class P2playApp(val block: TrustChainBlock) {
     fun getDoaVoteThreshold(): Int {
         try {
             if (block.type == JOIN_BLOCK) {
-                return (daoData as JoinDoaData).SW_VOTING_THRESHOLD
+                return (blockData as JoinDoaData).SW_VOTING_THRESHOLD
             } else if (block.type == PROPOSE_UPDATE_BLOCK
-                && (daoData as ProposeUpdateData).FEATURE_REQUEST_ID != null) {
+                && (blockData as ProposeUpdateData).FEATURE_REQUEST_ID != null) {
                 // Feature Solution proposals also contain voting threshold
-                return daoData.SW_SIGNATURES_REQUIRED
+                return blockData.SW_SIGNATURES_REQUIRED
             }
             val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
             return data.SW_VOTING_THRESHOLD
@@ -92,7 +92,7 @@ class P2playApp(val block: TrustChainBlock) {
     fun getEntranceFee(): Long {
         try {
             if (block.type == JOIN_BLOCK) {
-                return (daoData as JoinDoaData).SW_ENTRANCE_FEE
+                return (blockData as JoinDoaData).SW_ENTRANCE_FEE
             }
             val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
             return data.SW_ENTRANCE_FEE

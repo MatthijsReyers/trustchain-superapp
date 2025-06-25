@@ -108,38 +108,6 @@ class PollDetailsFragment : BaseFragment() {
                 updateBottomCard()
                 updateProgressBars()
                 updateVoteButtons()
-
-                // Trigger reward transfer if it's an approved feature solution and not yet initiated
-                if (updatePoll != null && updatePoll!!.isApproved && !isTransferInitiated) {
-                    Log.d(
-                        "PollDetailsFragment",
-                        "Approved UpdateProposalPoll detected, triggering reward transfer."
-                    )
-                    // Set flag to prevent multiple triggers
-                    isTransferInitiated = true
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        try {
-                            updatePoll!!.triggerRewardTransfer(
-                                requireContext(),
-                                requireActivity()
-                            )
-                        } catch (e: Exception) {
-                            Log.e(
-                                "PollDetailsFragment",
-                                "Error during reward transfer: ${e.message}",
-                                e
-                            )
-                            requireActivity().runOnUiThread {
-                                Toast.makeText(
-                                    context,
-                                    "Error initiating reward transfer: ${e.message}",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
-                            isTransferInitiated = false // Allow retry if it failed
-                        }
-                    }
-                }
             }
         }
         catch (err: Throwable) {

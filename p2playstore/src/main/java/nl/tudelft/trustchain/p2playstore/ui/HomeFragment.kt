@@ -226,23 +226,11 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                         requireContext()
                     )
                 }
-
-                android.widget.Toast.makeText(
-                    requireContext(),
-                    "DAO '$name' created successfully!",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
-                // Reload the DAO data
+                printToast("DAO '$name' created successfully!")
                 updateAppsLists()
             } catch (e: Exception) {
                 Log.e("P2PlayStore", "Error creating DAO: ${e.message}")
-                withContext(Dispatchers.Main) {
-                    android.widget.Toast.makeText(
-                        requireContext(),
-                        "Failed to create DAO: ${e.message}",
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-                }
+                printToast("Failed to create DAO: ${e.message}")
             }
         }
     }

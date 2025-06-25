@@ -63,7 +63,7 @@ abstract class BaseFragment(
 
     private val listener: BlockListener = object: BlockListener {
         override fun onBlockReceived(block: TrustChainBlock) {
-            Log.d("P2pStore", "Chain update ${block.type}")
+            Log.d("P2PlayStore", "Chain update ${block.type}")
             lifecycleScope.launch(Dispatchers.Main) {
                 delay(500)
                 onChainUpdated(block)

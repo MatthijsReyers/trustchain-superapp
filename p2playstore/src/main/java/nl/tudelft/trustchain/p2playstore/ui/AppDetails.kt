@@ -586,7 +586,8 @@ class AppDetails : BaseFragment() {
     }
 
     /**
-     *
+     * Checks if the user has submitted an update, which has now been accepted (in which case the
+     * submitting user should now create an UPDATE_ACCEPTED block with the collected signatures).
      */
     private fun finalizeUpdate() {
         // Have I proposed any updates that have since been accepted but for which no update block
