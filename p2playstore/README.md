@@ -14,7 +14,49 @@ The project is split into multiple modules to achieve maintainable, modular and 
 - **UI**: Contains the code that provides the functionality of what happens on screen and provides the connection to the backend of the application.
 - **Utils**: Contains externally imported helper functions for the application (including DAO Create and Join helpers) and to help debugging the application.
 
-## Source code
+## Code structure
+
+When trying to integrate the code of other groups we ran into problems with their business logic and UI being tightly coupled forcing us to copy all their code and make modifications to it rather than be able to import the parts we need and prevent duplication.
+This is obviously bad for long term maintainability which is why we aimed to design our business logic in such a modular way that it could easily be imported and extended by future groups without forcing them to copy it wholesale.
+
+### Block transaction data
+
+The transaction data stored inside the various block types was defined using Kotlin data classes found in the `nl.tudelft.trustchain.p2playstore.transactionData` package (in exactly the same way many other apps in the super app do it). 
+But to ensure modularity and allow future developers to extend these blocks with their own functionality, should a special kind of app require that we defined several interfaces which our block data classes implement which should allow for an easy and type-safe way to extend the P2PlayStore blocks.
+
+### Active record pattern
+
+With the above mentioned desire for modularity in my mind, we choose to use an active record design pattern as you might find in a more traditional relational database-based application. 
+Which essentially means that we modeled all the high level abstractions in our application such as Apps/DAO's, Feature requests, and Voting polls as classes with methods for performing the high-level actions we want to do with these things.
+We call these classes models and they can be found in the `nl.tudelft.trustchain.p2playstore.models` package. For example, below is a simplified version of the `P2playApp` model, which allows for writing nice high level code like `P2playApp.findByDoaId(id)` or `app.getDaoWalletBalance()`.
+
+```kotlin
+class P2playApp(val block: TrustChainBlock) {
+    fun requestToJoinDao()
+    fun getDaoWalletBalance(): Long
+    fun getFeatureRequests(): List<FeatureRequest> 
+    companion object {
+        fun createApp(...): P2playApp
+        fun findByDaoId(daoId: String): P2playApp?
+    }
+}
+```
+
+The general design goal/rule here was that Fragments (i.e. Android UI code) should contain no interactions with the trustchain community or trustchain blocks, as this kind of low-level interaction indicates that business logic is being put in the UI. 
+Fragments should only call the methods of the models and do things like input validation and error handling.
+(The minor exception being the creation of block creation/discovery event listeners on the trustchain community, which are needed to reactively update the UI when another user performs an action).
+
+For future maintainability and ease-of-use all most all public methods of the models have been well documented using javadoc comments (which are easily visible in most IDE's when hovering over a method's usage).
+Additionally we aimed for 100% test coverage of the models in unit tests, though we have not quite reached that number yet.
+
+### Example application/benefit of the models
+
+A good example of how the "active record" models can make the app's design more efficient is our use of an abstract `Poll` class.
+Note that there are two types of polls that a member of an app's DAO can vote on in this application, a join request created by a user who wants to join the app's DAO (a `DaoJoinPoll`), and a software update proposal by a developer in te app's DAO (an `UpdateProposalPoll`).
+However since the functionality of these two polls is very similar (they are in fact voted on using the same block types), it does not make sense two implement this voting functionality twice.
+Which is why we implemented it in the abstract `Poll` class instead, which in turns allows us to create a single voting page that does not care what kind of poll is loaded into it.
+
+<p align="center"><img src="./docs/poll.png" width="350px"></p>
 
 
 ## Block types
@@ -34,7 +76,7 @@ Practically speaking only the `UPDATE_ACCEPTED_BLOCK` & `JOIN_BLOCK` actually co
 
 ## Example chains
 
-To further illustrate the TrustChain side of things we have
+To further illustrate the TrustChain side of things we have illustrated some sections of chains below:
 
 ### Creating a DAO and letting a second member join
 

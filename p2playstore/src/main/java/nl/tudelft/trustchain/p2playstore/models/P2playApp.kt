@@ -29,6 +29,10 @@ import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 
+/**
+ * Represents an instance of a P2PlayStore application and specifically the version of the
+ * application described in the block passed to the constructor.
+ */
 class P2playApp(val block: TrustChainBlock) {
     private val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
 
