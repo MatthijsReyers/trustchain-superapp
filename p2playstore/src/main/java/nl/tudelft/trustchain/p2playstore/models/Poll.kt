@@ -141,7 +141,7 @@ abstract class Poll(val block: TrustChainBlock) {
         }
         // Null safety: such an app must exist otherwise this poll class could never actually be
         // instantiated.
-        return P2playApp.findByDoaId(this.daoId)!!
+        return P2playApp.findByDaoId(this.daoId)!!
     }
 
     fun getAllVotes() = (this.getYesVotes() + this.getNoVotes())
@@ -164,8 +164,8 @@ abstract class Poll(val block: TrustChainBlock) {
             isApproved -> "Approved"
             isDenied -> "Voting Closed - Not Approved"
             hasUserVoted() -> "✓ You voted ${if (getMyVote()?.type == P2pStoreCommunity.VOTE_YES_BLOCK) "Yes" else "No"}"
-            isUserMember() -> "${votes} of ${getApp().getDoaMemberCount()} members voted"
-            else -> "${votes} of ${getApp().getDoaMemberCount()} members voted"
+            isUserMember() -> "$votes of ${getApp().getDaoMemberCount()} members voted"
+            else -> "$votes of ${getApp().getDaoMemberCount()} members voted"
         }
     }
 

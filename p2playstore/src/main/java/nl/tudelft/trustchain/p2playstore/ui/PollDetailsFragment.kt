@@ -1,6 +1,6 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
-import UpdateProposalPoll
+import nl.tudelft.trustchain.p2playstore.models.UpdateProposalPoll
 import android.os.Bundle
 import android.widget.Toast
 import android.util.Log
@@ -126,7 +126,7 @@ class PollDetailsFragment : BaseFragment() {
 
                 // Trigger reward transfer if it's an approved feature solution and not yet initiated
                 if (poll is UpdateProposalPoll && poll.isApproved && !isTransferInitiated) {
-                    Log.d("PollDetailsFragment", "Approved UpdateProposalPoll detected, triggering reward transfer.")
+                    Log.d("PollDetailsFragment", "Approved nl.tudelft.trustchain.p2playstore.models.UpdateProposalPoll detected, triggering reward transfer.")
                     isTransferInitiated = true // Set flag to prevent multiple triggers
                     lifecycleScope.launch(Dispatchers.IO) {
                         try {

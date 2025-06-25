@@ -37,7 +37,7 @@ class AllPollsFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
         try {
             this.daoId = arguments?.getString("daoId")!!
-            this.app = P2playApp.findByDoaId(daoId)!!
+            this.app = P2playApp.findByDaoId(daoId)!!
             this.loadPolls()
         }
         catch (err: Throwable) {

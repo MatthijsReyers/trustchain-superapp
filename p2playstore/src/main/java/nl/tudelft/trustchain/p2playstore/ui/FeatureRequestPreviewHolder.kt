@@ -39,7 +39,7 @@ class FeatureRequestPreviewHolder(
                     .navigate(
                         destBtn,
                         Bundle().apply {
-                            putString("daoId", request.doaId)
+                            putString("daoId", request.daoId)
                             putString("featureRequestId", request.featureRequestId)
                         }
                     )

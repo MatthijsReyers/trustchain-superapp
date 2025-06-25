@@ -36,7 +36,7 @@ class FeatureRequestFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val daoId = arguments?.getString("daoId") as String
-        this.app = P2playApp.findByDoaId(daoId)!!
+        this.app = P2playApp.findByDaoId(daoId)!!
 
         this.daoBlockId = this.app.block.blockId
         this.daoUniqueId = daoId

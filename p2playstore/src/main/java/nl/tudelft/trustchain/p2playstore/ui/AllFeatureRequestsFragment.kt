@@ -34,7 +34,7 @@ class AllFeatureRequestsFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
         try {
             val daoId = arguments?.getString("daoId") as String
-            this.app = P2playApp.findByDoaId(daoId)!!
+            this.app = P2playApp.findByDaoId(daoId)!!
 
             setupRecyclerView()
             setupClickListeners()

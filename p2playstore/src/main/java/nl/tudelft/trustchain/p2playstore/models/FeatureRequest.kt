@@ -1,16 +1,13 @@
 package nl.tudelft.trustchain.p2playstore.models
 
-import UpdateProposalPoll
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestData
 import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
@@ -27,7 +24,7 @@ class FeatureRequest(val block: TrustChainBlock) {
 
     private val blockData: FeatureRequestData = FeatureRequestTransactionData(block.transaction).getData()
 
-    val doaId = blockData.DAO_ID
+    val daoId = blockData.DAO_ID
     val featureRequestId = blockData.FEATURE_REQUEST_ID
     val description = blockData.FEATURE_DESCRIPTION
     val title = blockData.FEATURE_TITLE
@@ -38,7 +35,7 @@ class FeatureRequest(val block: TrustChainBlock) {
 //            .filter { b ->
 //                try {
 //                    val data = UpdateAcceptedTransactionData(b.transaction).getData()
-//                    return data.DAO_ID == doaId && data.SW_UNIQUE_PROPOSAL_ID == featureRequestId
+//                    return data.DAO_ID == daoId && data.SW_UNIQUE_PROPOSAL_ID == featureRequestId
 //                }
 //                catch (e: Throwable) {
 //                    return false
@@ -58,7 +55,7 @@ class FeatureRequest(val block: TrustChainBlock) {
                 try { UpdateProposalPoll(b) }
                 catch (e: Throwable) { null }
             }
-            .filter { p -> p.daoId == this.doaId && p.featureRequestId == this.featureRequestId }
+            .filter { p -> p.daoId == this.daoId && p.featureRequestId == this.featureRequestId }
 
         // Find the actual unique proposals
         val proposals = allProposals.distinctBy { p -> p.proposalId }
@@ -93,7 +90,7 @@ class FeatureRequest(val block: TrustChainBlock) {
         magnetLink: String,
         developerBitcoinAddress: String
     ) {
-        val app = P2playApp.findByDoaId(this.doaId)!!
+        val app = P2playApp.findByDaoId(this.daoId)!!
         val latestDaoBlock = app.getLatestJoin()
         val daoData = JoinDaoTransactionData(latestDaoBlock.transaction).getData()
 
@@ -106,7 +103,7 @@ class FeatureRequest(val block: TrustChainBlock) {
         // Send proposal to all DAO members
         for (memberPk in daoData.SW_TRUSTCHAIN_PKS) {
             val memberSpecificProposal = ProposeUpdateTransactionData(
-                daoId = this.doaId,
+                daoId = this.daoId,
                 featureRequestId = this.featureRequestId,
                 solutionTitle = title,
                 solutionDescription = description,

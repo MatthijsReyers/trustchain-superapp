@@ -9,7 +9,6 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.transactionData.*
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
@@ -113,7 +112,7 @@ class P2pStoreCommunity : Community() {
      * - Long, the amount that needs to be transferred
      */
     fun transferFunds(
-        walletData: JoinDoaData,
+        walletData: JoinDaoData,
         walletBlockData: TrustChainTransaction,
         blockData: ProposeUpdateData,
         voteResponses: List<BaseData>,
@@ -125,7 +124,6 @@ class P2pStoreCommunity : Community() {
         daoTransferFundsHelper.transferFunds(
             myPeer,
             walletData,
-            walletBlockData,
             blockData,
             voteResponses,
             receiverAddress,
@@ -415,21 +413,21 @@ class P2pStoreCommunity : Community() {
         }
 
         val trustChainPks: List<String>? = when (daoData) {
-            is JoinDoaData -> daoData.SW_BITCOIN_PKS
+            is JoinDaoData -> daoData.SW_BITCOIN_PKS
             is UpdateAcceptedData -> daoData.SW_BITCOIN_PKS // Assuming UpdateAcceptedData has it
             is ProposeUpdateData -> daoData.SW_BITCOIN_PKS // Assuming ProposeUpdateData class exists and has it
             else -> null // Or throw an exception if this state is unexpected
         }
 
         val serialized_transaction: String? = when (daoData) {
-            is JoinDoaData -> daoData.SW_TRANSACTION_SERIALIZED
+            is JoinDaoData -> daoData.SW_TRANSACTION_SERIALIZED
             is UpdateAcceptedData -> daoData.SW_TRANSACTION_SERIALIZED
             is ProposeUpdateData -> daoData.SW_TRANSFER_FUNDS_TARGET_SERIALIZED
             else -> null
         }
 
         val noncePks: ArrayList<String> = when (daoData) {
-            is JoinDoaData -> daoData.SW_NONCE_PKS
+            is JoinDaoData -> daoData.SW_NONCE_PKS
             is UpdateAcceptedData -> daoData.SW_NONCE_PKS // Assuming UpdateAcceptedData has it
             else -> arrayListOf() // Should not happen
         }

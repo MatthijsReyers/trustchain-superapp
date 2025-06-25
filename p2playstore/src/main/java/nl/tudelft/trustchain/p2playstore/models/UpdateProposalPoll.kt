@@ -1,3 +1,5 @@
+package nl.tudelft.trustchain.p2playstore.models
+
 import android.app.Activity
 import android.content.Context
 import android.util.Log
@@ -13,11 +15,9 @@ import nl.tudelft.trustchain.currencyii.sharedWallet.SWResponseSignatureBlockTD
 import nl.tudelft.trustchain.currencyii.util.taproot.MuSig
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
-import nl.tudelft.trustchain.p2playstore.models.P2playApp
-import nl.tudelft.trustchain.p2playstore.models.Poll
 import nl.tudelft.trustchain.p2playstore.transactionData.BaseData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoData
@@ -25,6 +25,7 @@ import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
+import nl.tudelft.trustchain.p2playstore.utils.taproot.CTransaction
 import org.bitcoinj.core.Address
 import org.bitcoinj.core.ECKey
 import java.math.BigInteger
@@ -92,7 +93,7 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
         context: Context,
         activity: Activity
     ) {
-        Log.d("UpdateProposalPoll", "triggerRewardTransfer called for poll ${proposalId}")
+        Log.d("UpdateProposalPoll", "triggerRewardTransfer called for poll $proposalId")
 
         val walletManager = WalletManagerAndroid.getInstance()
         val p2pStoreCommunity = P2pStoreCommunity()
@@ -137,7 +138,7 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
                     else -> null
                 }
                 if (serializedTx != null) {
-                    nl.tudelft.trustchain.currencyii.util.taproot.CTransaction().deserialize(serializedTx.hexToBytes()).vout.find { it.scriptPubKey.size == 35 }?.nValue ?: 0L
+                    CTransaction().deserialize(serializedTx.hexToBytes()).vout.find { it.scriptPubKey.size == 35 }?.nValue ?: 0L
                 } else {
                     0L
                 }
@@ -219,7 +220,7 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
      * Broadcast bitcoin transaction.
      */
     private fun transferFunds(
-        walletData: JoinDoaData, // Data from the latest JOIN block
+        walletData: JoinDaoData, // Data from the latest JOIN block
         voteResponses: List<BaseData>, // All vote responses (including NO)
         receiverAddress: String,
         paymentAmount: Long,
@@ -314,7 +315,7 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
      */
     private fun broadcastTransferFundSuccessful(
         myPeer: Peer,
-        latestJoinBlockData: JoinDoaData, // Data from the latest JOIN block (P2PStore specific)
+        latestJoinBlockData: JoinDaoData, // Data from the latest JOIN block (P2PStore specific)
         serializedTransaction: String, // The new transaction
     ) {
         // Create an UPDATE_ACCEPTED_BLOCK for the successful transfer with app metadata

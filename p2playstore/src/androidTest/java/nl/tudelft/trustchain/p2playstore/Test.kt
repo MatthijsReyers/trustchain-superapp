@@ -180,18 +180,111 @@ class Test {
     }
 
     @Test
+    fun joinDaoTransactionData_serialization_roundtrip() {
+        val data =
+            JoinDaoData(
+                DAO_ID = "daoJoin",
+                SW_ENTRANCE_FEE = 1L,
+                SW_TRANSACTION_SERIALIZED = "txJoin",
+                SW_VOTING_THRESHOLD = 1,
+                SW_TRUSTCHAIN_PKS = arrayListOf("123", "456"),
+                SW_BITCOIN_PKS = arrayListOf("123", "456"),
+                SW_NONCE_PKS = arrayListOf("345", "567"),
+                APP_NAME = "Name",
+                APP_DESCRIPTION = "Description",
+                APP_CATEGORY = "Category",
+                APP_ICON = 1,
+                APP_MAGNET_LINK = "magnetlink"
+            )
+        val tx =
+            JoinDaoTransactionData(
+                data.SW_ENTRANCE_FEE,
+                data.SW_TRANSACTION_SERIALIZED,
+                data.SW_VOTING_THRESHOLD,
+                data.SW_TRUSTCHAIN_PKS,
+                data.SW_BITCOIN_PKS,
+                data.SW_NONCE_PKS,
+                data.DAO_ID,
+                data.APP_NAME,
+                data.APP_DESCRIPTION,
+                data.APP_CATEGORY,
+                data.APP_ICON,
+                data.APP_MAGNET_LINK
+            )
+        val parsed = tx.getData()
+        assertEquals(data.DAO_ID, parsed.DAO_ID)
+        assertEquals(data.SW_ENTRANCE_FEE, parsed.SW_ENTRANCE_FEE)
+        assertEquals(data.SW_TRANSACTION_SERIALIZED, parsed.SW_TRANSACTION_SERIALIZED)
+        assertEquals(data.SW_VOTING_THRESHOLD, parsed.SW_VOTING_THRESHOLD)
+        assertEquals(data.SW_TRUSTCHAIN_PKS, parsed.SW_TRUSTCHAIN_PKS)
+        assertEquals(data.SW_BITCOIN_PKS, parsed.SW_BITCOIN_PKS)
+        assertEquals(data.SW_NONCE_PKS, parsed.SW_NONCE_PKS)
+        assertEquals(data.APP_NAME, parsed.APP_NAME)
+        assertEquals(data.APP_DESCRIPTION, parsed.APP_DESCRIPTION)
+        assertEquals(data.APP_CATEGORY, parsed.APP_CATEGORY)
+        assertEquals(data.APP_ICON, parsed.APP_ICON)
+        assertEquals(data.APP_MAGNET_LINK, parsed.APP_MAGNET_LINK)
+    }
+
+    @Test
+    fun updatedAcceptedTransactionData_serialization_roundtrip() {
+        val data =
+            UpdateAcceptedData(
+                DAO_ID = "daoJoin",
+                FEATURE_REQUEST_ID = "123",
+                SW_UNIQUE_PROPOSAL_ID = "456",
+                SW_TRANSACTION_SERIALIZED = "txJoin",
+                SW_TRUSTCHAIN_PKS = arrayListOf("123", "456"),
+                SW_BITCOIN_PKS = arrayListOf("123", "456"),
+                SW_NONCE_PKS = arrayListOf("345", "567"),
+                SW_TRANSFER_FUNDS_AMOUNT = 1L,
+                SW_TRANSFER_FUNDS_TARGET_SERIALIZED = "1h24y",
+                APP_NAME = "Name",
+                APP_DESCRIPTION = "Description",
+                APP_CATEGORY = "Category",
+                APP_ICON = 1,
+                APP_MAGNET_LINK = "magnetlink"
+            )
+        val tx =
+            UpdateAcceptedTransactionData(
+                data.DAO_ID,
+                data.FEATURE_REQUEST_ID,
+                data.SW_TRANSACTION_SERIALIZED,
+                data.SW_TRANSFER_FUNDS_AMOUNT,
+                data.SW_TRUSTCHAIN_PKS,
+                data.SW_BITCOIN_PKS,
+                data.SW_NONCE_PKS,
+                data.SW_TRANSFER_FUNDS_TARGET_SERIALIZED,
+                data.SW_UNIQUE_PROPOSAL_ID,
+                data.APP_NAME,
+                data.APP_DESCRIPTION,
+                data.APP_CATEGORY,
+                data.APP_ICON,
+                data.APP_MAGNET_LINK
+            )
+        val parsed = tx.getData()
+        assertEquals(data.DAO_ID, parsed.DAO_ID)
+        assertEquals(data.FEATURE_REQUEST_ID, parsed.FEATURE_REQUEST_ID)
+        assertEquals(data.SW_UNIQUE_PROPOSAL_ID, parsed.SW_UNIQUE_PROPOSAL_ID)
+        assertEquals(data.SW_TRANSFER_FUNDS_AMOUNT, parsed.SW_TRANSFER_FUNDS_AMOUNT)
+        assertEquals(data.SW_TRUSTCHAIN_PKS, parsed.SW_TRUSTCHAIN_PKS)
+        assertEquals(data.SW_BITCOIN_PKS, parsed.SW_BITCOIN_PKS)
+        assertEquals(data.SW_NONCE_PKS, parsed.SW_NONCE_PKS)
+        assertEquals(data.SW_TRANSACTION_SERIALIZED, parsed.SW_TRANSACTION_SERIALIZED)
+        assertEquals(data.SW_TRANSFER_FUNDS_TARGET_SERIALIZED, parsed.SW_TRANSFER_FUNDS_TARGET_SERIALIZED)
+        assertEquals(data.APP_NAME, parsed.APP_NAME)
+        assertEquals(data.APP_DESCRIPTION, parsed.APP_DESCRIPTION)
+        assertEquals(data.APP_CATEGORY, parsed.APP_CATEGORY)
+        assertEquals(data.APP_ICON, parsed.APP_ICON)
+        assertEquals(data.APP_MAGNET_LINK, parsed.APP_MAGNET_LINK)
+    }
+
+    @Test
     fun blockUtils_randomUUID_isUnique() {
         val uuid1 = BlockUtils.randomUUID()
         val uuid2 = BlockUtils.randomUUID()
         assertNotEquals(uuid1, uuid2)
         assertEquals(22, uuid1.length)
         assertEquals(22, uuid2.length)
-    }
-    @Test
-    fun testPollApprovalLogic() {
-        val poll = TestPoll(yesVotes = 2, noVotes = 0, votesRequired = 2)
-        // assertTrue(poll.isApproved)
-        // assertFalse(poll.isDenied)
-        // assertFalse(poll.isPending)
     }
 }
