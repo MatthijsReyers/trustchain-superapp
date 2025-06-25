@@ -74,7 +74,7 @@
             app:enterAnim="@anim/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim" />
         <action
-            android:id="@+id/action_appDetailsFragment_to_daoWalletFragment"
+            android:id="@+id/action_appDetails_to_daoWalletFragment"
             app:destination="@id/daoWalletFragment"
             app:enterAnim="@anim/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim" />
