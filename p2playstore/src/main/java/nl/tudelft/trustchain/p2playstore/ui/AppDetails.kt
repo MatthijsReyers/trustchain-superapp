@@ -452,13 +452,18 @@ class AppDetails : BaseFragment() {
                 setOf(".bmp", ".gif", ".heif", ".heic", ".jpeg", ".jpg", ".png", ".webp")
             ).sorted()
         } catch (e: IllegalArgumentException) {
-            e.message?.let { Log.d("P2P", it) }
-            return
+            e.message?.let { Log.d("P2PlayStore", it) }
+            emptyList()
         }
 
         if (files.isEmpty()) {
             Log.d("P2P", "No image files found in: ${dir.path}")
+            binding.screenshots.visibility = View.GONE
+            binding.screenshotsHeader.visibility = View.GONE
             return
+        } else {
+            binding.screenshots.visibility = View.VISIBLE
+            binding.screenshotsHeader.visibility = View.VISIBLE
         }
 
         val container = binding.screenshotsContainer
