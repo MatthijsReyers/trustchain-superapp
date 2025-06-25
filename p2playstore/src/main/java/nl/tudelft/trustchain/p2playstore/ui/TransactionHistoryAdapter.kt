@@ -53,14 +53,8 @@ class TransactionHistoryAdapter(
                         // Use DAO ID if available, otherwise block ID
                         binding.tvDaoId.text = data.DAO_ID.take(8) + "..."
                         binding.tvTransactionType.text = "DAO Joined"
-
-                        // Get the value of the shared wallet output from the serialized transaction
-                        val serializedTx = data.SW_TRANSACTION_SERIALIZED
-                        val cTx = CTransaction().deserialize(serializedTx.hexToBytes())
-                        val sharedWalletOutputValue = cTx.vout.find { it.scriptPubKey.size == 35 }?.nValue ?: 0L
-
                         binding.tvAmountLabel.text = "New Total Balance:"
-                        binding.tvAmount.text = formatDynamicBalance(Coin.valueOf(sharedWalletOutputValue))
+                        binding.tvAmount.text = formatDynamicBalance(Coin.valueOf(data.SW_ENTRANCE_FEE))
                         binding.tvDetails.text = "New member joined DAO ${data.DAO_ID.take(8)}..."
                         binding.tvDetails.visibility = View.VISIBLE
 
