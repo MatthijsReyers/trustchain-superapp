@@ -11,7 +11,6 @@ import nl.tudelft.trustchain.p2playstore.models.FeatureRequest
 class FeatureRequestPreviewHolder(
     private val binding: FeatureRequestPreviewBinding,
     private val destBtn: Int = R.id.action_featureListFragment_to_featureSolutionFragment,
-    // private val dest: Int = R.id.action_featureListFragment_to_featureSolutionFragment,
 ) : RecyclerView.ViewHolder(binding.root) {
 
     fun hide() {

@@ -1,6 +1,7 @@
 package nl.tudelft.trustchain.p2playstore.models
 
 import UpdateProposalPoll
+import android.content.Context
 import android.util.Log
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
@@ -11,7 +12,6 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
-import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.AppMetaData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
@@ -20,6 +20,7 @@ import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
+import nl.tudelft.trustchain.p2playstore.utils.DAOCreateHelper
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
@@ -27,7 +28,7 @@ import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
 class P2playApp(val block: TrustChainBlock) {
     private val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
 
-    private val daoData: AppMetaData = when(block.type) {
+    val blockData: AppMetaData = when(block.type) {
         JOIN_BLOCK -> JoinDaoTransactionData(block.transaction).getData()
         UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(block.transaction).getData()
         PROPOSE_UPDATE_BLOCK -> ProposeUpdateTransactionData(block.transaction).getData()
@@ -38,13 +39,13 @@ class P2playApp(val block: TrustChainBlock) {
      * Unique identifier for the DAO that belongs to this app, this ID remains the same across all
      * different versions/updates of the app.
      */
-    val daoId = daoData.DAO_ID
+    val daoId = blockData.DAO_ID
 
-    val name: String get() = this.daoData.APP_NAME
-    val description: String get() = this.daoData.APP_DESCRIPTION
-    val category: String get() = this.daoData.APP_CATEGORY
-    val icon: Int get() = iconFromIconId(this.daoData.APP_ICON)
-    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(this.daoData.APP_MAGNET_LINK)
+    val name: String get() = this.blockData.APP_NAME
+    val description: String get() = this.blockData.APP_DESCRIPTION
+    val category: String get() = this.blockData.APP_CATEGORY
+    val icon: Int get() = iconFromIconId(this.blockData.APP_ICON)
+    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(this.blockData.APP_MAGNET_LINK)
 
     /**
      * Unique number to identify a specific update/version of the app, note that these numbers are
@@ -53,9 +54,9 @@ class P2playApp(val block: TrustChainBlock) {
     val version: Int get() = this.block.hashNumber
 
     private fun getSharedWalletPublicKeys(): ArrayList<String> {
-        return when (daoData) {
-            is JoinDoaData -> daoData.SW_TRUSTCHAIN_PKS
-            is UpdateAcceptedData -> daoData.SW_TRUSTCHAIN_PKS
+        return when (blockData) {
+            is JoinDoaData -> blockData.SW_TRUSTCHAIN_PKS
+            is UpdateAcceptedData -> blockData.SW_TRUSTCHAIN_PKS
             else -> arrayListOf()
         }
     }
@@ -63,12 +64,11 @@ class P2playApp(val block: TrustChainBlock) {
     fun getDoaVoteThreshold(): Int {
         try {
             if (block.type == JOIN_BLOCK) {
-                return (daoData as JoinDoaData).SW_VOTING_THRESHOLD
+                return (blockData as JoinDoaData).SW_VOTING_THRESHOLD
             } else if (block.type == PROPOSE_UPDATE_BLOCK
-                && (daoData as ProposeUpdateData).FEATURE_REQUEST_ID != null) {
+                && (blockData as ProposeUpdateData).FEATURE_REQUEST_ID != null) {
                 // Feature Solution proposals also contain voting threshold
-    //            TODO:fix this to precentage instead of int signatures
-                return daoData.SW_SIGNATURES_REQUIRED
+                return blockData.SW_SIGNATURES_REQUIRED
             }
             val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
             return data.SW_VOTING_THRESHOLD
@@ -92,7 +92,7 @@ class P2playApp(val block: TrustChainBlock) {
     fun getEntranceFee(): Long {
         try {
             if (block.type == JOIN_BLOCK) {
-                return (daoData as JoinDoaData).SW_ENTRANCE_FEE
+                return (blockData as JoinDoaData).SW_ENTRANCE_FEE
             }
             val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
             return data.SW_ENTRANCE_FEE
@@ -113,7 +113,7 @@ class P2playApp(val block: TrustChainBlock) {
                 val data = JoinRequestTransactionData(b.transaction).getData()
                 data.DAO_ID == this.daoId
             }
-            .maxByOrNull { b -> b.insertTime!! }!!
+            .maxByOrNull { b -> b.timestamp }!!
     }
 
     /**
@@ -131,7 +131,7 @@ class P2playApp(val block: TrustChainBlock) {
                 val data = JoinRequestTransactionData(b.transaction).getData()
                 data.DAO_ID == this.daoId
             }
-            .maxByOrNull { b -> b.insertTime!! }
+            .maxByOrNull { b -> b.timestamp }
         return P2playApp(latest!!)
     }
 
@@ -163,7 +163,7 @@ class P2playApp(val block: TrustChainBlock) {
         }
 
         return (myPolls + otherPolls)
-            .sortedBy { poll -> poll.block.insertTime!! }
+            .sortedBy { poll -> poll.block.timestamp }
     }
 
     /**
@@ -192,7 +192,7 @@ class P2playApp(val block: TrustChainBlock) {
                 val data = ProposeUpdateTransactionData(b.transaction).getData()
                 data.DAO_ID == daoId && b.linkPublicKey.contentEquals(myKey)
             }
-        val block = blocks.maxByOrNull { b -> b.insertTime!! }
+        val block = blocks.maxByOrNull { b -> b.timestamp }
         if (block == null) return null
         return DaoJoinPoll(block)
     }
@@ -235,7 +235,7 @@ class P2playApp(val block: TrustChainBlock) {
         return blocks
             .mapNotNull { b -> try { FeatureRequest(b) } catch (e: Throwable) { null } }
             .filter { b -> b.doaId == this.daoId }
-            .sortedBy { b -> b.block.insertTime }
+            .sortedBy { b -> b.block.timestamp }
             .reversed()
     }
 
@@ -270,6 +270,43 @@ class P2playApp(val block: TrustChainBlock) {
 
     companion object {
         /**
+         * Taken from curencyii.
+         *
+         * Create a bitcoin genesis wallet and broadcast the result on trust chain. The bitcoin
+         * transaction may take some time to finish.
+         * @throws
+         * - exception if something goes wrong with creating or broadcasting bitcoin transaction.
+         * @param entranceFee
+         * - Long, the entrance fee for joining the DAO.
+         * @param threshold
+         * - Int, the percentage of members that need to vote before allowing someone in the DAO.
+         */
+        fun createApp(
+            entranceFee: Long,
+            iconIndex: Int,
+            name: String,
+            description: String,
+            magnetLink: String,
+            category: String,
+            threshold: Int,
+            context: Context
+        ): JoinDaoTransactionData {
+            val helper = DAOCreateHelper()
+            val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
+            return helper.createBitcoinGenesisWallet(
+                trustChain.myPeer,
+                entranceFee,
+                iconIndex,
+                name,
+                description,
+                magnetLink,
+                category,
+                threshold,
+                context
+            )
+        }
+
+        /**
          * Tries to find an app with the given DAO id.
          */
         fun findByDoaId(daoId: String): P2playApp? {
@@ -283,7 +320,7 @@ class P2playApp(val block: TrustChainBlock) {
                     val data = JoinRequestTransactionData(b.transaction).getData()
                     data.DAO_ID == daoId
                 }
-                .maxByOrNull { b -> b.insertTime!! }
+                .maxByOrNull { b -> b.timestamp }
 
             if (latest == null) return null
             return P2playApp(latest)

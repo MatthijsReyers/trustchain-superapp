@@ -2,25 +2,44 @@ package nl.tudelft.trustchain.p2playstore.ui
 
 import UpdateProposalPoll
 import android.os.Bundle
+import android.widget.Toast
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.lifecycleScope
 import android.widget.FrameLayout
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.CoroutineScope
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
+import nl.tudelft.ipv8.attestation.trustchain.BlockListener
 import nl.tudelft.ipv8.util.toHex
+
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_NO_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
+
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentPollDetailsBinding
 import nl.tudelft.trustchain.p2playstore.models.DaoJoinPoll
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.models.Poll
 import nl.tudelft.trustchain.p2playstore.transactionData.BaseData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils
+
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -35,6 +54,8 @@ class PollDetailsFragment : BaseFragment() {
 
     private var joinPoll: DaoJoinPoll? = null
     private var updatePoll: UpdateProposalPoll? = null
+
+    private var isTransferInitiated: Boolean = false
 
     /**
      * Is the user currently voting? We disable the buttons during this time to prevent them from
@@ -63,7 +84,7 @@ class PollDetailsFragment : BaseFragment() {
             this.app = this.poll.getApp().getLatestVersion()
         }
         catch (err: Throwable) {
-            android.util.Log.e("P2PlayStore", "Failed to load poll: $err")
+            Log.e("P2PlayStore", "Failed to load poll: $err")
             findNavController().navigateUp()
         }
         this.setupClickListeners()
@@ -75,33 +96,35 @@ class PollDetailsFragment : BaseFragment() {
     }
 
     override suspend fun onChainUpdated(block: TrustChainBlock) {
-        try {
-            val data: BaseData = JoinDaoTransactionData(block.transaction).getData()
-            if (data.DAO_ID != this.poll.daoId) return;
+        if (this._binding == null) return // Fragment view destroyed
 
-            when (block.type) {
-                VOTE_NO_BLOCK, VOTE_YES_BLOCK -> {
-                    updateVoteButtons()
-                    updateProgressBars()
-                    updateBottomCard()
-                }
+        try {
+            val updatedDao = AppUtils.getDaoId(block);
+            if (updatedDao != this.poll.daoId) return; // Not relevant for this poll
+
+            // Update the UI on the main thread
+            requireActivity().runOnUiThread {
+                updatePreviewCard()
+                updateBottomCard()
+                updateProgressBars()
+                updateVoteButtons()
             }
         }
         catch (err: Throwable) {
-            android.util.Log.e("P2PlayStore", "Error during chain update: $err")
+            Log.e("P2PlayStore", "Error during chain update in PollDetailsFragment: ${err.message}")
         }
     }
 
     override fun onResume() {
         super.onResume()
-        android.util.Log.d("FeatureVotingFragment", "onResume called. Reloading poll data.")
+        Log.d("FeatureVotingFragment", "onResume called. Reloading poll data.")
         try {
             updateVoteButtons()
             updateProgressBars()
             updateBottomCard()
         }
         catch (err: Throwable) {
-            android.util.Log.e("P2PlayStore", "Error updating UI after resume: $err")
+            Log.e("P2PlayStore", "Error updating UI after resume: $err")
         }
     }
 
@@ -114,17 +137,32 @@ class PollDetailsFragment : BaseFragment() {
      * Called when the user presses a vote "yes"/"no" button.
      */
     private fun onVote(isYes: Boolean) {
-        // Prevent the user from creating multiple vote blocks by voting "twice" while the chain is
-        // still being updated.
+        Log.d("PollDetailsFragment", "onVote called with isYes: $isYes")
+
+        // Prevent multiple votes
         if (!this.isVoting) {
-            this.isVoting = true;
+            this.isVoting = true
             try {
+                if (poll.hasUserVoted()) {
+                    printToast("You have already voted on this proposal.")
+                    return
+                }
+
+                // Disable buttons immediately
+                CoroutineScope(Dispatchers.Main).launch {
+                    disableVoteButtons()
+                }
+
+                // Submit vote using community method
                 CoroutineScope(Dispatchers.IO).launch {
                     poll.submitVote(isYes, requireContext())
                 }
+
+                printToast("Vote submitted successfully")
             }
             catch (err: Throwable) {
-                Log.e("P2PlayStore", "Error occured during voting: $err")
+                printToast("Voting failed")
+                Log.e("P2PlayStore", "Error occurred during voting: $err")
             }
             finally {
                 this.isVoting = false

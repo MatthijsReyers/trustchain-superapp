@@ -5,13 +5,13 @@ import com.google.gson.JsonObject
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
-import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 
 data class ProposeUpdateData(
     override var DAO_ID: String,
     var SW_UNIQUE_PROPOSAL_ID: String,
     var SW_PREVIOUS_BLOCK_HASH: String,
-    var SW_BITCOIN_PKS: List<String>,
+    var SW_BITCOIN_PKS: ArrayList<String>,
+    var SW_NONCE_PKS: ArrayList<String>,
     var SW_SIGNATURES_REQUIRED: Int,
     var SW_TRANSFER_FUNDS_AMOUNT: Long,
     var SW_TRANSFER_FUNDS_TARGET_SERIALIZED: String,
@@ -25,7 +25,7 @@ data class ProposeUpdateData(
     var FEATURE_REQUEST_ID: String,
     var SOLUTION_TITLE: String,
     var SOLUTION_DESCRIPTION: String,
-    var DEVELOPER_PUBLIC_KEY: String
+    var DEVELOPER_PUBLIC_KEY: String,
 ) : AppMetaData
 
 class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
@@ -48,7 +48,8 @@ class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
         previousWalletBlockHash: String,
         requiredSignatures: Int,
         rewardAmount: Long,
-        bitcoinPks: List<String>,
+        bitcoinPks: ArrayList<String>,
+        noncePks: ArrayList<String>,
         developerBitcoinAddress: String,
         receiverPk: String,
         uniqueProposalId: String,
@@ -65,6 +66,7 @@ class ProposeUpdateTransactionData(data: JsonObject) : BlockTransactionData(
                 uniqueProposalId,
                 previousWalletBlockHash,
                 bitcoinPks,
+                noncePks,
                 requiredSignatures,
                 rewardAmount,
                 developerBitcoinAddress,

@@ -25,29 +25,9 @@ class P2PLoginFragment : BaseFragment(R.layout.fragment_p2p_login) {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // Inflate the layout for this fragment
-//        hideNavBar()
         _binding = FragmentP2pLoginBinding.inflate(inflater, container, false)
         return binding.root
     }
-//    @Deprecated("Deprecated in Java")
-//    override fun onActivityCreated(savedInstanceState: Bundle?) {
-//        @Suppress("DEPRECATION")
-//        super.onActivityCreated(savedInstanceState)
-//
-//        binding.loadProductionWallet.setOnClickListener {
-//            loadWallet(BitcoinNetworkOptions.PRODUCTION)
-//        }
-//
-//        binding.loadRegtestWallet.setOnClickListener {
-//            loadWallet(BitcoinNetworkOptions.REG_TEST)
-//        }
-//
-//        binding.loadTestnetWallet.setOnClickListener {
-//            loadWallet(BitcoinNetworkOptions.TEST_NET)
-//        }
-//    }
-
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -62,7 +42,6 @@ class P2PLoginFragment : BaseFragment(R.layout.fragment_p2p_login) {
             loadWallet(BitcoinNetworkOptions.REG_TEST)
         }
     }
-
 
     private fun loadWallet(params: BitcoinNetworkOptions) {
         // Close the current wallet manager if there is one running, blocks thread until it is closed
@@ -93,8 +72,6 @@ class P2PLoginFragment : BaseFragment(R.layout.fragment_p2p_login) {
                 .actionP2pLoginFragmentToP2pblockchainDownloadFragment(parent = R.id.p2pLoginFragment)
         )
     }
-
-
 
     override fun onDestroyView() {
         super.onDestroyView()

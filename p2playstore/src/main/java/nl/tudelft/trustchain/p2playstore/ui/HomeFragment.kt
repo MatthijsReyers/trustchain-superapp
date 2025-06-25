@@ -20,6 +20,7 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
+import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
@@ -64,14 +65,6 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                 delay(60_000 * 5)
             }
         }
-
-//        val wallet = WalletManagerAndroid.getInstance()
-//        val amountBTC: Double = 0.05
-//        val destination = "mgVz64BgaRMpKosY1fj1QCzETo2qMoLNpE"
-//        val address = Address.fromString(wallet.params, destination)
-//        val amountToSend = Coin.parseCoin(amountBTC.toString())
-//        val sendRequest = SendRequest.to(address, amountToSend)
-//        val sendResult = wallet.kit.wallet().sendCoins(sendRequest)
     }
 
     override suspend fun onChainUpdated(block: TrustChainBlock) {
@@ -222,8 +215,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-
-                    p2playStore.createBitcoinGenesisWallet(
+                    P2playApp.createApp(
                         entranceFee,
                         iconIndex,
                         name,
@@ -234,23 +226,11 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                         requireContext()
                     )
                 }
-
-                android.widget.Toast.makeText(
-                    requireContext(),
-                    "DAO '$name' created successfully!",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
-                // Reload the DAO data
+                printToast("DAO '$name' created successfully!")
                 updateAppsLists()
             } catch (e: Exception) {
                 Log.e("P2PlayStore", "Error creating DAO: ${e.message}")
-                withContext(Dispatchers.Main) {
-                    android.widget.Toast.makeText(
-                        requireContext(),
-                        "Failed to create DAO: ${e.message}",
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-                }
+                printToast("Failed to create DAO: ${e.message}")
             }
         }
     }

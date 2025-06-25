@@ -22,9 +22,6 @@ class FeatureSolutionFragment : BaseFragment() {
 
     private lateinit var featureRequest: FeatureRequest
 
-    private lateinit var featureId: String
-    private lateinit var daoUniqueId: String
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -43,7 +40,7 @@ class FeatureSolutionFragment : BaseFragment() {
             setupClickListeners()
         }
         catch (err: Throwable) {
-            android.util.Log.e("P2PlayStore", "Failed to load feature request: $err")
+            Log.e("P2PlayStore", "Failed to load feature request: $err")
             findNavController().navigateUp()
         }
     }
@@ -71,63 +68,50 @@ class FeatureSolutionFragment : BaseFragment() {
         }
     }
 
-    suspend private fun submitSolution() {
-        Log.d("P2PlayStore", "Submitting solution")
-
+    private fun submitSolution() {
         val title = binding.etSolutionTitle.text.toString().trim()
         val description = binding.etSolutionDescription.text.toString().trim()
         val magnetLink = binding.etMagnetLink.text.toString().trim()
         val developerBitcoinAddress = binding.etDeveloperBitcoinAddress.text.toString().trim()
 
         if (title.isEmpty()) {
-            Toast.makeText(context, "Please enter a solution title", Toast.LENGTH_SHORT).show()
+            printToast("Please enter a solution title")
             return
         }
 
         if (description.isEmpty()) {
-            Toast.makeText(context, "Please enter a solution description", Toast.LENGTH_SHORT).show()
+            printToast("Please enter a solution description")
             return
         }
 
         if (magnetLink.isEmpty()) {
-            Toast.makeText(context, "Please enter a magnet link for your APK", Toast.LENGTH_SHORT).show()
+            printToast("Please enter a magnet link for your APK")
             return
         }
 
         if (developerBitcoinAddress.isEmpty()) {
-            Toast.makeText(context, "Please enter your Bitcoin address to receive the reward.", Toast.LENGTH_LONG).show()
-            android.util.Log.e("FeatureSolutionFragment", "Developer Bitcoin address is missing or a placeholder!")
+            printToast("Please enter your Bitcoin address to receive the reward.")
             return
         }
 
         // Basic validation for Bitcoin address format
         try {
-            val params: NetworkParameters = WalletManagerAndroid.getInstance().params // Use the current network params
+            val params: NetworkParameters = WalletManagerAndroid.getInstance().params
             Address.fromString(params, developerBitcoinAddress)
         } catch (e: Exception) {
-            Toast.makeText(context, "Invalid Bitcoin address format.", Toast.LENGTH_LONG).show()
-            android.util.Log.e("FeatureSolutionFragment", "Invalid Bitcoin address format: ${e.message}")
+            printToast("Invalid Bitcoin address format.")
             return
         }
 
         try {
-            this.featureRequest.submitSolution(
-                title = title,
-                description = description,
-                magnetLink = magnetLink,
-                developerBitcoinAddress = developerBitcoinAddress,
+            featureRequest.submitSolution(
+                title, description, magnetLink, developerBitcoinAddress
             )
-
-            Toast.makeText(
-                context,
-                "Solution submitted successfully!",
-                Toast.LENGTH_LONG
-            ).show()
+            printToast("Solution submitted successfully! DAO members can now vote.")
             findNavController().navigateUp()
-
         } catch (e: Exception) {
-            android.util.Log.e("P2PlayStore", "Error submitting solution: ${e.message}")
-            Toast.makeText(context, "Error submitting solution", Toast.LENGTH_SHORT).show()
+            Log.e("P2PlayStore", "Error submitting solution: ${e.message}")
+            printToast("Error submitting solution")
         }
     }
 

@@ -7,6 +7,7 @@ import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.hexToBytes
+import nl.tudelft.ipv8.util.sha1
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWResponseSignatureBlockTD
@@ -18,11 +19,13 @@ import nl.tudelft.trustchain.p2playstore.models.Poll
 import nl.tudelft.trustchain.p2playstore.transactionData.BaseData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
-import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.SharedWalletData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
+import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
+import nl.tudelft.trustchain.p2playstore.utils.DAOTransferFundsHelper
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import org.bitcoinj.core.Address
@@ -44,16 +47,16 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
     override val votesRequired: Int = blockData.SW_SIGNATURES_REQUIRED
     override val receivingUser = blockData.SW_RECEIVER_PK
 
-    val name: String = blockData.APP_NAME;
-    val description: String = blockData.APP_DESCRIPTION;
-    val category: String = blockData.APP_CATEGORY;
-    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(blockData.APP_MAGNET_LINK);
+    val name: String = blockData.APP_NAME
+    val description: String = blockData.APP_DESCRIPTION
+    val category: String = blockData.APP_CATEGORY
+    val magnetLink: MagnetLink = MagnetUtils.parseMagnet(blockData.APP_MAGNET_LINK)
     val featureRequestId = blockData.FEATURE_REQUEST_ID
 
     /**
      * A bitcoin wallet address? Where the reward funds should end up after this transaction.
      */
-    val rewardDestination = blockData.SW_TRANSFER_FUNDS_TARGET_SERIALIZED
+    private val rewardDestination = blockData.SW_TRANSFER_FUNDS_TARGET_SERIALIZED
 
     /**
      * How much does the developer get transferred to their wallet (in Satoshi's) if this update is
@@ -62,13 +65,17 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
      */
     val rewardAmount = blockData.SW_TRANSFER_FUNDS_AMOUNT
 
+    override fun isUserDeveloper(): Boolean {
+        return trustChain.myPeer.publicKey.pub().toString() == blockData.DEVELOPER_PUBLIC_KEY
+    }
+
     /**
      * Checks if there has actually an UPDATE_ACCEPTED block been created for this proposal. Note
      * that is can only have happened after enough up votes were collected.
      */
     fun hasBeenReleased(): Boolean {
         return trustChain.database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
-            .filter { b -> b.insertTime!! > this.block.insertTime!! }
+            .filter { b -> b.timestamp > this.block.timestamp }
             .mapNotNull { b ->
                 try {
                     P2playApp(b)
@@ -80,22 +87,26 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
             .any { app -> app.magnetLink == this.magnetLink }
     }
 
-    fun publishUpdate(
-        context: Context,
-        activity: Activity // Activity context needed by underlying bitcoinj calls
-    ) {
-        val app = this.getApp()
-        val latestJoin = app.getLatestJoin()
-        val joinData = JoinDaoTransactionData(latestJoin.transaction).getData()
-        val voteResponses = this.getYesVotes() + this.getNoVotes()
-        this.transferFunds(
-            joinData,
-            voteResponses,
-            this.rewardDestination,
-            this.rewardAmount,
-            context,
-            activity
-        )
+    fun publishUpdate(context: Context, activity: Activity) {
+        val latestApp = this.getApp().getLatestVersion()
+        val yesVotes = this.getYesVotes()
+        val allVotes = yesVotes + this.getNoVotes()
+        if (yesVotes.size >= this.votesRequired) {
+            this.transferFunds(
+                latestApp,
+                latestApp.blockData as SharedWalletData,
+                allVotes,
+                this.rewardDestination,
+                this.rewardAmount,
+                context,
+                activity
+            )
+        } else {
+            Log.d(
+                "P2PlayStore",
+                "Bug found: someone tried to publish update without enough votes"
+            )
+        }
     }
 
     /**
@@ -103,7 +114,8 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
      * Broadcast bitcoin transaction.
      */
     private fun transferFunds(
-        walletData: JoinDoaData, // Data from the latest JOIN block
+        latestApp: P2playApp,
+        walletData: SharedWalletData, // Data from the latest JOIN block
         voteResponses: List<BaseData>, // All vote responses (including NO)
         receiverAddress: String,
         paymentAmount: Long,
@@ -123,7 +135,7 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
                     SW_NONCE = vote.SW_NONCE
                 )
                 is VoteNoData -> SWResponseSignatureBlockTD(
-                    SW_UNIQUE_ID = vote.DAO_ID, // Use DAO_ID from BaseData
+                    SW_UNIQUE_ID = vote.DAO_ID,
                     SW_UNIQUE_PROPOSAL_ID = vote.SW_UNIQUE_PROPOSAL_ID,
                     SW_SIGNATURE_SERIALIZED = vote.SW_SIGNATURE_SERIALIZED,
                     SW_BITCOIN_PK = vote.SW_BITCOIN_PK,
@@ -133,7 +145,6 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
             }
         }
 
-
         val signaturesOfOldOwners = swResponses.map {
             BigInteger(1, it.SW_SIGNATURE_SERIALIZED.hexToBytes())
         }
@@ -142,10 +153,9 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
         val oldTransactionSerialized = this.blockData.SW_TRANSACTION_SERIALIZED
 
         // Use nonce PKs from the latest JOIN_BLOCK data to aggregate nonces
-        val noncePoints =
-            walletData.SW_NONCE_PKS.map {
-                ECKey.fromPublicOnly(it.hexToBytes())
-            }
+        val noncePoints = walletData.SW_NONCE_PKS.map {
+            ECKey.fromPublicOnly(it.hexToBytes())
+        }
 
         val newNonces: ArrayList<String> = ArrayList(swResponses.map { it.SW_NONCE })
 
@@ -158,7 +168,7 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
         Log.d("P2P.DAOTransfer", "  oldTransactionSerialized: ${oldTransactionSerialized.take(64)}...")
         Log.d("P2P.DAOTransfer", "  receiverAddress: $receiverAddress")
         Log.d("P2P.DAOTransfer", "  paymentAmount: $paymentAmount")
-        Log.d("P2P.DAOTransfer", "  DAO_ID: ${walletData.DAO_ID}")
+        Log.d("P2P.DAOTransfer", "  DAO_ID: ${latestApp.daoId}")
 
         val (status, serializedTransaction) =
             walletManager.safeSendingTransactionFromMultiSig(
@@ -187,27 +197,29 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
 
         // Broadcast the result using the P2PlayStore specific block type
         broadcastTransferFundSuccessful(
-            trustChain.myPeer,
+            latestApp,
             walletData,
             serializedTransaction,
         )
     }
 
     /**
-     * 3.3 Everything is done, publish the final serialized bitcoin transaction data on trustchain.
+     * Everything is done, publish the final serialized bitcoin transaction data on trustchain.
      */
     private fun broadcastTransferFundSuccessful(
-        myPeer: Peer,
-        latestJoinBlockData: JoinDoaData, // Data from the latest JOIN block (P2PStore specific)
-        serializedTransaction: String, // The new transaction
+        latestApp: P2playApp,
+        latestJoinBlockData: SharedWalletData,
+        serializedTransaction: String,
     ) {
+        val join = latestApp.getLatestJoin()
+        val joinData = JoinDaoTransactionData(join.transaction).getData();
         // Create an UPDATE_ACCEPTED_BLOCK for the successful transfer with app metadata
         val updateAcceptedData = UpdateAcceptedTransactionData(
             this.daoId,
             this.featureRequestId,
             serializedTransaction,
-            this.rewardAmount,
-            latestJoinBlockData.SW_TRUSTCHAIN_PKS,
+            satoshiAmount = this.rewardAmount,
+            trustChainPks = joinData.SW_TRUSTCHAIN_PKS,
             latestJoinBlockData.SW_BITCOIN_PKS,
             latestJoinBlockData.SW_NONCE_PKS,
             this.rewardDestination,
@@ -215,10 +227,10 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
 
             // TODO: This should use the name and description of the update not the previous join
             // block.
-            latestJoinBlockData.APP_NAME,
-            latestJoinBlockData.APP_DESCRIPTION,
-            latestJoinBlockData.APP_CATEGORY,
-            latestJoinBlockData.APP_ICON,
+            latestApp.name,
+            latestApp.description,
+            latestApp.category,
+            latestApp.icon,
             this.magnetLink.raw
         )
 
@@ -226,7 +238,7 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
         trustChain.createProposalBlock(
             updateAcceptedData.blockType,
             updateAcceptedData.getTransactionData(),
-            myPeer.publicKey.keyToBin()
+            trustChain.myPeer.publicKey.keyToBin()
         )
     }
 

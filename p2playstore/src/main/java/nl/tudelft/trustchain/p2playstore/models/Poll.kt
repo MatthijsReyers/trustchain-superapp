@@ -110,7 +110,7 @@ abstract class Poll(val block: TrustChainBlock) {
     /**
      * Has this user already voted in the poll?
      */
-    fun hasVoted(): Boolean = this.getMyVote() != null
+    fun hasUserVoted(): Boolean = this.getMyVote() != null
 
     /**
      * Gets all the agreement signatures/votes.
@@ -153,6 +153,19 @@ abstract class Poll(val block: TrustChainBlock) {
 
     fun getAllVotes() = (this.getYesVotes() + this.getNoVotes())
 
+    fun isUserMember(): Boolean {
+        val myPublicKey = trustChain.myPeer.publicKey.keyToBin().toHex()
+        // Get the latest P2playApp instance to get the most up-to-date member list
+        val latestApp = getApp().getLatestVersion()
+        return latestApp.isDaoMember()
+    }
+
+    open fun isUserDeveloper(): Boolean = false // Default for general polls
+
+    fun canUserVote(): Boolean {
+        return isReceivingUser && isPending && !hasUserVoted() && !isUserDeveloper()
+    }
+
     /**
      * Submit a vote for the poll, note that calling this function if you are not a member will do
      * nothing but if you call it rapidly many times while the chain is still updating you can
@@ -171,7 +184,7 @@ abstract class Poll(val block: TrustChainBlock) {
         }
 
         // Only create one vote block per user/peer
-        if (this.hasVoted()) {
+        if (this.hasUserVoted()) {
             Log.w(
                 "P2PlayStore",
                 "Bug found! Ignoring vote because user has already voted"
@@ -202,7 +215,6 @@ abstract class Poll(val block: TrustChainBlock) {
                 PROPOSE_UPDATE_BLOCK -> {
                     DAOTransferFundsHelper.transferFundsBlockReceived(
                         block,
-                        data,
                         myPublicKey,
                         isYes,
                         context,

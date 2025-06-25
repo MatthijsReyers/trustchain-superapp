@@ -14,6 +14,7 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.currencyii.util.taproot.CTransaction
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils.formatDynamicBalance
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentWalletBalanceBinding
@@ -23,6 +24,7 @@ import org.bitcoinj.core.Coin
 import org.bitcoinj.params.MainNetParams
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.params.TestNet3Params
+import java.util.Locale
 
 class DaoWalletFragment : BaseFragment() {
 
@@ -94,13 +96,13 @@ class DaoWalletFragment : BaseFragment() {
             try {
                 val walletManager = WalletManagerAndroid.getInstance()
 
-                // 1. Get Personal Wallet Balance
+                // Get Personal Wallet Balance
                 val personalBalance = withContext(Dispatchers.IO) {
                     walletManager.kit.wallet().balance
                 }
                 Log.d("DaoWalletFragment", "Personal balance: $personalBalance")
 
-                // 2. Get THIS DAO's Shared Wallet Balance
+                // Get THIS DAO's Shared Wallet Balance
                 var daoBalance = Coin.ZERO
                 var daoMemberCount = 0
 
@@ -145,7 +147,7 @@ class DaoWalletFragment : BaseFragment() {
                     binding.balanceRefreshLayout.isRefreshing = false
                 }
 
-                // 3. Load Transaction History relevant to DAO
+                // Load Transaction History relevant to DAO
                 val transactionBlocks = withContext(Dispatchers.IO) {
                     // Fetch blocks relevant to this specific DAO's fund transfers/joins
                     val joinBlocks = getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.JOIN_BLOCK)
@@ -168,7 +170,6 @@ class DaoWalletFragment : BaseFragment() {
                 }
                 Log.d("DaoWalletFragment", "Found ${transactionBlocks.size} relevant transaction blocks for DAO $daoUniqueId")
 
-
                 // 4. Update UI
                 updateUI(personalBalance, daoBalance, daoMemberCount, transactionBlocks)
 
@@ -181,6 +182,7 @@ class DaoWalletFragment : BaseFragment() {
         }
     }
 
+
     private fun updateUI(
         personalBalance: Coin,
         daoBalance: Coin,
@@ -188,12 +190,12 @@ class DaoWalletFragment : BaseFragment() {
         transactionBlocks: List<TrustChainBlock>
     ) {
         // Update DAO Wallet specific UI
-        binding.totalBalance.text = daoBalance.toFriendlyString() // Show THIS DAO's balance as the main balance
-        binding.daoWalletBalance.text = daoBalance.toFriendlyString()
+        binding.totalBalance.text = formatDynamicBalance(daoBalance) // Show THIS DAO's balance as the main balance
+        binding.daoWalletBalance.text = formatDynamicBalance(daoBalance)
         binding.daoWalletCount.text = "$daoMemberCount ${if (daoMemberCount == 1) "member" else "members"} in DAO" // Use member count here
 
         // Update Personal Wallet UI
-        binding.personalWalletBalance.text = personalBalance.toFriendlyString()
+        binding.personalWalletBalance.text = formatDynamicBalance(personalBalance)
 
         val networkType = when (WalletManagerAndroid.getInstance().params) {
             RegTestParams.get() -> "RegTest Network"
@@ -202,8 +204,16 @@ class DaoWalletFragment : BaseFragment() {
             else -> "Unknown Network"
         }
         binding.bitcoinNetworkType.text = networkType
-        // TODO: Implement actual network status check (connected/disconnected)
-        binding.bitcoinNetworkStatus.text = "Connected"
+
+        val walletManager = WalletManagerAndroid.getInstance()
+        val peerGroup = walletManager.kit.peerGroup()
+        val connectedPeers = peerGroup.numConnectedPeers()
+        val isConnected = connectedPeers > 0
+        if (isConnected){
+            binding.bitcoinNetworkStatus.text = "Connected"
+        } else {
+            binding.bitcoinNetworkStatus.text = "Disconnected"
+        }
 
         // Update Transaction History
         if (transactionBlocks.isNotEmpty()) {

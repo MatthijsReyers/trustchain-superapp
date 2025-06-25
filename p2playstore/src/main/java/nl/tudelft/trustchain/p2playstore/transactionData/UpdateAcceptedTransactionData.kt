@@ -10,10 +10,10 @@ data class UpdateAcceptedData(
     override var DAO_ID: String,
     override var FEATURE_REQUEST_ID: String,
     var SW_UNIQUE_PROPOSAL_ID: String,
-    var SW_TRANSACTION_SERIALIZED: String,
-    var SW_TRUSTCHAIN_PKS: ArrayList<String>,
-    var SW_BITCOIN_PKS: ArrayList<String>,
-    var SW_NONCE_PKS: ArrayList<String>,
+    override var SW_TRANSACTION_SERIALIZED: String,
+    override var SW_TRUSTCHAIN_PKS: ArrayList<String>,
+    override var SW_BITCOIN_PKS: ArrayList<String>,
+    override var SW_NONCE_PKS: ArrayList<String>,
     var SW_TRANSFER_FUNDS_AMOUNT: Long,
     var SW_TRANSFER_FUNDS_TARGET_SERIALIZED: String,
     override var APP_NAME: String,
@@ -21,7 +21,7 @@ data class UpdateAcceptedData(
     override var APP_CATEGORY: String,
     override var APP_ICON: Int,
     override var APP_MAGNET_LINK: String
-) : AppMetaData, BaseFeatureRequestData
+) : AppMetaData, BaseFeatureRequestData, SharedWalletData
 
 class UpdateAcceptedTransactionData(data: JsonObject) : BlockTransactionData(
     data,

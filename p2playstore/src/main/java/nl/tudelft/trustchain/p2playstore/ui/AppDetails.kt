@@ -11,7 +11,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 
@@ -21,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
+import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
@@ -35,10 +35,9 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BL
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.findFilesByExtension
-import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
+
 
 class AppDetails : BaseFragment() {
     private lateinit var torrentManager: TorrentManager
@@ -114,6 +113,7 @@ class AppDetails : BaseFragment() {
         this.updateUIBasedOnMembership()
         this.updatePolls()
         this.updateFeatureRequests()
+        this.updateScreenshots()
 
         this.finalizeJoinRequest()
         this.finalizeUpdate()
@@ -126,12 +126,8 @@ class AppDetails : BaseFragment() {
     override suspend fun onChainUpdated(block: TrustChainBlock) {
         if (this._binding == null) return;
 
-        // TODO: Replace with BaseTransactionData class for better type safety, since there
-        // is really no guarantee that it will be this kind of block.
-        val data = JoinDaoTransactionData(block.transaction).getData()
-
         // Is the new block relevant for this app?
-        if (data.DAO_ID != app.daoId) return;
+        if (AppUtils.getDaoId(block) != app.daoId) return;
 
         when (block.type) {
             // Was a new version of the app released?
@@ -265,7 +261,7 @@ class AppDetails : BaseFragment() {
     */
     private fun onInstallApp() {
         if (this.app.isDaoMember()) {
-            AppUtils.printToast(requireContext(), "You are already a member of this DAO.")
+            printToast("You are already a member of this DAO.")
             Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but is already a member.")
             updateDownloadButton()
             updateUIBasedOnMembership()
@@ -273,7 +269,7 @@ class AppDetails : BaseFragment() {
         }
 
         if (this.app.isWaitingToJoin()) {
-            AppUtils.printToast(requireContext(), "You have a pending request to join this DAO.")
+            printToast("You have a pending request to join this DAO.")
             Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but has a pending request.")
             updateDownloadButton()
             updateUIBasedOnMembership()
@@ -313,7 +309,8 @@ class AppDetails : BaseFragment() {
     }
 
     /**
-     * Attempts to launch the downloaded APK associated with the current app's DAO.
+     * Called when the user presses the "open" button, which is only shown when the user is a member
+     * of the app's DAO and has finished downloading the torrent containing the APK.
      *
      * This function:
      * - Locates the APK inside the app's P2P cache directory.
@@ -355,8 +352,8 @@ class AppDetails : BaseFragment() {
         }
 
         if (!apkFile.exists() || !apkFile.isFile) {
-            Log.e("P2P", "File not found or invalid: ${apkFile.path}")
-            printToast(applicationContext, "No APK found connected to this DAO.")
+            Log.e("P2P", "File not found or invalid: $apkFile")
+            printToast("No APK found connected to this DAO.")
             return
         }
 
@@ -368,14 +365,14 @@ class AppDetails : BaseFragment() {
         try {
             applicationContext.startActivity(intent)
         } catch (e: ActivityNotFoundException) {
-            Log.e("P2P", "No activity found to handle intent for APK: ${apkFile.path}", e)
-            printToast(applicationContext, "Unable to open APK – app component not found.")
+            Log.e("P2P", "No activity found to handle intent for APK: $apkPath", e)
+            printToast("Unable to open APK – app component not found.")
         } catch (e: SecurityException) {
-            Log.e("P2P", "Security exception when launching APK: ${apkFile.path}", e)
-            printToast(applicationContext, "Permission denied to launch APK.")
+            Log.e("P2P", "Security exception when launching APK: $apkPath", e)
+            printToast("Permission denied to launch APK.")
         } catch (e: Exception) {
-            Log.e("P2P", "Unexpected error launching APK: ${apkFile.path}", e)
-            printToast(applicationContext, "Something went wrong when opening the APK.")
+            Log.e("P2P", "Unexpected error launching APK: $apkPath", e)
+            printToast("Something went wrong when opening the APK.")
         }
     }
 
@@ -434,6 +431,7 @@ class AppDetails : BaseFragment() {
                     if (link.infoHash == app.magnetLink.infoHash) {
                         downloadProgress = 100
                         updateDownloadButton()
+                        updateScreenshots()
                     }
                 }
             }
@@ -450,6 +448,8 @@ class AppDetails : BaseFragment() {
         binding.appLatestVersion.text = this.app.version.toString()
         binding.appDescription.text = this.app.description
         binding.daoIcon.setImageResource(this.app.icon)
+        val developer = this.app.block.publicKey.toHex().take(8)
+        binding.daoDeveloper.text = "Devloper: ${developer}"
     }
 
     /**
@@ -538,6 +538,103 @@ class AppDetails : BaseFragment() {
     }
 
     /**
+     * Takes all of the image files inside the downloaded torrent and shows them as
+     */
+    private fun updateScreenshots() {
+        val applicationContext = requireContext()
+        val dir = File(applicationContext.cacheDir, "p2p-apps/${app.magnetLink.infoHash}")
+
+        val files = try {
+            findFilesByExtension(
+                dir,
+                setOf(".bmp", ".gif", ".heif", ".heic", ".jpeg", ".jpg", ".png", ".webp")
+            ).sorted()
+        } catch (e: IllegalArgumentException) {
+            e.message?.let { Log.d("P2P", it) }
+            return
+        }
+
+        if (files.isEmpty()) {
+            Log.d("P2P", "No image files found in: ${dir.path}")
+            return
+        }
+
+        val container = binding.screenshotsContainer
+        container.removeAllViews()
+
+        val imageHeightPx = container.layoutParams.height.takeIf { it > 0 } ?: 200
+        val maxImageWidthPx = (150 * resources.displayMetrics.density).toInt()
+
+
+        for (file in files) {
+            // First decode only bounds to get original size
+            val boundsOptions = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            BitmapFactory.decodeFile(file.path, boundsOptions)
+
+            val originalWidth = boundsOptions.outWidth
+            val originalHeight = boundsOptions.outHeight
+
+            if (originalWidth <= 0 || originalHeight <= 0) continue // Skip corrupted images
+
+            // Compute target width preserving aspect ratio
+            var targetWidth = (originalWidth.toFloat() / originalHeight.toFloat() * imageHeightPx).toInt()
+            if (targetWidth > maxImageWidthPx) {
+                targetWidth = maxImageWidthPx
+            }
+
+            // Decode image with sampling
+            val decodeOptions = BitmapFactory.Options().apply {
+                inSampleSize = calculateInSampleSize(boundsOptions, targetWidth, imageHeightPx)
+            }
+
+            try {
+                val bitmap = BitmapFactory.decodeFile(file.path, decodeOptions)
+                if (bitmap == null) {
+                    Log.w("P2P", "Failed to decode bitmap from: ${file.path}")
+                    continue
+                }
+
+                val imageView = ImageView(applicationContext).apply {
+                    layoutParams = LinearLayout.LayoutParams(targetWidth, imageHeightPx).also {
+                        it.setMargins(8, 0, 8, 0)
+                    }
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    setImageBitmap(bitmap)
+                }
+
+                container.addView(imageView)
+            } catch (e: OutOfMemoryError) {
+                Log.e("P2P", "OutOfMemoryError decoding image: ${file.path}", e)
+                continue
+            } catch (e: Exception) {
+                Log.e("P2P", "Unexpected error decoding image: ${file.path}", e)
+                continue
+            }
+        }
+    }
+
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        // Raw height and width of image
+        val (height: Int, width: Int) = options.run { outHeight to outWidth }
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+
+            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+            // height and width larger than the requested height and width.
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+
+        return inSampleSize
+    }
+
+    /**
      * Checks if this user has previously created a DAO join request/poll and if enough signatures
      * have been collected it will create a JOIN_DAO block using the collected signatures.
      */
@@ -583,14 +680,15 @@ class AppDetails : BaseFragment() {
     }
 
     /**
-     *
+     * Checks if the user has submitted an update, which has now been accepted (in which case the
+     * submitting user should now create an UPDATE_ACCEPTED block with the collected signatures).
      */
     private fun finalizeUpdate() {
         // Have I proposed any updates that have since been accepted but for which no update block
         // has been released yet?
         val acceptedUpdate = this.app.getMyUpdateProposals()
             .filter { p -> p.isApproved && !p.hasBeenReleased() }
-            .maxByOrNull { p -> p.block.insertTime!! }
+            .maxByOrNull { p -> p.block.timestamp }
 
         // Looks like there is nothing to do.
         if (acceptedUpdate == null) return
