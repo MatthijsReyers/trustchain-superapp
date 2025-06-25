@@ -55,9 +55,16 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation "androidx.navigation:navigation-fragment-ktx:$nav_version"
     implementation "androidx.navigation:navigation-ui-ktx:$nav_version"
+    implementation 'androidx.preference:preference-ktx:1.2.1'
+    implementation 'androidx.test:rules:1.6.1'
+    implementation 'androidx.test.ext:junit-ktx:1.2.1'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+
+    implementation 'androidx.sqlite:sqlite:2.4.0'
+    implementation "app.cash.sqldelight:android-driver:$sqldelight_version"
+    implementation "app.cash.sqldelight:runtime:$sqldelight_version"
 
     implementation project(':ipv8-android')
     api project(':common')
@@ -102,7 +109,6 @@ dependencies {
         exclude module: 'lazysodium-java'
     }
 
-
     implementation "androidx.core:core:$core_version"
     implementation 'androidx.customview:customview:1.1.0'
     implementation "androidx.lifecycle:lifecycle-common:$lifecycle_version"
@@ -115,6 +121,4 @@ dependencies {
     implementation 'com.google.guava:guava:30.0-android'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.8.2'
-
-
 }

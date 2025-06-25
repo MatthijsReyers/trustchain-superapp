@@ -2,6 +2,7 @@ package nl.tudelft.trustchain.p2playstore.transactionData
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
@@ -89,5 +90,9 @@ class JoinDaoTransactionData(
         transaction: TrustChainTransaction,
     ) : this(
         BlockUtils.parseTransaction(transaction),
+    )
+
+    constructor(block: TrustChainBlock) : this(
+        BlockUtils.parseTransaction(block.transaction),
     )
 }
