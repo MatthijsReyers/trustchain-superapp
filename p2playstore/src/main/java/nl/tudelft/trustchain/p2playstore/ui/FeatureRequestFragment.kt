@@ -50,7 +50,6 @@ class FeatureRequestFragment : BaseFragment() {
         setupClickListeners()
     }
 
-
     private fun setupClickListeners() {
         binding.btnSubmitRequest.setOnClickListener {
             submitFeatureRequest()
