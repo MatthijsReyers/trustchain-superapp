@@ -19,8 +19,8 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
+import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
@@ -35,7 +35,7 @@ import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BL
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.TorrentManager
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.findFilesByExtension
 
 class AppDetails : BaseFragment() {
@@ -44,7 +44,6 @@ class AppDetails : BaseFragment() {
     private var _binding: FragmentAppDetailsBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var daoBlock: TrustChainBlock
     private lateinit var app: P2playApp
 
     private var joinPoll: PollPreviewHolder? = null
@@ -55,7 +54,7 @@ class AppDetails : BaseFragment() {
      * Integer between 0-100, this indicates how far along the torrent download for this apps
      * APK file is.
      */
-    private var downloadProgress: Int? = null
+    private var downloadProgress: Int? = null;
 
     /**
      * Has the torrent with the APK file for this app finished downloading yet?
@@ -68,14 +67,14 @@ class AppDetails : BaseFragment() {
         super.onCreate(bundle)
 
         // The previous fragment (home) tells us which block/app/version to show
-        val args = this.requireArguments()
+        val args = this.requireArguments();
         val publicKey = args.getByteArray("publicKey")!!
         val sequenceNumber = args.getInt("sequenceNumber").toUInt()
 
         try {
             // Actually retrieve the block
             val community = this.getTrustChainCommunity()
-            this.daoBlock = community.database.get(publicKey, sequenceNumber)!!
+            val daoBlock = community.database.get(publicKey, sequenceNumber)!!
             this.app = P2playApp(daoBlock)
         }
         catch (e: Throwable) {
@@ -84,7 +83,7 @@ class AppDetails : BaseFragment() {
         }
 
         torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
-        this.downloadProgress = torrentManager.downloadProgress(this.app)
+        this.downloadProgress = torrentManager.downloadProgress(this.app);
     }
 
     override fun onCreateView(
@@ -113,6 +112,7 @@ class AppDetails : BaseFragment() {
         this.updateUIBasedOnMembership()
         this.updatePolls()
         this.updateFeatureRequests()
+        this.updateScreenshots()
 
         this.finalizeJoinRequest()
         this.finalizeUpdate()
@@ -123,14 +123,10 @@ class AppDetails : BaseFragment() {
      * we want to update the whole UI since votes/version updates might have changed.
      */
     override suspend fun onChainUpdated(block: TrustChainBlock) {
-        if (this._binding == null) return
-
-        // TODO: Replace with BaseTransactionData class for better type safety, since there
-        // is really no guarantee that it will be this kind of block.
-        val data = JoinDaoTransactionData(block.transaction).getData()
+        if (this._binding == null) return;
 
         // Is the new block relevant for this app?
-        if (data.DAO_ID != app.daoId) return
+        if (AppUtils.getDaoId(block) != app.daoId) return;
 
         when (block.type) {
             // Was a new version of the app released?
@@ -163,7 +159,271 @@ class AppDetails : BaseFragment() {
         }
     }
 
-    private fun loadScreenshots() {
+    /**
+    * Called when the user presses the install button (which is only shown when the user is not
+    * yet in the app's DAO), effectively this means they will spend bitcoins to join the shared
+    * wallet, so we'll ask them for confirmation of that first.
+    */
+    private fun onInstallApp() {
+        if (this.app.isDaoMember()) {
+            printToast("You are already a member of this DAO.")
+            Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but is already a member.")
+            updateDownloadButton()
+            updateUIBasedOnMembership()
+            return
+        }
+
+        if (this.app.isWaitingToJoin()) {
+            printToast("You have a pending request to join this DAO.")
+            Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but has a pending request.")
+            updateDownloadButton()
+            updateUIBasedOnMembership()
+            return
+        }
+
+        val entranceFee = this.app.getEntranceFee()
+        val msg = "In order to download this app you must join its DAO and pay an enterance fee " +
+            "of $entranceFee Satoshi to the shared wallet."
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Are you sure?")
+            .setMessage(msg)
+            .setPositiveButton("Join DAO") { dialog, _ ->
+                dialog.dismiss()
+                onJoinDoa()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+    }
+
+    /**
+     * Called when the user presses the "restart download" button, which is only visible when they
+     * are a member of the app DAO, but the torrent download for the app has failed.
+     */
+    private fun onRestartDownload() {
+        lifecycleScope.launch {
+            downloadProgress = 0
+            updateDownloadButton()
+            torrentManager.downloadApp(app)
+            downloadProgress = torrentManager.downloadProgress(app)
+            updateDownloadButton()
+        }
+    }
+
+    /**
+     * Called when the user presses the "open" button, which is only shown when the user is a member
+     * of the app's DAO and has finished downloading the torrent containing the APK.
+     *
+     * This function:
+     * - Locates the APK inside the app's P2P cache directory.
+     * - Validates the presence and uniqueness of the APK file.
+     * - Launches the APK via an `ExecutionActivity` intent.
+     *
+     * The method provides error feedback to the user using `Toast` messages
+     * and logs warnings for unexpected or invalid states.
+     *
+     * Preconditions:
+     * - The user must be a member of the DAO.
+     * - The APK must have already been downloaded.
+     */
+    private fun onOpenApp() {
+        val applicationContext = requireContext()
+
+        val apkPath = "${applicationContext.cacheDir}/p2p-apps/${app.magnetLink.infoHash}" +
+            "/${app.magnetLink.displayName}"
+        val apkFile = File(apkPath)
+
+        if (!apkFile.exists() || !apkFile.isFile) {
+            Log.e("P2P", "File not found or invalid: $apkFile")
+            printToast("No APK found connected to this DAO.")
+            return
+        }
+
+        val intent = Intent(applicationContext, ExecutionActivity::class.java).apply {
+            putExtra("fileName", apkPath)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        try {
+            applicationContext.startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Log.e("P2P", "No activity found to handle intent for APK: $apkPath", e)
+            printToast("Unable to open APK – app component not found.")
+        } catch (e: SecurityException) {
+            Log.e("P2P", "Security exception when launching APK: $apkPath", e)
+            printToast("Permission denied to launch APK.")
+        } catch (e: Exception) {
+            Log.e("P2P", "Unexpected error launching APK: $apkPath", e)
+            printToast("Something went wrong when opening the APK.")
+        }
+    }
+
+    /**
+     * Called when the user agrees to spend bitcoins needed to join the app's DAO.
+     */
+    private fun onJoinDoa() {
+        try {
+            lifecycleScope.launch {
+                val mostRecentSWBlock =
+                    getP2pStoreCommunity().fetchLatestSharedWalletBlock(app.block.calculateHash())
+                        ?: app.block
+                try {
+                    getP2pStoreCommunity().proposeJoinWallet(mostRecentSWBlock).getData()
+                } catch (t: Throwable) {
+                    Log.e("P2P", "Join wallet proposal failed. ${t.message ?: "No further information"}.")
+                }
+                updateDownloadButton()
+            }
+            requireActivity().runOnUiThread {
+                updatePolls()
+            }
+        } catch (e: Exception) {
+            Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
+        }
+    }
+
+    /**
+     * Sets up the required event listeners to detect when the download state for the torrent
+     * changes so we can update the UI.
+     */
+    private fun setupTorrentDownloadStatus() {
+        this.downloadProgress = torrentManager.downloadProgress(this.app);
+        if (!this.downloadFinished()) {
+            lifecycleScope.launch {
+                torrentManager.onStarted.collect { link ->
+                    if (link.infoHash == app.magnetLink.infoHash) {
+                        downloadProgress = 0
+                        updateDownloadButton()
+                    }
+                }
+            }
+            lifecycleScope.launch {
+                torrentManager.onProgress.collect { data ->
+                    val link = data.first
+                    val progress = data.second
+                    if (link.infoHash == app.magnetLink.infoHash) {
+                        downloadProgress = progress
+                        updateDownloadButton()
+                    }
+                }
+            }
+            lifecycleScope.launch {
+                torrentManager.onFinished.collect { link ->
+                    if (link.infoHash == app.magnetLink.infoHash) {
+                        downloadProgress = 100
+                        updateDownloadButton()
+                        updateScreenshots()
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates all the basic app metadata that is contained in the trustchain block
+     */
+    private fun updateAppMetaData() {
+        binding.appName.text = this.app.name
+        binding.appCategory.text = this.app.category
+        binding.daoMembersCount.text = this.app.getDoaMemberCount().toString()
+        binding.appLatestVersion.text = this.app.version.toString()
+        binding.appDescription.text = this.app.description
+        binding.daoIcon.setImageResource(this.app.icon)
+        val developer = this.app.block.publicKey.toHex().take(8)
+        binding.daoDeveloper.text = "Devloper: ${developer}"
+    }
+
+    /**
+     * Shows/hides/disables UI elements based on whether the user can even use them or not.
+     */
+    private fun updateUIBasedOnMembership() {
+        if (this.app.isDaoMember()) {
+            binding.btnFeatureRequest.isEnabled = true
+            binding.btnFeatureRequest.alpha = 1.0f
+            // Voting card clickability/alpha handled in loadRecentVotingPoll
+        } else {
+            binding.btnFeatureRequest.isEnabled = false
+            binding.btnFeatureRequest.alpha = 0.5f
+            // Voting card clickability/alpha handled in loadRecentVotingPoll
+        }
+    }
+
+    /**
+     * Updates the open feature request preview by getting the latest one.
+     */
+    private fun updateFeatureRequests() {
+        val requests = this.app.getFeatureRequests()
+        val openRequest = requests.find { r -> !r.solutionAccepted() }
+        if (openRequest != null) {
+            this.lastestFeatureRequest?.bind(openRequest)
+            binding.tvNoPendingFeatureRequests.visibility = View.GONE
+        }
+        else {
+            this.lastestFeatureRequest?.hide()
+            binding.tvNoPendingFeatureRequests.visibility = View.VISIBLE
+        }
+    }
+
+    /**
+     * Updates the list of polls/proposals
+     */
+    private fun updatePolls() {
+        val joinPolls = this.app.getOpenDaoJoinPolls();
+
+        if (joinPolls.isNotEmpty()) {
+            this.joinPoll?.bind(joinPolls[0])
+        } else {
+            this.joinPoll?.hide()
+        }
+
+       val updatePolls = this.app.getOpenUpdatePolls();
+       if (updatePolls.isNotEmpty()) {
+           this.updatePoll?.bind(updatePolls[0])
+       } else {
+           this.updatePoll?.hide()
+       }
+
+        // Show/hide the "no active proposals text"
+        binding.noProposalsText.visibility =
+            if (joinPolls.isEmpty() && updatePolls.isEmpty()) { View.VISIBLE } else { View.GONE }
+    }
+
+    /**
+     * Updates the download/open button based on the state of DOA and the app download
+     */
+    private fun updateDownloadButton() {
+        if (this._binding == null) return
+        if (this.app.isDaoMember()) {
+            if (this.downloadFinished()) {
+                this.binding.installOpenBtn.isEnabled = true
+                this.binding.installOpenBtn.text = "Open"
+            }
+            else if (this.downloadProgress == null) {
+                this.binding.installOpenBtn.isEnabled = true
+                this.binding.installOpenBtn.text = "Download"
+            }
+            else {
+                this.binding.installOpenBtn.isEnabled = false
+                this.binding.installOpenBtn.text = "${this.downloadProgress}%"
+            }
+        }
+        else if (this.app.isWaitingToJoin()) {
+            this.binding.installOpenBtn.isEnabled = false
+            this.binding.installOpenBtn.text = "Collecting votes"
+        }
+        else {
+            this.binding.installOpenBtn.isEnabled = true
+            this.binding.installOpenBtn.text = "Install"
+        }
+    }
+
+    /**
+     * Takes all of the image files inside the downloaded torrent and shows them as
+     */
+    private fun updateScreenshots() {
         val applicationContext = requireContext()
         val dir = File(applicationContext.cacheDir, "p2p-apps/${app.magnetLink.infoHash}")
 
@@ -258,295 +518,12 @@ class AppDetails : BaseFragment() {
     }
 
     /**
-    * Called when the user presses the install button (which is only shown when the user is not
-    * yet in the app's DAO), effectively this means they will spend bitcoins to join the shared
-    * wallet, so we'll ask them for confirmation of that first.
-    */
-    private fun onInstallApp() {
-        if (this.app.isDaoMember()) {
-            printToast("You are already a member of this DAO.")
-            Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but is already a member.")
-            updateDownloadButton()
-            updateUIBasedOnMembership()
-            return
-        }
-
-        if (this.app.isWaitingToJoin()) {
-            printToast("You have a pending request to join this DAO.")
-            Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but has a pending request.")
-            updateDownloadButton()
-            updateUIBasedOnMembership()
-            return
-        }
-
-        val entranceFee = this.app.getEntranceFee()
-        val msg = "In order to download this app you must join its DAO and pay an enterance fee " +
-            "of $entranceFee Satoshi to the shared wallet."
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Are you sure?")
-            .setMessage(msg)
-            .setPositiveButton("Join DAO") { dialog, _ ->
-                dialog.dismiss()
-                onJoinDoa()
-            }
-            .setNegativeButton("Cancel") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .create()
-            .show()
-    }
-
-    /**
-     * Called when the user presses the "restart download" button, which is only visible when they
-     * are a member of the app DAO, but the torrent download for the app has failed.
-     */
-    private fun onRestartDownload() {
-        lifecycleScope.launch {
-            downloadProgress = 0
-            updateDownloadButton()
-            torrentManager.downloadApp(app)
-            downloadProgress = torrentManager.downloadProgress(app)
-            updateDownloadButton()
-        }
-    }
-
-    /**
-     * Attempts to launch the downloaded APK associated with the current app's DAO.
-     *
-     * This function:
-     * - Locates the APK inside the app's P2P cache directory.
-     * - Validates the presence and uniqueness of the APK file.
-     * - Launches the APK via an `ExecutionActivity` intent.
-     *
-     * The method provides error feedback to the user using `Toast` messages
-     * and logs warnings for unexpected or invalid states.
-     *
-     * Preconditions:
-     * - The user must be a member of the DAO.
-     * - The APK must have already been downloaded.
-     */
-    private fun onOpenApp() {
-        val applicationContext = requireContext()
-        val dir = File(applicationContext.cacheDir, "p2p-apps/${app.magnetLink.infoHash}")
-
-        val apkFiles = try {
-            findFilesByExtension(dir, setOf(".apk"))
-        } catch (e: IllegalArgumentException) {
-            e.message?.let {
-                Log.w("P2P", it)
-                printToast("Directory containing APK not found or invalid.")
-            }
-            return
-        }
-
-        val apkFile: File
-        if (apkFiles.isEmpty()) {
-            Log.e("P2P", "No APK files found in: ${dir.absolutePath}")
-            printToast("Could not find APK in the torrent.")
-            return
-        } else if (apkFiles.size > 1) {
-            Log.e("P2P", "Multiple APK files found in: ${dir.absolutePath}")
-            printToast("Found multiple APK's in the torrent.")
-            return
-        } else {
-            apkFile = apkFiles.first()
-        }
-
-        if (!apkFile.exists() || !apkFile.isFile) {
-            Log.e("P2P", "File not found or invalid: $apkFile")
-            printToast("No APK found connected to this DAO.")
-            return
-        }
-
-        val apkPath = apkFile.path
-
-        val intent = Intent(applicationContext, ExecutionActivity::class.java).apply {
-            putExtra("fileName", apkPath)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-
-        try {
-            applicationContext.startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            Log.e("P2P", "No activity found to handle intent for APK: $apkPath", e)
-            printToast("Unable to open APK – app component not found.")
-        } catch (e: SecurityException) {
-            Log.e("P2P", "Security exception when launching APK: $apkPath", e)
-            printToast("Permission denied to launch APK.")
-        } catch (e: Exception) {
-            Log.e("P2P", "Unexpected error launching APK: $apkPath", e)
-            printToast("Something went wrong when opening the APK.")
-        }
-    }
-
-    /**
-     * Called when the user agrees to spend bitcoins needed to join the app's DAO.
-     */
-    private fun onJoinDoa() {
-        try {
-            lifecycleScope.launch {
-                val mostRecentSWBlock =
-                    getP2pStoreCommunity().fetchLatestSharedWalletBlock(app.block.calculateHash())
-                        ?: app.block
-                try {
-                    getP2pStoreCommunity().proposeJoinWallet(mostRecentSWBlock).getData()
-                } catch (t: Throwable) {
-                    Log.e("P2P", "Join wallet proposal failed. ${t.message ?: "No further information"}.")
-                }
-                updateDownloadButton()
-            }
-            requireActivity().runOnUiThread {
-                updatePolls()
-                updateDownloadButton()
-            }
-        } catch (e: Exception) {
-            Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
-        }
-    }
-
-    /**
-     * Sets up the required event listeners to detect when the download state for the torrent
-     * changes so we can update the UI.
-     */
-    private fun setupTorrentDownloadStatus() {
-        this.downloadProgress = torrentManager.downloadProgress(this.app)
-        if (!this.downloadFinished()) {
-            lifecycleScope.launch {
-                torrentManager.onStarted.collect { link ->
-                    if (link.infoHash == app.magnetLink.infoHash) {
-                        downloadProgress = 0
-                        updateDownloadButton()
-                    }
-                }
-            }
-            lifecycleScope.launch {
-                torrentManager.onProgress.collect { data ->
-                    val link = data.first
-                    val progress = data.second
-                    if (link.infoHash == app.magnetLink.infoHash) {
-                        downloadProgress = progress
-                        updateDownloadButton()
-                    }
-                }
-            }
-            lifecycleScope.launch {
-                torrentManager.onFinished.collect { link ->
-                    if (link.infoHash == app.magnetLink.infoHash) {
-                        downloadProgress = 100
-                        updateDownloadButton()
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Updates all the basic app metadata that is contained in the trustchain block
-     */
-    private fun updateAppMetaData() {
-        binding.appName.text = this.app.name
-        binding.appCategory.text = this.app.category
-        binding.daoMembersCount.text = this.app.getDoaMemberCount().toString()
-        binding.appLatestVersion.text = this.app.version.toString()
-        binding.appDescription.text = this.app.description
-        binding.daoIcon.setImageResource(this.app.icon)
-
-        binding.daoDeveloper.text = "Creator: ${this.daoBlock.publicKey.toHex().take(8)}..."
-    }
-
-    /**
-     * Shows/hides/disables UI elements based on whether the user can even use them or not.
-     */
-    private fun updateUIBasedOnMembership() {
-        if (this.app.isDaoMember()) {
-            binding.btnFeatureRequest.isEnabled = true
-            binding.btnFeatureRequest.alpha = 1.0f
-            // Voting card clickability/alpha handled in loadRecentVotingPoll
-        } else {
-            binding.btnFeatureRequest.isEnabled = false
-            binding.btnFeatureRequest.alpha = 0.5f
-            // Voting card clickability/alpha handled in loadRecentVotingPoll
-        }
-    }
-
-    /**
-     * Updates the open feature request preview by getting the latest one.
-     */
-    private fun updateFeatureRequests() {
-        val requests = this.app.getFeatureRequests()
-        val openRequest = requests.find { r -> !r.solutionAccepted() }
-        if (openRequest != null) {
-            this.lastestFeatureRequest?.bind(openRequest)
-            binding.tvNoPendingFeatureRequests.visibility = View.GONE
-        }
-        else {
-            this.lastestFeatureRequest?.hide()
-            binding.tvNoPendingFeatureRequests.visibility = View.VISIBLE
-        }
-    }
-
-    /**
-     * Updates the list of polls/proposals
-     */
-    private fun updatePolls() {
-        val joinPolls = this.app.getOpenDaoJoinPolls()
-
-        if (joinPolls.isNotEmpty()) {
-            this.joinPoll?.bind(joinPolls[0])
-        } else {
-            this.joinPoll?.hide()
-        }
-
-       val updatePolls = this.app.getOpenUpdatePolls()
-       if (updatePolls.isNotEmpty()) {
-           this.updatePoll?.bind(updatePolls[0])
-       } else {
-           this.updatePoll?.hide()
-       }
-
-        // Show/hide the "no active proposals text"
-        binding.noProposalsText.visibility =
-            if (joinPolls.isEmpty() && updatePolls.isEmpty()) { View.VISIBLE } else { View.GONE }
-    }
-
-    /**
-     * Updates the download/open button based on the state of DOA and the app download
-     */
-    private fun updateDownloadButton() {
-        if (this._binding == null) return
-        if (this.app.isDaoMember()) {
-            if (this.downloadFinished()) {
-                this.binding.installOpenBtn.isEnabled = true
-                this.binding.installOpenBtn.text = "Open"
-                loadScreenshots()
-            }
-            else if (this.downloadProgress == null) {
-                this.binding.installOpenBtn.isEnabled = true
-                this.binding.installOpenBtn.text = "Download"
-            }
-            else {
-                this.binding.installOpenBtn.isEnabled = false
-                this.binding.installOpenBtn.text = "${this.downloadProgress}%"
-            }
-        }
-        else if (this.app.isWaitingToJoin()) {
-            this.binding.installOpenBtn.isEnabled = false
-            this.binding.installOpenBtn.text = "Collecting votes"
-        }
-        else {
-            this.binding.installOpenBtn.isEnabled = true
-            this.binding.installOpenBtn.text = "Install"
-        }
-    }
-
-    /**
      * Checks if this user has previously created a DAO join request/poll and if enough signatures
      * have been collected it will create a JOIN_DAO block using the collected signatures.
      */
     private fun finalizeJoinRequest() {
         // User is already a DAO member; do nothing.
-        if (this.app.isDaoMember()) return
+        if (this.app.isDaoMember()) return;
 
         // Has the user even created a join request/poll?
         val myPoll = this.app.getMyDaoJoinPoll() ?: return
@@ -618,11 +595,11 @@ class AppDetails : BaseFragment() {
         this.joinPoll = PollPreviewHolder(
             binding.joinProposal,
             R.id.action_appDetailsFragment_to_featureVotingFragment
-        )
+        );
         this.updatePoll = PollPreviewHolder(
             binding.updateProposal,
             R.id.action_appDetailsFragment_to_featureVotingFragment
-        )
+        );
         this.lastestFeatureRequest = FeatureRequestPreviewHolder(
             binding.latestFeatureRequest,
             R.id.action_appDetailsFragment_to_featureSolutionFragment
@@ -636,7 +613,7 @@ class AppDetails : BaseFragment() {
         binding.installOpenBtn.setOnClickListener {
             if (this.app.isDaoMember()) {
                 if (this.downloadProgress == null) {
-                    this.onRestartDownload()
+                    this.onRestartDownload();
                 }
                 else if (this.downloadFinished()) {
                     this.onOpenApp()

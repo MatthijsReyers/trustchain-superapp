@@ -1,3 +1,21 @@
+## P2PlayStore
+P2Playstore is an Android application built on top of IPv8 and Trustchain, and is integrated into the Trustchain Superapp. It is a proof-of-concept implementation of a DAO system which provides a platform for proposing updates for applications. Each application is a separate DAO through which voting and transactions of bounty for solutions of features are handled. In P2Playstore, Trustchain is used for communication and bookkeeping while the Bitcoin blockchain is used to have collective multi-signature wallets for each DAO. The content of the app is split up in several tabs:
+
+- **First time launch screens** (Provide screen shots of main screen superapp, screen containing the test/reg test button and the screen of the bitcoin download): The user must set up a bitcoin wallet to be able to use the application. During development, we continuously used the reg test server. The user is routed through this process and guided to the main screen of the application.
+- **List of DAO's** (Provide screen shot of screen showing the widgets of different DAO's, separating 'All DAO's' from 'My DAO's'): On the main screen of the system the user finds a list of current DAO's. They can create a new DAO or select one of the existing ones to find more info.
+- **DAO screen** (Provide screen shot of screen showing the DAO details and a screen shot of the screen with the shared wallet info of the DAO): Per DAO there is a page containing the details of the application/DAO. If the user is not a member, they can join the DAO. If the user is not a member, they can request features and vote on solutions to those requests. They can also open the newest accepted version of the application through this screen.
+- **Voting screen** (Provide screen shot of voting poll): To vote on whether a user can join a DAO or whether a solution to a feature requests gets approved, the DAO uses a poll with a threshold specified by the DAO owner.
+
+
+## Project structure
+The project is split into multiple modules to achieve maintainable, modular and testable code. The project uses the following packages:
+- **Models**: Contains the necessary functionality and constructors for each part of the system flow of an application DAO.
+- **TransactionData**: Provides constructors and other functions for all the blocks that are used in the P2Playstore.
+- **UI**: Contains the code that provides the functionality of what happens on screen and provides the connection to the backend of the application.
+- **Utils**: Contains externally imported helper functions for the application (including DAO Create and Join helpers) and to help debugging the application.
+## Source code
+
+
 
 ## Source code
 
