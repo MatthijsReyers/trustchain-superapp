@@ -21,8 +21,6 @@ class FeatureRequestFragment : BaseFragment() {
     private val binding get() = _binding!!
 
     private lateinit var app: P2playApp
-    private lateinit var daoBlockId: String
-    private lateinit var daoUniqueId: String
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -39,20 +37,11 @@ class FeatureRequestFragment : BaseFragment() {
         val daoId = arguments?.getString("daoId") as String
         this.app = P2playApp.findByDoaId(daoId)!!
 
-        this.daoBlockId = this.app.block.blockId
-        this.daoUniqueId = daoId
-
-        // Don't allow
+        // Don't allow people who are not DAO members to access this page
         if (!this.app.isDaoMember()) {
             findNavController().navigateUp()
         }
 
-        if (daoUniqueId.isEmpty()) {
-            android.util.Log.e("FeatureRequestFragment", "daoUniqueId is empty. Cannot submit feature request.")
-            binding.btnSubmitRequest.isEnabled = false
-            binding.btnSubmitRequest.alpha = 0.5f
-            Toast.makeText(context, "Error: Could not load DAO information.", Toast.LENGTH_LONG).show()
-        }
         setupClickListeners()
     }
 
