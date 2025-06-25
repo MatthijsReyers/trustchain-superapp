@@ -210,7 +210,7 @@ class DaoWalletFragment : BaseFragment() {
         val connectedPeers = peerGroup.numConnectedPeers()
         val isConnected = connectedPeers > 0
         if (isConnected){
-            binding.bitcoinNetworkStatus.text = "Selected"
+            binding.bitcoinNetworkStatus.text = "Connected"
         } else {
             binding.bitcoinNetworkStatus.text = "Disconnected"
         }
