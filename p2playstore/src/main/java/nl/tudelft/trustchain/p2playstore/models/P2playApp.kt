@@ -6,7 +6,10 @@ import android.util.Log
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
+import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
+import nl.tudelft.trustchain.currencyii.util.taproot.CTransaction
+import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
@@ -19,6 +22,7 @@ import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.SharedWalletData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.DAOCreateHelper
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
@@ -100,6 +104,30 @@ class P2playApp(val block: TrustChainBlock) {
         catch (err: Throwable) {
             Log.d("P2PlayStore", "Failed to load entrance fee")
             return 0
+        }
+    }
+
+    /**
+     * In Shatoshi's; the amount of Bitcoin currently stored in the shared wallet of the app's DAO
+     */
+    fun getWalletBalance(): Long {
+        try {
+            val latestVersion = this.getLatestVersion()
+            val data = latestVersion.blockData as SharedWalletData
+            val serializedTx = data.SW_TRANSACTION_SERIALIZED
+            return CTransaction()
+                .deserialize(serializedTx.hexToBytes())
+                .vout
+                .find { it.scriptPubKey.size == 35 }
+                ?.nValue
+                ?: 0L
+        }
+        catch (e: Exception) {
+            android.util.Log.e(
+                "P2PlayStore",
+                "Error fetching DAO balance: ${e.message}"
+            )
+            return 0L // Assume 0 if fetching fails, to prevent transfer
         }
     }
 

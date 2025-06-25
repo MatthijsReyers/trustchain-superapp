@@ -206,6 +206,7 @@ class P2pStoreCommunity : Community() {
     }
 
     /**
+<<<<<<< Updated upstream
      * Create a feature request proposal block on trust chain.
      */
     fun createFeatureRequest(daoId: String, title: String, description: String, reward: Long) {
@@ -328,6 +329,8 @@ class P2pStoreCommunity : Community() {
 
 
     /**
+=======
+>>>>>>> Stashed changes
      * Get all feature requests for a DAO
      */
     fun getFeatureRequestsForDao(daoId: String): List<FeatureRequestData> {

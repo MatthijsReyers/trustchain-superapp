@@ -160,100 +160,6 @@ class AppDetails : BaseFragment() {
         }
     }
 
-    private fun loadScreenshots() {
-        val applicationContext = requireContext()
-        val dir = File(applicationContext.cacheDir, "p2p-apps/${app.magnetLink.infoHash}")
-
-        val files = try {
-            findFilesByExtension(
-                dir,
-                setOf(".bmp", ".gif", ".heif", ".heic", ".jpeg", ".jpg", ".png", ".webp")
-            ).sorted()
-        } catch (e: IllegalArgumentException) {
-            e.message?.let { Log.d("P2P", it) }
-            return
-        }
-
-        if (files.isEmpty()) {
-            Log.d("P2P", "No image files found in: ${dir.path}")
-            return
-        }
-
-        val container = binding.screenshotsContainer
-        container.removeAllViews()
-
-        val imageHeightPx = container.layoutParams.height.takeIf { it > 0 } ?: 200
-        val maxImageWidthPx = (150 * resources.displayMetrics.density).toInt()
-
-
-        for (file in files) {
-            // First decode only bounds to get original size
-            val boundsOptions = BitmapFactory.Options().apply {
-                inJustDecodeBounds = true
-            }
-            BitmapFactory.decodeFile(file.path, boundsOptions)
-
-            val originalWidth = boundsOptions.outWidth
-            val originalHeight = boundsOptions.outHeight
-
-            if (originalWidth <= 0 || originalHeight <= 0) continue // Skip corrupted images
-
-            // Compute target width preserving aspect ratio
-            var targetWidth = (originalWidth.toFloat() / originalHeight.toFloat() * imageHeightPx).toInt()
-            if (targetWidth > maxImageWidthPx) {
-                targetWidth = maxImageWidthPx
-            }
-
-            // Decode image with sampling
-            val decodeOptions = BitmapFactory.Options().apply {
-                inSampleSize = calculateInSampleSize(boundsOptions, targetWidth, imageHeightPx)
-            }
-
-            try {
-                val bitmap = BitmapFactory.decodeFile(file.path, decodeOptions)
-                if (bitmap == null) {
-                    Log.w("P2P", "Failed to decode bitmap from: ${file.path}")
-                    continue
-                }
-
-                val imageView = ImageView(applicationContext).apply {
-                    layoutParams = LinearLayout.LayoutParams(targetWidth, imageHeightPx).also {
-                        it.setMargins(8, 0, 8, 0)
-                    }
-                    scaleType = ImageView.ScaleType.FIT_CENTER
-                    setImageBitmap(bitmap)
-                }
-
-                container.addView(imageView)
-            } catch (e: OutOfMemoryError) {
-                Log.e("P2P", "OutOfMemoryError decoding image: ${file.path}", e)
-                continue
-            } catch (e: Exception) {
-                Log.e("P2P", "Unexpected error decoding image: ${file.path}", e)
-                continue
-            }
-        }
-    }
-
-    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
-        // Raw height and width of image
-        val (height: Int, width: Int) = options.run { outHeight to outWidth }
-        var inSampleSize = 1
-
-        if (height > reqHeight || width > reqWidth) {
-            val halfHeight: Int = height / 2
-            val halfWidth: Int = width / 2
-
-            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-            // height and width larger than the requested height and width.
-            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
-                inSampleSize *= 2
-            }
-        }
-
-        return inSampleSize
-    }
-
     /**
     * Called when the user presses the install button (which is only shown when the user is not
     * yet in the app's DAO), effectively this means they will spend bitcoins to join the shared
@@ -333,7 +239,7 @@ class AppDetails : BaseFragment() {
         } catch (e: IllegalArgumentException) {
             e.message?.let {
                 Log.w("P2P", it)
-                printToast(applicationContext,"Directory containing APK not found or invalid.")
+                printToast("Directory containing APK not found or invalid.")
             }
             return
         }
@@ -341,11 +247,11 @@ class AppDetails : BaseFragment() {
         val apkFile: File
         if (apkFiles.isEmpty()) {
             Log.e("P2P", "No APK files found in: ${dir.absolutePath}")
-            printToast(applicationContext,"Could not find APK in the torrent.")
+            printToast("Could not find APK in the torrent.")
             return
         } else if (apkFiles.size > 1) {
             Log.e("P2P", "Multiple APK files found in: ${dir.absolutePath}")
-            printToast(applicationContext,"Found multiple APK's in the torrent.")
+            printToast("Found multiple APK's in the torrent.")
             return
         } else {
             apkFile = apkFiles.first()
@@ -365,13 +271,10 @@ class AppDetails : BaseFragment() {
         try {
             applicationContext.startActivity(intent)
         } catch (e: ActivityNotFoundException) {
-            Log.e("P2P", "No activity found to handle intent for APK: $apkPath", e)
             printToast("Unable to open APK – app component not found.")
         } catch (e: SecurityException) {
-            Log.e("P2P", "Security exception when launching APK: $apkPath", e)
             printToast("Permission denied to launch APK.")
         } catch (e: Exception) {
-            Log.e("P2P", "Unexpected error launching APK: $apkPath", e)
             printToast("Something went wrong when opening the APK.")
         }
     }
@@ -516,7 +419,6 @@ class AppDetails : BaseFragment() {
             if (this.downloadFinished()) {
                 this.binding.installOpenBtn.isEnabled = true
                 this.binding.installOpenBtn.text = "Open"
-                loadScreenshots()
             }
             else if (this.downloadProgress == null) {
                 this.binding.installOpenBtn.isEnabled = true
