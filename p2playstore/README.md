@@ -13,12 +13,8 @@ The project is split into multiple modules to achieve maintainable, modular and 
 - **TransactionData**: Provides constructors and other functions for all the blocks that are used in the P2Playstore.
 - **UI**: Contains the code that provides the functionality of what happens on screen and provides the connection to the backend of the application.
 - **Utils**: Contains externally imported helper functions for the application (including DAO Create and Join helpers) and to help debugging the application.
-## Source code
-
-
 
 ## Source code
-
 
 
 ## Block types
