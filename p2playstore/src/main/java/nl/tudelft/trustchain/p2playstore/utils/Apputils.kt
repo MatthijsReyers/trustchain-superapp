@@ -1,6 +1,7 @@
 package nl.tudelft.trustchain.p2playstore.utils
 
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -78,7 +79,7 @@ object AppUtils {
     /**
      * Extracts the DAO_ID from a P2PlayStore TrustChain block.
      */
-    fun getDaoId(block: TrustChainBlock): String {
+    fun getDaoId(block: TrustChainBlock): String? {
         val data = when (block.type) {
             JOIN_BLOCK -> JoinDaoTransactionData(block.transaction).getData()
             UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(block.transaction).getData()
@@ -86,7 +87,10 @@ object AppUtils {
             JOIN_REQUEST_BLOCK -> JoinDaoTransactionData(block.transaction).getData()
             VOTE_YES_BLOCK -> VoteYesTransactionData(block.transaction).getData()
             VOTE_NO_BLOCK -> VoteNoTransactionData(block.transaction).getData()
-            else -> throw Exception("Not a P2PlayStore block")
+            else -> {
+                Log.d("P2PlayStore", "getDaoId - not ")
+                return null
+            }
         }
         return data.DAO_ID;
     }
@@ -97,7 +101,10 @@ object AppUtils {
                 .getData().SW_UNIQUE_PROPOSAL_ID
             JOIN_REQUEST_BLOCK -> JoinRequestTransactionData(block.transaction)
                 .getData().SW_UNIQUE_PROPOSAL_ID
-            else -> throw Exception("Not a P2PlayStore block")
+            else -> {
+                Log.d("P2PlayStore", "getDaoId - not ")
+                null
+            }
         }
     }
 
