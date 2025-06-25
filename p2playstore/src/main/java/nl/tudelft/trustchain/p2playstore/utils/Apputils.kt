@@ -17,6 +17,7 @@ import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransacti
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
 import nl.tudelft.trustchain.p2playstore.R
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinRequestTransactionData
 import org.bitcoinj.core.Coin
 import java.io.File
 import java.util.Locale
@@ -88,6 +89,16 @@ object AppUtils {
             else -> throw Exception("Not a P2PlayStore block")
         }
         return data.DAO_ID;
+    }
+
+    fun getProposalId(block: TrustChainBlock): String {
+        return when (block.type) {
+            PROPOSE_UPDATE_BLOCK -> ProposeUpdateTransactionData(block.transaction)
+                .getData().SW_UNIQUE_PROPOSAL_ID
+            JOIN_REQUEST_BLOCK -> JoinRequestTransactionData(block.transaction)
+                .getData().SW_UNIQUE_PROPOSAL_ID
+            else -> throw Exception("Not a P2PlayStore block")
+        }
     }
 
     fun formatDynamicBalance(balance: Coin): String {

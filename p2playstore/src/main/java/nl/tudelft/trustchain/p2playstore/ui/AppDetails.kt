@@ -443,6 +443,8 @@ class AppDetails : BaseFragment() {
      * Takes all of the image files inside the downloaded torrent and shows them as
      */
     private fun updateScreenshots() {
+        if (this._binding == null) return;
+
         val applicationContext = requireContext()
         val dir = File(applicationContext.cacheDir, "p2p-apps/${app.magnetLink.infoHash}")
 

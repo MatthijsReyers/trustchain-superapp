@@ -16,6 +16,7 @@ import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils.getProposalId
 import nl.tudelft.trustchain.p2playstore.utils.DAOJoinHelper
 import nl.tudelft.trustchain.p2playstore.utils.DAOTransferFundsHelper
 
@@ -62,18 +63,24 @@ abstract class Poll(val block: TrustChainBlock) {
         return trustChain.myPeer.publicKey.keyToBin().toHex() == receivingUser
     }
 
+    val numberOfUsers: Int by lazy {
+        this.trustChain.database.getBlocksWithType(this.block.type)
+            .filter { b -> getProposalId(b) == this.proposalId }
+            .size
+    }
+
     /**
      * Amount of people/peers that have not yet voted out of all the people that can vote.
      *
      * Note: remember not everyone needs to vote in order for a vote to go through.
      */
-    val pendingVotes: Int get() = votesRequired - votes
+    val pendingVotes: Int get() = numberOfUsers - votes
 
-    val yesPercentage: Float get() = (getYesVotes().size) / votesRequired.toFloat()
+    val yesPercentage: Float get() = (getYesVotes().size) / numberOfUsers.toFloat()
 
-    val noPercentage: Float get() = (getNoVotes().size) / votesRequired.toFloat()
+    val noPercentage: Float get() = (getNoVotes().size) / numberOfUsers.toFloat()
 
-    val pendingPercentage: Float get() = (pendingVotes) / votesRequired.toFloat()
+    val pendingPercentage: Float get() = (pendingVotes) / numberOfUsers.toFloat()
 
     /**
      * Checks if the poll/request has been accepted/approved by the community.

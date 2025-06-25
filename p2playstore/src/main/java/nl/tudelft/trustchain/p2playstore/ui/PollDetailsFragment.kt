@@ -55,8 +55,6 @@ class PollDetailsFragment : BaseFragment() {
     private var joinPoll: DaoJoinPoll? = null
     private var updatePoll: UpdateProposalPoll? = null
 
-    private var isTransferInitiated: Boolean = false
-
     /**
      * Is the user currently voting? We disable the buttons during this time to prevent them from
      * creating multiple vote blocks by spamming clicks while we're still creating their vote block.
