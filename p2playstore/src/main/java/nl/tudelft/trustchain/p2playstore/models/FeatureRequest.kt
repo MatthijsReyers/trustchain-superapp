@@ -1,6 +1,7 @@
 package nl.tudelft.trustchain.p2playstore.models
 
 import UpdateProposalPoll
+import android.util.Log
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
@@ -148,6 +149,36 @@ class FeatureRequest(val block: TrustChainBlock) {
                 }
             if (block == null) return null
             return FeatureRequest(block)
+        }
+
+        /**
+         * Create a feature request proposal block on trust chain.
+         */
+        fun createFeatureRequest(daoId: String, title: String, description: String, reward: Long) {
+
+            // Does this DAO even exist and is the user a member?
+            val app = P2playApp.findByDoaId(daoId)
+            if (app == null || !app.isDaoMember()) return
+
+            val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
+
+            val featureRequestData = FeatureRequestTransactionData(
+                daoId = daoId,
+                title = title,
+                description = description,
+                reward = reward,
+                requesterPublicKey = trustChain.myPeer.publicKey.pub().toString(),
+            )
+
+            val transaction = featureRequestData.getTransactionData()
+
+            trustChain.createProposalBlock(
+                featureRequestData.blockType,
+                transaction,
+                trustChain.myPeer.publicKey.keyToBin()
+            )
+
+            Log.d("P2PlayStore", "Created Feature Request proposal block for DAO $daoId")
         }
     }
 }
