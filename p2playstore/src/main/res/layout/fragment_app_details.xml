@@ -195,30 +195,7 @@
                 android:id="@+id/screenshots_container"
                 android:layout_width="wrap_content"
                 android:layout_height="200dp"
-                android:orientation="horizontal">
-
-                <!-- Screenshots will be added here programmatically -->
-                <ImageView
-                    android:layout_width="120dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginEnd="8dp"
-                    android:background="#EEEEEE"
-                    android:scaleType="centerCrop" />
-
-                <ImageView
-                    android:layout_width="120dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginEnd="8dp"
-                    android:background="#EEEEEE"
-                    android:scaleType="centerCrop" />
-
-                <ImageView
-                    android:layout_width="120dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginEnd="8dp"
-                    android:background="#EEEEEE"
-                    android:scaleType="centerCrop" />
-            </LinearLayout>
+                android:orientation="horizontal"/>
         </HorizontalScrollView>
 
         <!-- About this DAO -->

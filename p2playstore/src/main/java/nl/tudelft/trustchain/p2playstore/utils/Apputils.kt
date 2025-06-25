@@ -16,8 +16,42 @@ import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactio
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
+import nl.tudelft.trustchain.p2playstore.R
+import java.io.File
 
 object AppUtils {
+    /**
+     * Recursively searches for files with a specific extension inside a given directory.
+     *
+     * @param folder The root folder to search.
+     * @param extension File extensions to match (e.g. ".apk").
+     * @param recursive Whether to search subdirectories recursively. Defaults to true.
+     * @return A list of [File] objects that match the given extension.
+     *
+     * @throws IllegalArgumentException if the folder path is not a valid directory.
+     */
+    fun findFilesByExtension(
+        folder: File,
+        extensions: Set<String>,
+        recursive: Boolean = true
+    ): List<File> {
+        require(folder.exists() && folder.isDirectory) {
+            "Directory not found or invalid: ${folder.absolutePath}"
+        }
+
+        val files: MutableList<File> = emptyList<File>().toMutableList()
+
+        folder.listFiles()?.forEach { file ->
+            if (file.isDirectory && recursive) {
+                files.addAll(findFilesByExtension(file, extensions, recursive))
+            } else if (extensions.any { file.name.endsWith(it, ignoreCase = true) }) {
+                files += file
+            }
+        }
+
+        return files
+    }
+
     /**
      * Displays a temporary on-screen message (toast) to the user.
      *
