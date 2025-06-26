@@ -34,7 +34,7 @@ But to ensure modularity and allow future developers to extend these blocks with
 
 ### Active record pattern
 
-With the above mentioned desire for modularity in my mind, we choose to use an active record design pattern as you might find in a more traditional relational database-based application. 
+With the above mentioned desire for modularity in mind, we choose to use an active record design pattern as you might find in a more traditional relational database-based application. 
 Which essentially means that we modeled all the high level abstractions in our application such as Apps/DAO's, Feature requests, and Voting polls as classes with methods for performing the high-level actions we want to do with these things.
 We call these classes models and they can be found in the `nl.tudelft.trustchain.p2playstore.models` package. For example, below is a simplified version of the `P2playApp` model, which allows for writing nice high level code like `P2playApp.findByDoaId(id)` or `app.getDaoWalletBalance()`.
 
