@@ -95,7 +95,7 @@ object AppUtils {
         return data.DAO_ID;
     }
 
-    fun getProposalId(block: TrustChainBlock): String {
+    fun getProposalId(block: TrustChainBlock): String? {
         return when (block.type) {
             PROPOSE_UPDATE_BLOCK -> ProposeUpdateTransactionData(block.transaction)
                 .getData().SW_UNIQUE_PROPOSAL_ID
