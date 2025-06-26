@@ -14,6 +14,14 @@ The project is split into multiple modules to achieve maintainable, modular and 
 - **UI**: Contains the code that provides the functionality of what happens on screen and provides the connection to the backend of the application.
 - **Utils**: Contains externally imported helper functions for the application (including DAO Create and Join helpers) and to help debugging the application.
 
+This structure enables P2PlayStore to be a marketplace where there are:
+
+*   **DAO-Governed Apps**: Each application on P2PlayStore is managed by its own DAO. This means app updates, feature implementations, and even new member admissions are decided through voting by DAO members.
+*   **Feature Bounties**: Users can request new features or bug fixes for apps they use, attaching a Bitcoin (BTC) bounty as an incentive for developers.
+*   **Community-Driven Development**: Developers can propose solutions to these feature requests. If their solution is accepted by the DAO through a voting process, they receive the associated BTC bounty.
+*   **Trust and Transparency**: All critical operations—from DAO creation and member joining to fund transfers and app updates—are recorded as immutable blocks on TrustChain, ensuring transparency and accountability.
+
+
 ## Code structure
 
 When trying to integrate the code of other groups we ran into problems with their business logic and UI being tightly coupled forcing us to copy all their code and make modifications to it rather than be able to import the parts we need and prevent duplication.
@@ -87,8 +95,12 @@ To further illustrate the TrustChain side of things we have illustrated some sec
 | <img src="./docs/step-3.drawio.png" width="250px"> | <h3>DAO members vote on join request</h3><p>When the members of a DAO detect the new `JOIN_REQUEST_BLOCK`, they will respond with agreement or disagreement votes based on whether or not they think the new user should be allowed to be become a member of the DAO. Practically voting yes essentially means that the members add a signature to the transaction of moving all the DAO's funds to a new shared wallet which also has the new user's key.</p> |
 | <img src="./docs/step-4.drawio.png" width="250px"> | <h3>New user joins DAO</h3><p>The user which created the `JOIN_REQUEST_BLOCK` is responsible for watching the TrustChain and determining when enough votes/signatures have been collected, which can then be used to create a new `JOIN_BLOCK`, using the original transaction data proposed in the `JOIN_REQUEST_BLOCK`. Practically this means a new shared wallet is created with all the keys of the previous members and the key of the new user.</p> |
 
+
+
 ### Limitations
 There are a few limitations to consider with this project. First of all, general users and developers have the same rights in the application, which can lead to DAO hijacking. In addition, all users are shown by a unique hash in the application. For privacy this is a safe option, but it does not help to create a community of developers, as hashes are more difficult to recognize than chosen nicknames. Lastly, due to the current implementation of the Freedom Of Computing app, which we reused for this application, this app can only import apk files that do not contain xml files and have their UI handled in a different way.
 
 ### Future work
 Currently there is no fallback for when the reg test setup fails, hence the application crashes when you try to continue or go back during initialization. Freedom of Computing does implement such a fallback, but due to time constraints, we did not manage to include this. Secondly, there could be functionality added to convert an apk file into a magnet link and torrent file direct in the application to add it to a DAO, as currently we need to convert an apk file to a magnet link outside of the application. Furthermore, there are already some DAO icons that the user can choose from, but it could be enhanced to let the user upload a custom app icon themselves.
+
+
