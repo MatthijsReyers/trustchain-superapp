@@ -21,19 +21,18 @@ import kotlinx.coroutines.launch
 
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
+import nl.tudelft.trustchain.p2playstore.FEATURE_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.JOIN_BLOCK
+import nl.tudelft.trustchain.p2playstore.JOIN_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2PlayStoreMainActivity
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_NO_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BLOCK
+import nl.tudelft.trustchain.p2playstore.PROPOSE_UPDATE_BLOCK
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.TorrentManager
+import nl.tudelft.trustchain.p2playstore.UPDATE_ACCEPTED_BLOCK
+import nl.tudelft.trustchain.p2playstore.VOTE_NO_BLOCK
+import nl.tudelft.trustchain.p2playstore.VOTE_YES_BLOCK
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.findFilesByExtension
@@ -285,15 +284,15 @@ class AppDetails : BaseFragment() {
     private fun onJoinDoa() {
         try {
             lifecycleScope.launch {
-                val mostRecentSWBlock =
-                    getP2pStoreCommunity().fetchLatestSharedWalletBlock(app.block.calculateHash())
-                        ?: app.block
                 try {
-                    getP2pStoreCommunity().proposeJoinWallet(mostRecentSWBlock).getData()
+                    app.requestToJoin();
+                    updateDownloadButton()
                 } catch (t: Throwable) {
-                    Log.e("P2P", "Join wallet proposal failed. ${t.message ?: "No further information"}.")
+                    Log.e(
+                        "P2P",
+                        "Join wallet proposal failed. ${t.message ?: ""}"
+                    )
                 }
-                updateDownloadButton()
             }
             requireActivity().runOnUiThread {
                 updatePolls()
@@ -557,25 +556,12 @@ class AppDetails : BaseFragment() {
         // Do we have enough signatures?
         if (!myPoll.isApproved) return
 
-        val signatures = getP2pStoreCommunity().fetchProposalResponses(
-            this.app.daoId,
-            myPoll.proposalId
-        )
-
         try {
             this.binding.installOpenBtn.text = "Joining.."
 
-            getP2pStoreCommunity().joinBitcoinWallet(
-                app.block.transaction,
-                myPoll.blockData,
-                signatures,
-                requireContext()
-            )
-            // Add new nonceKey after joining a DAO
-            WalletManagerAndroid.getInstance().addNewNonceKey(
-                this.app.daoId,
-                requireContext()
-            )
+            lifecycleScope.launch(Dispatchers.IO) {
+                myPoll.finishJoining(requireContext())
+            }
 
             // Now update the UI to inform the user they have joined successfully
             val latestApp = this.app.getLatestVersion()
@@ -584,7 +570,10 @@ class AppDetails : BaseFragment() {
             }
         }
         catch (t: Throwable) {
-            Log.e("Coin", "Joining failed. ${t.message ?: "No further information"}.")
+            Log.e(
+                "P2PlayStore",
+                "Joining failed. ${t.message ?: "No further information"}."
+            )
         }
     }
 

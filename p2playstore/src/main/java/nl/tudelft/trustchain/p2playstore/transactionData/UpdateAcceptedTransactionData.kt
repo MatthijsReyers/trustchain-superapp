@@ -3,7 +3,7 @@ package nl.tudelft.trustchain.p2playstore.transactionData
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 data class UpdateAcceptedData(
@@ -24,8 +24,7 @@ data class UpdateAcceptedData(
 ) : AppMetaData, BaseFeatureRequestData, SharedWalletData
 
 class UpdateAcceptedTransactionData(data: JsonObject) : BlockTransactionData(
-    data,
-    P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK
+    data, UPDATE_ACCEPTED_BLOCK
 ) {
     fun getData(): UpdateAcceptedData {
         return Gson().fromJson(getJsonString(), UpdateAcceptedData::class.java)

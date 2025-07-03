@@ -3,7 +3,7 @@ package nl.tudelft.trustchain.p2playstore.transactionData
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.FEATURE_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 data class FeatureRequestData(
@@ -17,7 +17,7 @@ data class FeatureRequestData(
 
 class FeatureRequestTransactionData(data: JsonObject) : BlockTransactionData(
     data,
-    P2pStoreCommunity.FEATURE_REQUEST_BLOCK
+    FEATURE_REQUEST_BLOCK
 ) {
     constructor(transaction: TrustChainTransaction) : this(BlockUtils.parseTransaction(transaction))
 

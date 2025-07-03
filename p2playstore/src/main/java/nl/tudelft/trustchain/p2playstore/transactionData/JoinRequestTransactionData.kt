@@ -3,7 +3,7 @@ package nl.tudelft.trustchain.p2playstore.transactionData
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.JOIN_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 data class JoinRequestData (
@@ -16,8 +16,7 @@ data class JoinRequestData (
 ) : BaseData
 
 open class JoinRequestTransactionData(data: JsonObject) : BlockTransactionData(
-    data,
-    P2pStoreCommunity.JOIN_REQUEST_BLOCK
+    data, JOIN_REQUEST_BLOCK
 ) {
     fun getData(): JoinRequestData {
         return Gson().fromJson(getJsonString(), JoinRequestData::class.java)

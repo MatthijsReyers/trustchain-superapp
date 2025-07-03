@@ -6,12 +6,10 @@ import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
+import nl.tudelft.trustchain.p2playstore.FEATURE_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.PROPOSE_UPDATE_BLOCK
 import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestData
 import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
@@ -33,20 +31,6 @@ class FeatureRequest(val block: TrustChainBlock) {
     val description = blockData.FEATURE_DESCRIPTION
     val title = blockData.FEATURE_TITLE
     val reward = blockData.FEATURE_REWARD
-//
-//    fun hasBeenFulfilled(): Boolean {
-//        val updates = trustChain.database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
-//            .filter { b ->
-//                try {
-//                    val data = UpdateAcceptedTransactionData(b.transaction).getData()
-//                    return data.DAO_ID == doaId && data.SW_UNIQUE_PROPOSAL_ID == featureRequestId
-//                }
-//                catch (e: Throwable) {
-//                    return false
-//                }
-//            }
-//        return updates.isNotEmpty()
-//    }
 
     /**
      * Gets a list of all the solutions (i.e. software updates) that have been proposed for this

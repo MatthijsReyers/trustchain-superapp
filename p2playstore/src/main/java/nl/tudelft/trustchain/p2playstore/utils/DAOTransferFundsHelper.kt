@@ -14,8 +14,9 @@ import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWResponseSignatureBlockTD
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.currencyii.util.taproot.MuSig
+import nl.tudelft.trustchain.p2playstore.VOTE_NO_BLOCK
+import nl.tudelft.trustchain.p2playstore.VOTE_YES_BLOCK
 import nl.tudelft.trustchain.p2playstore.transactionData.*
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import org.bitcoinj.core.Address
 import org.bitcoinj.core.ECKey
 import java.math.BigInteger
@@ -231,7 +232,7 @@ class DAOTransferFundsHelper {
 
             // Create the appropriate vote block based on how the user voted on the proposal.
             // This block contains their signature for the underlying Bitcoin transfer transaction.
-            val blockType = if (votedInFavor) P2pStoreCommunity.VOTE_YES_BLOCK else P2pStoreCommunity.VOTE_NO_BLOCK
+            val blockType = if (votedInFavor) VOTE_YES_BLOCK else VOTE_NO_BLOCK
             val transactionData = if (votedInFavor) {
                 Log.d("P2P.DAOTransfer", "Vote YES")
                 VoteYesTransactionData(
@@ -258,7 +259,6 @@ class DAOTransferFundsHelper {
                 myPublicKey
             )
             Log.d("DAOTransferFundsHelper", "createProposalBlock called for ${blockType}. Proposal ID: ${blockData.SW_UNIQUE_PROPOSAL_ID}")
-
         }
     }
 }

@@ -9,12 +9,11 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.util.taproot.CTransaction
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
+import nl.tudelft.trustchain.p2playstore.FEATURE_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.JOIN_BLOCK
+import nl.tudelft.trustchain.p2playstore.JOIN_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.PROPOSE_UPDATE_BLOCK
+import nl.tudelft.trustchain.p2playstore.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.transactionData.AppMetaData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
@@ -25,6 +24,7 @@ import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactio
 import nl.tudelft.trustchain.p2playstore.transactionData.SharedWalletData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.DAOCreateHelper
+import nl.tudelft.trustchain.p2playstore.utils.DAOJoinHelper
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import nl.tudelft.trustchain.p2playstore.utils.iconFromIconId
@@ -73,10 +73,9 @@ class P2playApp(val block: TrustChainBlock) {
         try {
             if (block.type == JOIN_BLOCK) {
                 return (blockData as JoinDoaData).SW_VOTING_THRESHOLD
-            } else if (block.type == PROPOSE_UPDATE_BLOCK
-                && (blockData as ProposeUpdateData).FEATURE_REQUEST_ID != null) {
+            } else if (block.type == PROPOSE_UPDATE_BLOCK) {
                 // Feature Solution proposals also contain voting threshold
-                return blockData.SW_SIGNATURES_REQUIRED
+                return (blockData as ProposeUpdateData).SW_SIGNATURES_REQUIRED
             }
             val data = JoinDaoTransactionData(this.getLatestJoin().transaction).getData()
             return data.SW_VOTING_THRESHOLD
@@ -300,6 +299,28 @@ class P2playApp(val block: TrustChainBlock) {
         return false
     }
 
+    /**
+     * Creates a join request so the DAO members can vote on letting this user join the DAO.
+     *
+     * Note that if the user is already a member or already has a join request that is still pending
+     * calling this method will do nothing.
+     */
+    fun requestToJoin(): DaoJoinPoll? {
+        val latestVersion = this.getLatestVersion();
+        if (latestVersion.isDaoMember()) {
+            return null; // The user is already a member, don't create duplicate join requests.
+        }
+        if (latestVersion.isWaitingToJoin()) {
+            return null; // User is already waiting to join
+        }
+        val daoJoinHelper = DAOJoinHelper()
+        val data = daoJoinHelper.proposeJoinWallet(
+            trustChain.myPeer,
+            latestVersion.block
+        )
+        return DaoJoinPoll.findByProposalId(data.getData().SW_UNIQUE_PROPOSAL_ID)
+    }
+
     companion object {
         /**
          * Taken from curencyii.
@@ -356,6 +377,50 @@ class P2playApp(val block: TrustChainBlock) {
 
             if (latest == null) return null
             return P2playApp(latest)
+        }
+
+        /**
+         * Searches all known parts of the trust chain for P2PlayStore apps, always returning the
+         * latest version of each app inside this user's database.
+         */
+        fun getAllApps(): List<P2playApp> {
+            val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
+
+            val joinBlocks = trustChain.database.getBlocksWithType(JOIN_BLOCK)
+            val updateBlocks = trustChain.database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
+            val blocks = joinBlocks + updateBlocks
+
+            // Get a unique list of the shared wallet IDs of the app DAO's that we know about.
+            val appIds = blocks
+                .map { b -> JoinDaoTransactionData(b.transaction).getData().DAO_ID }
+                .distinctBy { id -> id }
+
+            val latestBlocks = appIds
+                .map { id ->
+                    blocks
+                        // Get all blocks with this app ID
+                        .filter { b ->
+                            JoinDaoTransactionData(b.transaction).getData().DAO_ID == id
+                        }
+                        // Find the newest block
+                        .maxByOrNull { b -> b.timestamp }
+                }
+
+            return latestBlocks.mapNotNull { b ->
+                try {
+                    P2playApp(b!!)
+                } catch (err: Throwable) {
+                    Log.e("P2PlayStore", "Found invalid app block: $err")
+                    null
+                }
+            }
+        }
+
+        /**
+         * Gets all the apps where this user is a member of the app's DAO.
+         */
+        fun getMyApps(): List<P2playApp> {
+            return P2playApp.getAllApps().filter { app -> app.isDaoMember() }
         }
     }
 }

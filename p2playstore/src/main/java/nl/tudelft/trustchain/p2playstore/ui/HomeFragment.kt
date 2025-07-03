@@ -7,18 +7,16 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
-
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
+import nl.tudelft.trustchain.p2playstore.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.R
+import nl.tudelft.trustchain.p2playstore.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
@@ -69,7 +67,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
 
     override suspend fun onChainUpdated(block: TrustChainBlock) {
         when (block.type) {
-            // Did a new app (verion) just release?
+            // Did a new app (version) just release?
             JOIN_BLOCK, UPDATE_ACCEPTED_BLOCK -> {
                 this.updateAppsLists()
             }
@@ -242,7 +240,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         lifecycleScope.launch {
             try {
                 val allApps = withContext(Dispatchers.IO) {
-                    getP2pStoreCommunity().discoverAllApps()
+                    P2playApp.getAllApps()
                 }
 
                 binding.allApps.text = "All apps (${allApps.size})"

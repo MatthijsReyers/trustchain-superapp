@@ -8,9 +8,10 @@ import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
+import nl.tudelft.trustchain.p2playstore.JOIN_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.PROPOSE_UPDATE_BLOCK
+import nl.tudelft.trustchain.p2playstore.VOTE_NO_BLOCK
+import nl.tudelft.trustchain.p2playstore.VOTE_YES_BLOCK
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
@@ -102,8 +103,8 @@ abstract class Poll(val block: TrustChainBlock) {
      * Tries to find the vote of this user, assuming one exists.
      */
     fun getMyVote(): TrustChainBlock? {
-        val yesVotes = trustChain.database.getBlocksWithType(P2pStoreCommunity.VOTE_YES_BLOCK)
-        val noVotes = trustChain.database.getBlocksWithType(P2pStoreCommunity.VOTE_NO_BLOCK)
+        val yesVotes = trustChain.database.getBlocksWithType(VOTE_YES_BLOCK)
+        val noVotes = trustChain.database.getBlocksWithType(VOTE_NO_BLOCK)
 
         val votes = (yesVotes + noVotes).filter { vote ->
             val data = VoteYesTransactionData(vote.transaction).getData()
@@ -123,7 +124,7 @@ abstract class Poll(val block: TrustChainBlock) {
      * Gets all the agreement signatures/votes.
      */
     fun getYesVotes(): List<VoteYesData> {
-        val votes = trustChain.database.getBlocksWithType(P2pStoreCommunity.VOTE_YES_BLOCK)
+        val votes = trustChain.database.getBlocksWithType(VOTE_YES_BLOCK)
         return votes
             .mapNotNull { vote ->
                 try { VoteYesTransactionData(vote.transaction).getData() }
@@ -136,7 +137,7 @@ abstract class Poll(val block: TrustChainBlock) {
      * Gets all the disagreement/denied votes.
      */
     fun getNoVotes(): List<VoteNoData> {
-        val votes = trustChain.database.getBlocksWithType(P2pStoreCommunity.VOTE_NO_BLOCK)
+        val votes = trustChain.database.getBlocksWithType(VOTE_NO_BLOCK)
         return votes
             .mapNotNull { vote ->
                 try { VoteNoTransactionData(vote.transaction).getData() }

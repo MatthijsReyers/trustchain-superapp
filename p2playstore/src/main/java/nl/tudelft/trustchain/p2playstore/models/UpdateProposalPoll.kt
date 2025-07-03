@@ -2,30 +2,25 @@ import android.app.Activity
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
-import nl.tudelft.ipv8.Peer
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.hexToBytes
-import nl.tudelft.ipv8.util.sha1
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWResponseSignatureBlockTD
 import nl.tudelft.trustchain.currencyii.util.taproot.MuSig
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
+import nl.tudelft.trustchain.p2playstore.PROPOSE_UPDATE_BLOCK
+import nl.tudelft.trustchain.p2playstore.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.models.Poll
 import nl.tudelft.trustchain.p2playstore.transactionData.BaseData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDoaData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.SharedWalletData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
-import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
-import nl.tudelft.trustchain.p2playstore.utils.DAOTransferFundsHelper
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
 import org.bitcoinj.core.Address
@@ -35,7 +30,7 @@ import java.math.BigInteger
 class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
 
     init {
-        assert(block.type == P2pStoreCommunity.PROPOSE_UPDATE_BLOCK)
+        assert(block.type == PROPOSE_UPDATE_BLOCK)
     }
 
     private val blockData = ProposeUpdateTransactionData(block.transaction).getData()
@@ -87,6 +82,9 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
             .any { app -> app.magnetLink == this.magnetLink }
     }
 
+    /**
+     * Publishes an update block with the proposed update if enough votes have collected.
+     */
     fun publishUpdate(context: Context, activity: Activity) {
         val latestApp = this.getApp().getLatestVersion()
         val yesVotes = this.getYesVotes()
@@ -249,7 +247,7 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
         fun findByProposalId(proposalId: String): UpdateProposalPoll? {
             val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
             val proposals = trustChain.database
-                .getBlocksWithType(P2pStoreCommunity.PROPOSE_UPDATE_BLOCK)
+                .getBlocksWithType(PROPOSE_UPDATE_BLOCK)
                 .mapNotNull { b ->
                     try { UpdateProposalPoll(b) }
                     catch (err: Throwable) { null}

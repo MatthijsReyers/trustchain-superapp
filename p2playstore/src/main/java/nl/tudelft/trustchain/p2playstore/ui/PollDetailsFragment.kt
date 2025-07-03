@@ -2,44 +2,23 @@ package nl.tudelft.trustchain.p2playstore.ui
 
 import UpdateProposalPoll
 import android.os.Bundle
-import android.widget.Toast
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.lifecycle.lifecycleScope
 import android.widget.FrameLayout
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.CoroutineScope
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
-
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
-import nl.tudelft.ipv8.attestation.trustchain.BlockListener
 import nl.tudelft.ipv8.util.toHex
-
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_NO_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
-
+import nl.tudelft.trustchain.p2playstore.VOTE_YES_BLOCK
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentPollDetailsBinding
 import nl.tudelft.trustchain.p2playstore.models.DaoJoinPoll
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.models.Poll
-import nl.tudelft.trustchain.p2playstore.transactionData.BaseData
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesTransactionData
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils
-
 import kotlin.math.max
 import kotlin.math.roundToInt
 

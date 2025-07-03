@@ -7,7 +7,8 @@ import androidx.recyclerview.widget.RecyclerView
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.trustchain.currencyii.util.taproot.CTransaction
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.JOIN_BLOCK
+import nl.tudelft.trustchain.p2playstore.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils.formatDynamicBalance
 import nl.tudelft.trustchain.p2playstore.databinding.ItemTransactionHistoryBinding
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
@@ -47,7 +48,7 @@ class TransactionHistoryAdapter(
 
             // Specific details based on block type
             when (block.type) {
-                P2pStoreCommunity.JOIN_BLOCK -> {
+                JOIN_BLOCK -> {
                     try {
                         val data = JoinDaoTransactionData(block.transaction).getData()
                         // Use DAO ID if available, otherwise block ID
@@ -63,7 +64,7 @@ class TransactionHistoryAdapter(
                         setParsingErrorState(block)
                     }
                 }
-                P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> {
+                UPDATE_ACCEPTED_BLOCK -> {
                     try {
                         val data = UpdateAcceptedTransactionData(block.transaction).getData()
                         // Use DAO ID if available, otherwise block ID

@@ -15,27 +15,17 @@ import nl.tudelft.ipv8.attestation.trustchain.BlockListener
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.trustchain.common.util.TrustChainHelper
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_NO_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BLOCK
+import nl.tudelft.trustchain.p2playstore.FEATURE_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.JOIN_BLOCK
+import nl.tudelft.trustchain.p2playstore.JOIN_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.PROPOSE_UPDATE_BLOCK
+import nl.tudelft.trustchain.p2playstore.UPDATE_ACCEPTED_BLOCK
+import nl.tudelft.trustchain.p2playstore.VOTE_NO_BLOCK
+import nl.tudelft.trustchain.p2playstore.VOTE_YES_BLOCK
 
 abstract class BaseFragment(
     @LayoutRes contentLayoutId: Int = 0
 ) : Fragment(contentLayoutId) {
-    protected fun getP2pStoreCommunity(): P2pStoreCommunity {
-        return getIpv8().getOverlay()
-            ?: throw IllegalStateException("P2pStoreCommunity is not configured")
-    }
-
-    protected val p2playStore: P2pStoreCommunity by lazy {
-        getP2pStoreCommunity()
-    }
-
     protected fun getIpv8(): IPv8 {
         return IPv8Android.getInstance()
     }

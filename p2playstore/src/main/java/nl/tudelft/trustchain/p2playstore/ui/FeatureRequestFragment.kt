@@ -4,17 +4,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.navigation.fragment.findNavController
-import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentFeatureRequestBinding
-import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.currencyii.util.taproot.CTransaction
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.p2playstore.models.FeatureRequest
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
-import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
-import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 
 class FeatureRequestFragment : BaseFragment() {
     private var _binding: FragmentFeatureRequestBinding? = null
