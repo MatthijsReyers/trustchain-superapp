@@ -1,5 +1,6 @@
 package nl.tudelft.trustchain.currencyii.coin
 
+import android.annotation.SuppressLint
 import android.content.Context
 
 // TODO: Clean up Thread usage.
@@ -7,6 +8,7 @@ import android.content.Context
 /**
  * Singleton class for WalletManager which also sets-up Android specific things.
  */
+@SuppressLint("StaticFieldLeak")
 object WalletManagerAndroid {
     private var walletManager: WalletManager? = null
     private var context: Context? = null
@@ -27,7 +29,10 @@ object WalletManagerAndroid {
             return this
         }
 
-        fun init(): WalletManager {
+        fun init(
+            regTestDomain: String? = null,
+            regTestIp: String? = null,
+        ): WalletManager {
             val walletDir = context.filesDir
             val configuration =
                 configuration
@@ -40,7 +45,9 @@ object WalletManagerAndroid {
                     configuration,
                     walletDir,
                     configuration.key,
-                    configuration.addressPrivateKeyPair
+                    configuration.addressPrivateKeyPair,
+                    regTestDomain ?: REG_TEST_FAUCET_DOMAIN,
+                    regTestIp ?: REG_TEST_FAUCET_IP,
                 )
 
             WalletManagerAndroid.walletManager = walletManager

@@ -60,7 +60,9 @@ class WalletManager(
     walletManagerConfiguration: WalletManagerConfiguration,
     walletDir: File,
     serializedDeterministicKey: SerializedDeterministicKey? = null,
-    addressPrivateKeyPair: AddressPrivateKeyPair? = null
+    addressPrivateKeyPair: AddressPrivateKeyPair? = null,
+    val regTestDomain: String = REG_TEST_FAUCET_DOMAIN,
+    val regTestIp: String = REG_TEST_FAUCET_IP,
 ) {
     val kit: WalletAppKit
     val params: NetworkParameters
@@ -121,7 +123,7 @@ class WalletManager(
 
         if (params == RegTestParams.get()) {
             try {
-                val localHost = InetAddress.getByName(REG_TEST_FAUCET_IP)
+                val localHost = InetAddress.getByName(this.regTestIp)
                 kit.setPeerNodes(PeerAddress(params, localHost, params.port))
             } catch (e: UnknownHostException) {
                 throw RuntimeException(e)
@@ -621,7 +623,7 @@ class WalletManager(
         Log.i("Coin", "Sending serialized transaction to the server: ${transaction.serialize().toHex()}")
         val url =
             URL(
-                "https://$REG_TEST_FAUCET_DOMAIN/generateBlock?tx_id=${
+                "https://${this.regTestDomain}/generateBlock?tx_id=${
                     transaction.serialize().toHex()
                 }"
             )

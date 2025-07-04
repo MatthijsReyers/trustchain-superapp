@@ -69,6 +69,7 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    implementation 'androidx.datastore:datastore-preferences-core-android:1.1.7'
 
     // Testing
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'

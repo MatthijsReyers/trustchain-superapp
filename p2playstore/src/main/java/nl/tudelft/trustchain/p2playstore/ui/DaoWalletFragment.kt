@@ -26,7 +26,6 @@ import org.bitcoinj.core.Coin
 import org.bitcoinj.params.MainNetParams
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.params.TestNet3Params
-import java.util.Locale
 
 class DaoWalletFragment : BaseFragment() {
 
