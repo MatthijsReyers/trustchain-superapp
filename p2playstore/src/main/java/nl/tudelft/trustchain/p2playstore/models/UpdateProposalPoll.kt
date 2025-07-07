@@ -132,13 +132,6 @@ class UpdateProposalPoll(block: TrustChainBlock) : Poll(block) {
                     SW_BITCOIN_PK = vote.SW_BITCOIN_PK,
                     SW_NONCE = vote.SW_NONCE
                 )
-                is VoteNoData -> SWResponseSignatureBlockTD(
-                    SW_UNIQUE_ID = vote.DAO_ID,
-                    SW_UNIQUE_PROPOSAL_ID = vote.SW_UNIQUE_PROPOSAL_ID,
-                    SW_SIGNATURE_SERIALIZED = vote.SW_SIGNATURE_SERIALIZED,
-                    SW_BITCOIN_PK = vote.SW_BITCOIN_PK,
-                    SW_NONCE = vote.SW_NONCE
-                )
                 else -> null
             }
         }
