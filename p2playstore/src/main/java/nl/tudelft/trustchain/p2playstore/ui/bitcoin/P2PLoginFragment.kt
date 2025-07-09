@@ -1,24 +1,47 @@
 package nl.tudelft.trustchain.p2playstore.ui.bitcoin
+import android.content.Context
 import android.util.Log
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
+import androidx.datastore.preferences.core.edit
 import androidx.navigation.fragment.findNavController
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.currencyii.coin.*
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentP2pLoginBinding
 import nl.tudelft.trustchain.p2playstore.ui.BaseFragment
-import nl.tudelft.trustchain.p2playstore.ui.bitcoin.P2PLoginFragmentDirections
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.net.InetAddress
 
+private val Context.dataStore by preferencesDataStore("bitcoins_net")
+
+val REGTEST_SERVER = stringPreferencesKey("regtest_server")
 
 class P2PLoginFragment : BaseFragment(R.layout.fragment_p2p_login) {
     @Suppress("ktlint:standard:property-naming") // False positive
     private var _binding: FragmentP2pLoginBinding? = null
     private val binding get() = _binding!!
 
+    fun saveRegTestServer(server: String) {
+        lifecycleScope.launch {
+            requireContext().dataStore.edit { prefs ->
+                prefs[REGTEST_SERVER] = server
+            }
+        }
+    }
+
+    suspend fun loadRegTestServer(): String? {
+        val prefs = requireContext().dataStore.data.first()
+        return prefs[REGTEST_SERVER]
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -41,6 +64,11 @@ class P2PLoginFragment : BaseFragment(R.layout.fragment_p2p_login) {
         binding.loadRegtestWallet.setOnClickListener {
             loadWallet(BitcoinNetworkOptions.REG_TEST)
         }
+
+        lifecycleScope.launch {
+            val server = loadRegTestServer() ?: REG_TEST_FAUCET_DOMAIN
+            binding.regtestServer.setText(server)
+        }
     }
 
     private fun loadWallet(params: BitcoinNetworkOptions) {
@@ -60,12 +88,37 @@ class P2PLoginFragment : BaseFragment(R.layout.fragment_p2p_login) {
         // Make sure to hide any other wallets that exists, when creating a new wallet
         hideWalletFiles(hideWallets)
 
+        val regTestServer = if (params == BitcoinNetworkOptions.REG_TEST) {
+            if (binding.regtestServer.text!!.isNotEmpty()) {
+                binding.regtestServer.text.toString().trim()
+            } else {
+                null
+            }
+        } else { null }
+
+        var regTestIp: String? = null
+        lifecycleScope.launch {
+            try {
+                regTestIp = withContext(Dispatchers.IO) {
+                    return@withContext InetAddress.getByName(regTestServer).hostAddress
+                }
+            }
+            catch (err: Throwable) {
+                Log.e("P2PlayStore", "${err.message} ${err.stackTrace}")
+                printToast("Failed to get IP for RegTest server: $err")
+            }
+        }
+
+        if (regTestServer != null) {
+            this.saveRegTestServer(regTestServer)
+        }
+
         // Initialize wallet manager
         val config = WalletManagerConfiguration(params)
         WalletManagerAndroid
             .Factory(this.requireContext().applicationContext)
             .setConfiguration(config)
-            .init()
+            .init(regTestServer, regTestIp)
 
         findNavController().navigate(
             P2PLoginFragmentDirections

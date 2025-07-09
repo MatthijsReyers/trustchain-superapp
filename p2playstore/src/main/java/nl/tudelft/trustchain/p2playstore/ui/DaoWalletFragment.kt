@@ -14,9 +14,12 @@ import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
 import nl.tudelft.trustchain.currencyii.util.taproot.CTransaction
+import nl.tudelft.trustchain.p2playstore.JOIN_BLOCK
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils.formatDynamicBalance
 import nl.tudelft.trustchain.p2playstore.R
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentWalletBalanceBinding
+import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
 import org.bitcoinj.core.Coin
@@ -99,7 +102,6 @@ class DaoWalletFragment : BaseFragment() {
                 val personalBalance = withContext(Dispatchers.IO) {
                     walletManager.kit.wallet().balance
                 }
-
                 Log.d("DaoWalletFragment", "Personal balance: $personalBalance")
 
                 // Get THIS DAO's Shared Wallet Balance
@@ -107,16 +109,17 @@ class DaoWalletFragment : BaseFragment() {
                 var daoMemberCount = 0
 
                 val latestDaoBlock = withContext(Dispatchers.IO) {
-                    p2playStore.fetchLatestSharedWalletBlockByDaoId(daoUniqueId)
+                    val latestApp = P2playApp.findByDaoId(daoUniqueId)
+                    latestApp?.block
                 }
 
                 if (latestDaoBlock != null) {
                     val (serializedTx, trustChainPks) = when(latestDaoBlock.type) {
-                        P2pStoreCommunity.JOIN_BLOCK -> {
+                        JOIN_BLOCK -> {
                             val data = JoinDaoTransactionData(latestDaoBlock.transaction).getData()
                             Pair(data.SW_TRANSACTION_SERIALIZED, data.SW_TRUSTCHAIN_PKS)
                         }
-                        P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> {
+                        UPDATE_ACCEPTED_BLOCK -> {
                             val data = UpdateAcceptedTransactionData(latestDaoBlock.transaction).getData()
                             Pair(data.SW_TRANSACTION_SERIALIZED, data.SW_TRUSTCHAIN_PKS)
                         }
@@ -149,21 +152,26 @@ class DaoWalletFragment : BaseFragment() {
 
                 // Load Transaction History relevant to DAO
                 val transactionBlocks = withContext(Dispatchers.IO) {
+                    val trustchain = getTrustChainCommunity()
+
                     // Fetch blocks relevant to this specific DAO's fund transfers/joins
-                    val joinBlocks = getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.JOIN_BLOCK)
-                    val updateBlocks = getTrustChainCommunity().database.getBlocksWithType(P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK)
+                    val joinBlocks = trustchain.database.getBlocksWithType(JOIN_BLOCK)
+                    val updateBlocks = trustchain.database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
 
                     // Filter blocks by this specific DAO_ID
                     (joinBlocks + updateBlocks).filter { block ->
                         try {
                             val daoIdFromBlock = when(block.type) {
-                                P2pStoreCommunity.JOIN_BLOCK -> JoinDaoTransactionData(block.transaction).getData().DAO_ID
-                                P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(block.transaction).getData().DAO_ID
+                                JOIN_BLOCK -> JoinDaoTransactionData(block.transaction).getData().DAO_ID
+                                UPDATE_ACCEPTED_BLOCK -> UpdateAcceptedTransactionData(block.transaction).getData().DAO_ID
                                 else -> null // Should not happen
                             }
                             daoIdFromBlock == daoUniqueId
                         } catch (e: Exception) {
-                            Log.e("DaoWalletFragment", "Error filtering transaction blocks for DAO $daoUniqueId: ${e.message}")
+                            Log.e(
+                                "DaoWalletFragment",
+                                "Error filtering transaction blocks for DAO $daoUniqueId: ${e.message}"
+                            )
                             false // Exclude blocks that fail parsing
                         }
                     }.sortedByDescending { it.timestamp.time } // Sort by time descending
@@ -178,25 +186,6 @@ class DaoWalletFragment : BaseFragment() {
                 updateUIWithError("Error loading wallet data: ${e.message}")
             } finally {
                 binding.balanceRefreshLayout.isRefreshing = false
-            }
-        }
-    }
-
-    private fun formatDynamicBalance(balance: Coin): String {
-        return when {
-            balance >= Coin.COIN -> {
-                balance.toFriendlyString()
-            }
-            balance >= Coin.CENT -> {
-                val btcValue = balance.value.toDouble() / Coin.COIN.value.toDouble()
-                String.format(Locale.getDefault(), "%.2f BTC", btcValue)
-            }
-            balance >= Coin.MILLICOIN -> {
-                val mbtc = balance.value / Coin.MILLICOIN.value
-                "$mbtc mBTC"
-            }
-            else -> {
-                "${balance.value} sats"
             }
         }
     }
@@ -229,7 +218,7 @@ class DaoWalletFragment : BaseFragment() {
         val connectedPeers = peerGroup.numConnectedPeers()
         val isConnected = connectedPeers > 0
         if (isConnected){
-            binding.bitcoinNetworkStatus.text = "Selected"
+            binding.bitcoinNetworkStatus.text = "Connected"
         } else {
             binding.bitcoinNetworkStatus.text = "Disconnected"
         }

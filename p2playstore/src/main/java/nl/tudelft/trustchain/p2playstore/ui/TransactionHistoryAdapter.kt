@@ -6,9 +6,10 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.util.hexToBytes
-import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.util.taproot.CTransaction
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.JOIN_BLOCK
+import nl.tudelft.trustchain.p2playstore.UPDATE_ACCEPTED_BLOCK
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils.formatDynamicBalance
 import nl.tudelft.trustchain.p2playstore.databinding.ItemTransactionHistoryBinding
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData
@@ -47,20 +48,14 @@ class TransactionHistoryAdapter(
 
             // Specific details based on block type
             when (block.type) {
-                P2pStoreCommunity.JOIN_BLOCK -> {
+                JOIN_BLOCK -> {
                     try {
                         val data = JoinDaoTransactionData(block.transaction).getData()
                         // Use DAO ID if available, otherwise block ID
                         binding.tvDaoId.text = data.DAO_ID.take(8) + "..."
                         binding.tvTransactionType.text = "DAO Joined"
-
-                        // Get the value of the shared wallet output from the serialized transaction
-                        val serializedTx = data.SW_TRANSACTION_SERIALIZED
-                        val cTx = CTransaction().deserialize(serializedTx.hexToBytes())
-                        val sharedWalletOutputValue = cTx.vout.find { it.scriptPubKey.size == 35 }?.nValue ?: 0L
-
                         binding.tvAmountLabel.text = "New Total Balance:"
-                        binding.tvAmount.text = Coin.valueOf(sharedWalletOutputValue).toFriendlyString()
+                        binding.tvAmount.text = formatDynamicBalance(Coin.valueOf(data.SW_ENTRANCE_FEE))
                         binding.tvDetails.text = "New member joined DAO ${data.DAO_ID.take(8)}..."
                         binding.tvDetails.visibility = View.VISIBLE
 
@@ -69,7 +64,7 @@ class TransactionHistoryAdapter(
                         setParsingErrorState(block)
                     }
                 }
-                P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK -> {
+                UPDATE_ACCEPTED_BLOCK -> {
                     try {
                         val data = UpdateAcceptedTransactionData(block.transaction).getData()
                         // Use DAO ID if available, otherwise block ID
@@ -79,7 +74,7 @@ class TransactionHistoryAdapter(
                         // Check if it was a feature solution with a reward transfer
                         if (data.SW_TRANSFER_FUNDS_AMOUNT > 0 && !data.SW_TRANSFER_FUNDS_TARGET_SERIALIZED.isNullOrEmpty()) {
                             binding.tvAmountLabel.text = "Reward Transferred:"
-                            binding.tvAmount.text = Coin.valueOf(data.SW_TRANSFER_FUNDS_AMOUNT).toFriendlyString()
+                            binding.tvAmount.text = formatDynamicBalance(Coin.valueOf(data.SW_TRANSFER_FUNDS_AMOUNT))
                             binding.tvAmount.setTextColor(binding.root.context.getColor(android.R.color.holo_green_dark)) // Indicate funds received
 
                             // Display details about the feature request and developer if available in the original proposal block
@@ -93,7 +88,7 @@ class TransactionHistoryAdapter(
                             val serializedTx = data.SW_TRANSACTION_SERIALIZED
                             val cTx = CTransaction().deserialize(serializedTx.hexToBytes())
                             val sharedWalletOutputValue = cTx.vout.find { it.scriptPubKey.size == 35 }?.nValue ?: 0L
-                            binding.tvAmount.text = Coin.valueOf(sharedWalletOutputValue).toFriendlyString()
+                            binding.tvAmount.text = formatDynamicBalance(Coin.valueOf(sharedWalletOutputValue))
                             binding.tvAmount.setTextColor(binding.root.context.getColor(android.R.color.black)) // Default color
 
                             binding.tvDetails.text = "Update for ${data.APP_NAME} accepted."

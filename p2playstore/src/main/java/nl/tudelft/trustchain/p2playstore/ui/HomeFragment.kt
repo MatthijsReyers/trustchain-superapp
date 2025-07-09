@@ -7,19 +7,18 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
-
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
+import nl.tudelft.trustchain.p2playstore.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.R
+import nl.tudelft.trustchain.p2playstore.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentHomeBinding
+import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils.parseMagnet
 
 class HomeFragment : BaseFragment(R.layout.fragment_home) {
@@ -68,7 +67,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
 
     override suspend fun onChainUpdated(block: TrustChainBlock) {
         when (block.type) {
-            // Did a new app (verion) just release?
+            // Did a new app (version) just release?
             JOIN_BLOCK, UPDATE_ACCEPTED_BLOCK -> {
                 this.updateAppsLists()
             }
@@ -214,8 +213,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-
-                    p2playStore.createBitcoinGenesisWallet(
+                    P2playApp.createApp(
                         entranceFee,
                         iconIndex,
                         name,
@@ -226,23 +224,11 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
                         requireContext()
                     )
                 }
-
-                android.widget.Toast.makeText(
-                    requireContext(),
-                    "DAO '$name' created successfully!",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
-                // Reload the DAO data
+                printToast("DAO '$name' created successfully!")
                 updateAppsLists()
             } catch (e: Exception) {
                 Log.e("P2PlayStore", "Error creating DAO: ${e.message}")
-                withContext(Dispatchers.Main) {
-                    android.widget.Toast.makeText(
-                        requireContext(),
-                        "Failed to create DAO: ${e.message}",
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-                }
+                printToast("Failed to create DAO: ${e.message}")
             }
         }
     }
@@ -254,7 +240,7 @@ class HomeFragment : BaseFragment(R.layout.fragment_home) {
         lifecycleScope.launch {
             try {
                 val allApps = withContext(Dispatchers.IO) {
-                    getP2pStoreCommunity().discoverAllApps()
+                    P2playApp.getAllApps()
                 }
 
                 binding.allApps.text = "All apps (${allApps.size})"

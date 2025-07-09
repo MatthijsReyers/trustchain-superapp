@@ -1,11 +1,13 @@
 package nl.tudelft.trustchain.p2playstore.models
 
+import UpdateProposalPoll
+import android.util.Log
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.ipv8.util.toHex
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
+import nl.tudelft.trustchain.p2playstore.FEATURE_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.PROPOSE_UPDATE_BLOCK
 import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestData
 import nl.tudelft.trustchain.p2playstore.transactionData.FeatureRequestTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
@@ -29,20 +31,6 @@ class FeatureRequest(val block: TrustChainBlock) {
     val description = blockData.FEATURE_DESCRIPTION
     val title = blockData.FEATURE_TITLE
     val reward = blockData.FEATURE_REWARD
-//
-//    fun hasBeenFulfilled(): Boolean {
-//        val updates = trustChain.database.getBlocksWithType(UPDATE_ACCEPTED_BLOCK)
-//            .filter { b ->
-//                try {
-//                    val data = UpdateAcceptedTransactionData(b.transaction).getData()
-//                    return data.DAO_ID == daoId && data.SW_UNIQUE_PROPOSAL_ID == featureRequestId
-//                }
-//                catch (e: Throwable) {
-//                    return false
-//                }
-//            }
-//        return updates.isNotEmpty()
-//    }
 
     /**
      * Gets a list of all the solutions (i.e. software updates) that have been proposed for this
@@ -69,7 +57,7 @@ class FeatureRequest(val block: TrustChainBlock) {
             p -> myProposals.none { prop -> p.proposalId == prop.proposalId }
         }
 
-        return (myProposals + otherProposals).sortedBy { p -> p.block.insertTime!! }
+        return (myProposals + otherProposals).sortedBy { p -> p.block.timestamp }
     }
 
     /**
@@ -145,6 +133,36 @@ class FeatureRequest(val block: TrustChainBlock) {
                 }
             if (block == null) return null
             return FeatureRequest(block)
+        }
+
+        /**
+         * Create a feature request proposal block on trust chain.
+         */
+        fun createFeatureRequest(daoId: String, title: String, description: String, reward: Long) {
+
+            // Does this DAO even exist and is the user a member?
+            val app = P2playApp.findByDoaId(daoId)
+            if (app == null || !app.isDaoMember()) return
+
+            val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!
+
+            val featureRequestData = FeatureRequestTransactionData(
+                daoId = daoId,
+                title = title,
+                description = description,
+                reward = reward,
+                requesterPublicKey = trustChain.myPeer.publicKey.pub().toString(),
+            )
+
+            val transaction = featureRequestData.getTransactionData()
+
+            trustChain.createProposalBlock(
+                featureRequestData.blockType,
+                transaction,
+                trustChain.myPeer.publicKey.keyToBin()
+            )
+
+            Log.d("P2PlayStore", "Created Feature Request proposal block for DAO $daoId")
         }
     }
 }

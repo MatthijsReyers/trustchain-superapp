@@ -64,7 +64,6 @@ import nl.tudelft.trustchain.eurotoken.community.EuroTokenCommunity
 import nl.tudelft.trustchain.eurotoken.db.TrustStore
 import nl.tudelft.trustchain.musicdao.core.dao.DaoCommunity
 import nl.tudelft.trustchain.musicdao.core.ipv8.MusicCommunity
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
 import nl.tudelft.trustchain.valuetransfer.community.IdentityCommunity
 import nl.tudelft.trustchain.valuetransfer.community.PeerChatCommunity
 import nl.tudelft.trustchain.valuetransfer.db.IdentityStore
@@ -112,7 +111,6 @@ class TrustChainApplication : Application() {
                         createMusicCommunity(),
                         createIdentityCommunity(),
                         createFOCCommunity(),
-                        createP2PStoreCommunity(),
                     ),
                 walkerInterval = 5.0
             )
@@ -268,15 +266,6 @@ class TrustChainApplication : Application() {
         return OverlayConfiguration(
             EuroTokenCommunity.Factory(store, trustStore, this),
             listOf(randomWalk)
-        )
-    }
-
-    private fun createP2PStoreCommunity(): OverlayConfiguration<P2pStoreCommunity> {
-        val randomWalk = RandomWalk.Factory()
-        val nsd = NetworkServiceDiscovery.Factory(getSystemService()!!)
-        return OverlayConfiguration(
-            Overlay.Factory(P2pStoreCommunity::class.java),
-            listOf(randomWalk, nsd)
         )
     }
 

@@ -3,37 +3,40 @@ package nl.tudelft.trustchain.p2playstore.ui
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+
+import java.io.File
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
-import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
+import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentAppDetailsBinding
 import nl.tudelft.trustchain.p2playstore.ExecutionActivity
+import nl.tudelft.trustchain.p2playstore.FEATURE_REQUEST_BLOCK
+import nl.tudelft.trustchain.p2playstore.JOIN_BLOCK
+import nl.tudelft.trustchain.p2playstore.JOIN_REQUEST_BLOCK
 import nl.tudelft.trustchain.p2playstore.P2PlayStoreMainActivity
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.FEATURE_REQUEST_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.JOIN_REQUEST_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.PROPOSE_UPDATE_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.UPDATE_ACCEPTED_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_NO_BLOCK
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity.Companion.VOTE_YES_BLOCK
+import nl.tudelft.trustchain.p2playstore.PROPOSE_UPDATE_BLOCK
 import nl.tudelft.trustchain.p2playstore.R
 import nl.tudelft.trustchain.p2playstore.TorrentManager
+import nl.tudelft.trustchain.p2playstore.UPDATE_ACCEPTED_BLOCK
+import nl.tudelft.trustchain.p2playstore.VOTE_NO_BLOCK
+import nl.tudelft.trustchain.p2playstore.VOTE_YES_BLOCK
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
-import nl.tudelft.trustchain.p2playstore.transactionData.*
-import nl.tudelft.trustchain.p2playstore.utils.AppUtils.printToast
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils
+import nl.tudelft.trustchain.p2playstore.utils.AppUtils.findFilesByExtension
 
-import java.io.File
 
 class AppDetails : BaseFragment() {
     private lateinit var torrentManager: TorrentManager
@@ -41,7 +44,6 @@ class AppDetails : BaseFragment() {
     private var _binding: FragmentAppDetailsBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var daoBlock: TrustChainBlock
     private lateinit var app: P2playApp
 
     private var joinPoll: PollPreviewHolder? = null
@@ -81,7 +83,7 @@ class AppDetails : BaseFragment() {
         }
 
         torrentManager = (this.activity as P2PlayStoreMainActivity).torrentManager
-        this.downloadProgress = torrentManager.downloadProgress(this.app)
+        this.downloadProgress = torrentManager.downloadProgress(this.app);
     }
 
     override fun onCreateView(
@@ -110,6 +112,7 @@ class AppDetails : BaseFragment() {
         this.updateUIBasedOnMembership()
         this.updatePolls()
         this.updateFeatureRequests()
+        this.updateScreenshots()
 
         this.finalizeJoinRequest()
         this.finalizeUpdate()
@@ -120,14 +123,10 @@ class AppDetails : BaseFragment() {
      * we want to update the whole UI since votes/version updates might have changed.
      */
     override suspend fun onChainUpdated(block: TrustChainBlock) {
-        if (this._binding == null) return
-
-        // TODO: Replace with BaseTransactionData class for better type safety, since there
-        // is really no guarantee that it will be this kind of block.
-        val data = JoinDaoTransactionData(block.transaction).getData()
+        if (this._binding == null) return;
 
         // Is the new block relevant for this app?
-        if (data.DAO_ID != app.daoId) return
+        if (AppUtils.getDaoId(block) != app.daoId) return;
 
         when (block.type) {
             // Was a new version of the app released?
@@ -167,7 +166,7 @@ class AppDetails : BaseFragment() {
     */
     private fun onInstallApp() {
         if (this.app.isDaoMember()) {
-            printToast(requireContext(), "You are already a member of this DAO.")
+            printToast("You are already a member of this DAO.")
             Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but is already a member.")
             updateDownloadButton()
             updateUIBasedOnMembership()
@@ -175,7 +174,7 @@ class AppDetails : BaseFragment() {
         }
 
         if (this.app.isWaitingToJoin()) {
-            printToast(requireContext(), "You have a pending request to join this DAO.")
+            printToast("You have a pending request to join this DAO.")
             Log.d("AppDetails", "User attempted to join DAO ${app.daoId} but has a pending request.")
             updateDownloadButton()
             updateUIBasedOnMembership()
@@ -216,37 +215,66 @@ class AppDetails : BaseFragment() {
 
     /**
      * Called when the user presses the "open" button, which is only shown when the user is a member
-     * of the app's DAO and has finished downloading the
+     * of the app's DAO and has finished downloading the torrent containing the APK.
+     *
+     * This function:
+     * - Locates the APK inside the app's P2P cache directory.
+     * - Validates the presence and uniqueness of the APK file.
+     * - Launches the APK via an `ExecutionActivity` intent.
+     *
+     * The method provides error feedback to the user using `Toast` messages
+     * and logs warnings for unexpected or invalid states.
+     *
+     * Preconditions:
+     * - The user must be a member of the DAO.
+     * - The APK must have already been downloaded.
      */
     private fun onOpenApp() {
         val applicationContext = requireContext()
+        val dir = File(applicationContext.cacheDir, "p2p-apps/${app.magnetLink.infoHash}")
 
-        val apkPath = "${applicationContext.cacheDir}/p2p-apps/${app.magnetLink.infoHash}" +
-            "/${app.magnetLink.displayName}"
-        val apkFile = File(apkPath)
+        val apkFiles = try {
+            findFilesByExtension(dir, setOf(".apk"))
+        } catch (e: IllegalArgumentException) {
+            e.message?.let {
+                Log.w("P2P", it)
+                printToast("Directory containing APK not found or invalid.")
+            }
+            return
+        }
+
+        val apkFile: File
+        if (apkFiles.isEmpty()) {
+            Log.e("P2P", "No APK files found in: ${dir.absolutePath}")
+            printToast("Could not find APK in the torrent.")
+            return
+        } else if (apkFiles.size > 1) {
+            Log.e("P2P", "Multiple APK files found in: ${dir.absolutePath}")
+            printToast("Found multiple APK's in the torrent.")
+            return
+        } else {
+            apkFile = apkFiles.first()
+        }
 
         if (!apkFile.exists() || !apkFile.isFile) {
             Log.e("P2P", "File not found or invalid: $apkFile")
-            printToast(applicationContext, "No APK found connected to this DAO.")
+            printToast("No APK found connected to this DAO.")
             return
         }
 
         val intent = Intent(applicationContext, ExecutionActivity::class.java).apply {
-            putExtra("fileName", apkPath)
+            putExtra("fileName", apkFile.path)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
         try {
             applicationContext.startActivity(intent)
         } catch (e: ActivityNotFoundException) {
-            Log.e("P2P", "No activity found to handle intent for APK: $apkPath", e)
-            printToast(applicationContext, "Unable to open APK – app component not found.")
+            printToast("Unable to open APK – app component not found.")
         } catch (e: SecurityException) {
-            Log.e("P2P", "Security exception when launching APK: $apkPath", e)
-            printToast(applicationContext, "Permission denied to launch APK.")
+            printToast("Permission denied to launch APK.")
         } catch (e: Exception) {
-            Log.e("P2P", "Unexpected error launching APK: $apkPath", e)
-            printToast(applicationContext, "Something went wrong when opening the APK.")
+            printToast("Something went wrong when opening the APK.")
         }
     }
 
@@ -256,18 +284,19 @@ class AppDetails : BaseFragment() {
     private fun onJoinDao() {
         try {
             lifecycleScope.launch {
-                val mostRecentSWBlock =
-                    getP2pStoreCommunity().fetchLatestSharedWalletBlock(app.block.calculateHash())
-                        ?: app.block
                 try {
-                    getP2pStoreCommunity().proposeJoinWallet(mostRecentSWBlock).getData()
+                    app.requestToJoin();
+                    updateDownloadButton()
                 } catch (t: Throwable) {
-                    Log.e("P2P", "Join wallet proposal failed. ${t.message ?: "No further information"}.")
+                    Log.e(
+                        "P2P",
+                        "Join wallet proposal failed. ${t.message ?: ""}"
+                    )
                 }
-                updateDownloadButton()
             }
             requireActivity().runOnUiThread {
                 updatePolls()
+                updateDownloadButton()
             }
         } catch (e: Exception) {
             Log.e("DaoDetailsFragment", "Error joining DAO: ${e.message}")
@@ -304,6 +333,7 @@ class AppDetails : BaseFragment() {
                     if (link.infoHash == app.magnetLink.infoHash) {
                         downloadProgress = 100
                         updateDownloadButton()
+                        updateScreenshots()
                     }
                 }
             }
@@ -320,8 +350,8 @@ class AppDetails : BaseFragment() {
         binding.appLatestVersion.text = this.app.version.toString()
         binding.appDescription.text = this.app.description
         binding.daoIcon.setImageResource(this.app.icon)
-
-        binding.daoDeveloper.text = "Creator: ${this.daoBlock.publicKey.toHex().take(8)}..."
+        val developer = this.app.block.publicKey.toHex().take(8)
+        binding.daoDeveloper.text = "Devloper: ${developer}"
     }
 
     /**
@@ -359,7 +389,7 @@ class AppDetails : BaseFragment() {
      * Updates the list of polls/proposals
      */
     private fun updatePolls() {
-        val joinPolls = this.app.getOpenDaoJoinPolls()
+        val joinPolls = this.app.getOpenDaoJoinPolls();
 
         if (joinPolls.isNotEmpty()) {
             this.joinPoll?.bind(joinPolls[0])
@@ -367,7 +397,7 @@ class AppDetails : BaseFragment() {
             this.joinPoll?.hide()
         }
 
-       val updatePolls = this.app.getOpenUpdatePolls()
+       val updatePolls = this.app.getOpenUpdatePolls();
        if (updatePolls.isNotEmpty()) {
            this.updatePoll?.bind(updatePolls[0])
        } else {
@@ -409,12 +439,116 @@ class AppDetails : BaseFragment() {
     }
 
     /**
+     * Takes all of the image files inside the downloaded torrent and shows them as
+     */
+    private fun updateScreenshots() {
+        if (this._binding == null) return;
+
+        val applicationContext = requireContext()
+        val dir = File(applicationContext.cacheDir, "p2p-apps/${app.magnetLink.infoHash}")
+
+        val files = try {
+            findFilesByExtension(
+                dir,
+                setOf(".bmp", ".gif", ".heif", ".heic", ".jpeg", ".jpg", ".png", ".webp")
+            ).sorted()
+        } catch (e: IllegalArgumentException) {
+            e.message?.let { Log.d("P2PlayStore", it) }
+            emptyList()
+        }
+
+        if (files.isEmpty()) {
+            Log.d("P2P", "No image files found in: ${dir.path}")
+            binding.screenshots.visibility = View.GONE
+            binding.screenshotsHeader.visibility = View.GONE
+            return
+        } else {
+            binding.screenshots.visibility = View.VISIBLE
+            binding.screenshotsHeader.visibility = View.VISIBLE
+        }
+
+        val container = binding.screenshotsContainer
+        container.removeAllViews()
+
+        val imageHeightPx = container.layoutParams.height.takeIf { it > 0 } ?: 200
+        val maxImageWidthPx = (150 * resources.displayMetrics.density).toInt()
+
+
+        for (file in files) {
+            // First decode only bounds to get original size
+            val boundsOptions = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            BitmapFactory.decodeFile(file.path, boundsOptions)
+
+            val originalWidth = boundsOptions.outWidth
+            val originalHeight = boundsOptions.outHeight
+
+            if (originalWidth <= 0 || originalHeight <= 0) continue // Skip corrupted images
+
+            // Compute target width preserving aspect ratio
+            var targetWidth = (originalWidth.toFloat() / originalHeight.toFloat() * imageHeightPx).toInt()
+            if (targetWidth > maxImageWidthPx) {
+                targetWidth = maxImageWidthPx
+            }
+
+            // Decode image with sampling
+            val decodeOptions = BitmapFactory.Options().apply {
+                inSampleSize = calculateInSampleSize(boundsOptions, targetWidth, imageHeightPx)
+            }
+
+            try {
+                val bitmap = BitmapFactory.decodeFile(file.path, decodeOptions)
+                if (bitmap == null) {
+                    Log.w("P2P", "Failed to decode bitmap from: ${file.path}")
+                    continue
+                }
+
+                val imageView = ImageView(applicationContext).apply {
+                    layoutParams = LinearLayout.LayoutParams(targetWidth, imageHeightPx).also {
+                        it.setMargins(8, 0, 8, 0)
+                    }
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    setImageBitmap(bitmap)
+                }
+
+                container.addView(imageView)
+            } catch (e: OutOfMemoryError) {
+                Log.e("P2P", "OutOfMemoryError decoding image: ${file.path}", e)
+                continue
+            } catch (e: Exception) {
+                Log.e("P2P", "Unexpected error decoding image: ${file.path}", e)
+                continue
+            }
+        }
+    }
+
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        // Raw height and width of image
+        val (height: Int, width: Int) = options.run { outHeight to outWidth }
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+
+            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+            // height and width larger than the requested height and width.
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+
+        return inSampleSize
+    }
+
+    /**
      * Checks if this user has previously created a DAO join request/poll and if enough signatures
      * have been collected it will create a JOIN_DAO block using the collected signatures.
      */
     private fun finalizeJoinRequest() {
         // User is already a DAO member; do nothing.
-        if (this.app.isDaoMember()) return
+        if (this.app.isDaoMember()) return;
 
         // Has the user even created a join request/poll?
         val myPoll = this.app.getMyDaoJoinPoll() ?: return
@@ -422,25 +556,12 @@ class AppDetails : BaseFragment() {
         // Do we have enough signatures?
         if (!myPoll.isApproved) return
 
-        val signatures = getP2pStoreCommunity().fetchProposalResponses(
-            this.app.daoId,
-            myPoll.proposalId
-        )
-
         try {
             this.binding.installOpenBtn.text = "Joining.."
 
-            getP2pStoreCommunity().joinBitcoinWallet(
-                app.block.transaction,
-                myPoll.blockData,
-                signatures,
-                requireContext()
-            )
-            // Add new nonceKey after joining a DAO
-            WalletManagerAndroid.getInstance().addNewNonceKey(
-                this.app.daoId,
-                requireContext()
-            )
+            lifecycleScope.launch(Dispatchers.IO) {
+                myPoll.finishJoining(requireContext())
+            }
 
             // Now update the UI to inform the user they have joined successfully
             val latestApp = this.app.getLatestVersion()
@@ -449,19 +570,23 @@ class AppDetails : BaseFragment() {
             }
         }
         catch (t: Throwable) {
-            Log.e("Coin", "Joining failed. ${t.message ?: "No further information"}.")
+            Log.e(
+                "P2PlayStore",
+                "Joining failed. ${t.message ?: "No further information"}."
+            )
         }
     }
 
     /**
-     *
+     * Checks if the user has submitted an update, which has now been accepted (in which case the
+     * submitting user should now create an UPDATE_ACCEPTED block with the collected signatures).
      */
     private fun finalizeUpdate() {
         // Have I proposed any updates that have since been accepted but for which no update block
         // has been released yet?
         val acceptedUpdate = this.app.getMyUpdateProposals()
             .filter { p -> p.isApproved && !p.hasBeenReleased() }
-            .maxByOrNull { p -> p.block.insertTime!! }
+            .maxByOrNull { p -> p.block.timestamp }
 
         // Looks like there is nothing to do.
         if (acceptedUpdate == null) return
@@ -485,11 +610,11 @@ class AppDetails : BaseFragment() {
         this.joinPoll = PollPreviewHolder(
             binding.joinProposal,
             R.id.action_appDetailsFragment_to_featureVotingFragment
-        )
+        );
         this.updatePoll = PollPreviewHolder(
             binding.updateProposal,
             R.id.action_appDetailsFragment_to_featureVotingFragment
-        )
+        );
         this.lastestFeatureRequest = FeatureRequestPreviewHolder(
             binding.latestFeatureRequest,
             R.id.action_appDetailsFragment_to_featureSolutionFragment

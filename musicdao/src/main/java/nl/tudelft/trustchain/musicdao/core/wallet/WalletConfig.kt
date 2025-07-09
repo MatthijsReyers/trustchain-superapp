@@ -14,8 +14,10 @@ data class WalletConfig(
     companion object {
         val DEFAULT_NETWORK_PARAMS = RegTestParams.get()
         const val DEFAULT_FILE_PREFIX = "regtest-musicdao"
-        const val DEFAULT_REGTEST_BOOTSTRAP_IP = "131.180.27.224"
+        // const val DEFAULT_REGTEST_BOOTSTRAP_IP = "131.180.27.224"
+        const val DEFAULT_REGTEST_BOOTSTRAP_IP = "136.144.245.208"
         const val DEFAULT_REGTEST_BOOTSTRAP_PORT = "3000"
-        const val DEFAULT_FAUCET_ENDPOINT = "https://taproot.tribler.org"
-    }
+        // const val DEFAULT_FAUCET_ENDPOINT = "https://taproot.tribler.org"
+        const val DEFAULT_FAUCET_ENDPOINT = "bitcoin.matthijsreyers.nl"
+}
 }

@@ -15,10 +15,11 @@ import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
 import nl.tudelft.trustchain.common.BaseActivity
 import nl.tudelft.trustchain.currencyii.coin.WalletManagerAndroid
+import nl.tudelft.trustchain.p2playstore.models.P2playApp
 
 class P2PlayStoreMainActivity() : BaseActivity() {
 
-    public lateinit var torrentManager: TorrentManager;
+    lateinit var torrentManager: TorrentManager;
 
     override val navigationGraph = R.navigation.nav_graph_p2pstore
 
@@ -113,34 +114,12 @@ class P2PlayStoreMainActivity() : BaseActivity() {
         }
     }
 
-    protected fun getIpv8(): IPv8 {
-        return IPv8Android.getInstance()
-    }
-
-    protected fun getP2pStoreCommunity(): P2pStoreCommunity {
-        return getIpv8().getOverlay()
-            ?: throw IllegalStateException("P2pStoreCommunity is not configured")
-    }
-
-    protected val p2playStore: P2pStoreCommunity by lazy {
-        getP2pStoreCommunity()
-    }
-
-    protected fun getTrustChainCommunity(): TrustChainCommunity {
-        return getIpv8().getOverlay()
-            ?: throw IllegalStateException("TrustChainCommunity is not configured")
-    }
-
-    protected val trustChain: TrustChainCommunity by lazy {
-        getTrustChainCommunity()
-    }
-
     private fun initializeTorrents() {
         // Downloading torrents is a blocking operation so we cannot do this on the UI thread or the
         // whole app will block.
         val scope = CoroutineScope(Dispatchers.IO);
         scope.launch {
-            val apps = p2playStore.discoverMyApps()
+            val apps = P2playApp.getMyApps()
             for (app in apps) {
                 try {
                     torrentManager.downloadApp(app);

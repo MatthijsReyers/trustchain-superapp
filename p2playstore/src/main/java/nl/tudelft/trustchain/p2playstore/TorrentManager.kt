@@ -177,19 +177,24 @@ class TorrentManager(cacheDir: File) {
      */
     private suspend fun resumeTorrents() {
         while (scope.isActive) {
-            for (info in this.torrentInfos) {
-                try {
-                    val hash = info.infoHash()
-                    val handle: TorrentHandle? = this.sessionManager.find(hash)
-                    if (handle == null) {
-                        val destDir = File(this.appsDirectory, hash.toString())
-                        this.sessionManager.download(info, destDir)
+            try {
+                for (info in this.torrentInfos) {
+                    try {
+                        val hash = info.infoHash()
+                        val handle: TorrentHandle? = this.sessionManager.find(hash)
+                        if (handle == null) {
+                            val destDir = File(this.appsDirectory, hash.toString())
+                            this.sessionManager.download(info, destDir)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("P2P.TorrentManager", "Exception while seeding apps")
                     }
+                    delay(10_000)
                 }
-                catch (e: Exception) {
-                    Log.e("P2P.TorrentManager", "Exception while seeding apps")
-                }
-                delay(10_000)
+            }
+            catch (e: Exception) {
+                delay(120_000)
+                Log.e("P2P.TorrentManager", "Exception while seeding apps $e")
             }
         }
     }

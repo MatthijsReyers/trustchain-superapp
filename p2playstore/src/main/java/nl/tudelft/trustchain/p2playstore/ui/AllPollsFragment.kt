@@ -69,7 +69,7 @@ class AllPollsFragment : BaseFragment() {
         this.polls = ArrayList()
         this.polls.addAll(this.app.getAllUpdatePolls())
         this.polls.addAll(this.app.getAllDaoJoinPolls())
-        this.polls.sortBy { poll: Poll -> poll.block.insertTime }
+        this.polls.sortBy { poll: Poll -> poll.block.timestamp }
         this.polls.reverse()
         this.pollsAdapter.updatePolls(this.polls)
         Log.d("P2PlayStore", "Updated polls list: ${this.polls.size} polls loaded")

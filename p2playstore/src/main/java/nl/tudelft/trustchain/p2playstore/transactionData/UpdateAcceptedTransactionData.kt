@@ -3,17 +3,17 @@ package nl.tudelft.trustchain.p2playstore.transactionData
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.UPDATE_ACCEPTED_BLOCK
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 data class UpdateAcceptedData(
     override var DAO_ID: String,
     override var FEATURE_REQUEST_ID: String,
     var SW_UNIQUE_PROPOSAL_ID: String,
-    var SW_TRANSACTION_SERIALIZED: String,
-    var SW_TRUSTCHAIN_PKS: ArrayList<String>,
-    var SW_BITCOIN_PKS: ArrayList<String>,
-    var SW_NONCE_PKS: ArrayList<String>,
+    override var SW_TRANSACTION_SERIALIZED: String,
+    override var SW_TRUSTCHAIN_PKS: ArrayList<String>,
+    override var SW_BITCOIN_PKS: ArrayList<String>,
+    override var SW_NONCE_PKS: ArrayList<String>,
     var SW_TRANSFER_FUNDS_AMOUNT: Long,
     var SW_TRANSFER_FUNDS_TARGET_SERIALIZED: String,
     override var APP_NAME: String,
@@ -21,11 +21,10 @@ data class UpdateAcceptedData(
     override var APP_CATEGORY: String,
     override var APP_ICON: Int,
     override var APP_MAGNET_LINK: String
-) : AppMetaData, BaseFeatureRequestData
+) : AppMetaData, BaseFeatureRequestData, SharedWalletData
 
 class UpdateAcceptedTransactionData(data: JsonObject) : BlockTransactionData(
-    data,
-    P2pStoreCommunity.UPDATE_ACCEPTED_BLOCK
+    data, UPDATE_ACCEPTED_BLOCK
 ) {
     fun getData(): UpdateAcceptedData {
         return Gson().fromJson(getJsonString(), UpdateAcceptedData::class.java)

@@ -46,7 +46,7 @@ class PollPreviewHolder(
             binding.noProgressBar.requestLayout()
         }
 
-        binding.votingProgress.text = "${poll.votes} of ${poll.votesRequired} members voted"
+        binding.votingProgress.text = "${poll.votes} of ${poll.numberOfUsers} members voted"
 
         binding.card.setOnClickListener {
             val pollType = if (poll is DaoJoinPoll) "join" else "update"

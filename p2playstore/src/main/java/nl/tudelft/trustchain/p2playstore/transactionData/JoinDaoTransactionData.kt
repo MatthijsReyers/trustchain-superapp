@@ -3,27 +3,27 @@ package nl.tudelft.trustchain.p2playstore.transactionData
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.JOIN_BLOCK
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 data class JoinDaoData(
     override var DAO_ID: String,
     var SW_ENTRANCE_FEE: Long,
-    var SW_TRANSACTION_SERIALIZED: String,
+    override var SW_TRANSACTION_SERIALIZED: String,
     var SW_VOTING_THRESHOLD: Int,
-    var SW_TRUSTCHAIN_PKS: ArrayList<String>,
-    var SW_BITCOIN_PKS: ArrayList<String>,
-    var SW_NONCE_PKS: ArrayList<String>,
+    override var SW_TRUSTCHAIN_PKS: ArrayList<String>,
+    override var SW_BITCOIN_PKS: ArrayList<String>,
+    override var SW_NONCE_PKS: ArrayList<String>,
     override var APP_NAME: String,
     override var APP_DESCRIPTION: String,
     override var APP_CATEGORY: String,
     override var APP_ICON: Int,
     override var APP_MAGNET_LINK: String
-) : AppMetaData
+) : AppMetaData, SharedWalletData
 
 class JoinDaoTransactionData(
     data: JsonObject,
-) : BlockTransactionData(data, P2pStoreCommunity.JOIN_BLOCK) {
+) : BlockTransactionData(data, JOIN_BLOCK) {
 
     fun getData(): JoinDaoData {
         return Gson().fromJson(getJsonString(), JoinDaoData::class.java)

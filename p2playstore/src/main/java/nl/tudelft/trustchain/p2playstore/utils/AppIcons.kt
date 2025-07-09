@@ -7,9 +7,8 @@ import java.math.BigInteger
  * should probably work differently with compressed images or something, but this demonstrates the
  * basic functionality.
  */
-fun iconFromIconId(id: Any?): Int {
-    val icon: Int? = (id as? BigInteger)?.toInt()
-    return when (icon) {
+fun iconFromIconId(icon: Any?): Int {
+    return when (icon as? Int) {
         0 -> R.drawable.ic_bitcoin
         1 -> R.drawable.ic_account_balance_wallet_black_24dp
         2 -> R.drawable.ic_group_work_black_24dp

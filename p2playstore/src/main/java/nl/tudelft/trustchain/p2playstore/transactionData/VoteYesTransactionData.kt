@@ -3,7 +3,7 @@ package nl.tudelft.trustchain.p2playstore.transactionData
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
-import nl.tudelft.trustchain.p2playstore.P2pStoreCommunity
+import nl.tudelft.trustchain.p2playstore.VOTE_YES_BLOCK
 import nl.tudelft.trustchain.p2playstore.utils.BlockUtils
 
 data class VoteYesData(
@@ -15,8 +15,7 @@ data class VoteYesData(
 ) : BaseData
 
 class VoteYesTransactionData(data: JsonObject) : BlockTransactionData(
-    data,
-    P2pStoreCommunity.VOTE_YES_BLOCK
+    data, VOTE_YES_BLOCK
 ) {
     fun getData(): VoteYesData {
         return Gson().fromJson(getJsonString(), VoteYesData::class.java)
