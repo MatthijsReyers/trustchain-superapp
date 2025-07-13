@@ -1,6 +1,5 @@
 package nl.tudelft.trustchain.p2playstore.models
 
-import UpdateProposalPoll
 import android.content.Context
 import android.util.Log
 import nl.tudelft.ipv8.android.IPv8Android

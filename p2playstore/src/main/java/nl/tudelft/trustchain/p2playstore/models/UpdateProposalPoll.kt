@@ -26,7 +26,6 @@ import nl.tudelft.trustchain.p2playstore.transactionData.VoteNoData
 import nl.tudelft.trustchain.p2playstore.transactionData.VoteYesData
 import nl.tudelft.trustchain.p2playstore.utils.MagnetLink
 import nl.tudelft.trustchain.p2playstore.utils.MagnetUtils
-import nl.tudelft.trustchain.p2playstore.utils.taproot.CTransaction
 import org.bitcoinj.core.Address
 import org.bitcoinj.core.ECKey
 import java.math.BigInteger

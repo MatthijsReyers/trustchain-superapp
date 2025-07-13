@@ -1,6 +1,5 @@
 package nl.tudelft.trustchain.p2playstore.models
 
-import UpdateProposalPoll
 import android.util.Log
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
@@ -141,7 +140,7 @@ class FeatureRequest(val block: TrustChainBlock) {
         fun createFeatureRequest(daoId: String, title: String, description: String, reward: Long) {
 
             // Does this DAO even exist and is the user a member?
-            val app = P2playApp.findByDoaId(daoId)
+            val app = P2playApp.findByDaoId(daoId)
             if (app == null || !app.isDaoMember()) return
 
             val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!

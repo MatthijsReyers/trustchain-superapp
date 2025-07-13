@@ -39,49 +39,49 @@ class Test {
     @Test
     fun proposeUpdateData_serialization_roundtrip() {
         val data =
-                ProposeUpdateData(
-                        DAO_ID = "dao123",
-                        SW_UNIQUE_PROPOSAL_ID = "proposal789",
-                        SW_PREVIOUS_BLOCK_HASH = "prevhash",
-                        SW_BITCOIN_PKS = listOf("btc1", "btc2"),
-                        SW_NONCE_PKS = arrayListOf("nonce1", "nonce2"),
-                        SW_SIGNATURES_REQUIRED = 2,
-                        SW_TRANSFER_FUNDS_AMOUNT = 500L,
-                        SW_TRANSFER_FUNDS_TARGET_SERIALIZED = "btc_addr",
-                        SW_RECEIVER_PK = "pk_receiver",
-                        SW_TRANSACTION_SERIALIZED = "txhex",
-                        APP_NAME = "TestApp",
-                        APP_DESCRIPTION = "Desc",
-                        APP_CATEGORY = "Cat",
-                        APP_ICON = 1,
-                        APP_MAGNET_LINK = "magnet:?xt=urn:btih:abcdef",
-                        FEATURE_REQUEST_ID = "feature456",
-                        SOLUTION_TITLE = "Solution",
-                        SOLUTION_DESCRIPTION = "Desc",
-                        DEVELOPER_PUBLIC_KEY = "devpk"
-                )
+            ProposeUpdateData(
+                DAO_ID = "dao123",
+                SW_UNIQUE_PROPOSAL_ID = "proposal789",
+                SW_PREVIOUS_BLOCK_HASH = "prevhash",
+                SW_BITCOIN_PKS = arrayListOf("btc1", "btc2"),
+                SW_NONCE_PKS = arrayListOf("nonce1", "nonce2"),
+                SW_SIGNATURES_REQUIRED = 2,
+                SW_TRANSFER_FUNDS_AMOUNT = 500L,
+                SW_TRANSFER_FUNDS_TARGET_SERIALIZED = "btc_addr",
+                SW_RECEIVER_PK = "pk_receiver",
+                SW_TRANSACTION_SERIALIZED = "txhex",
+                APP_NAME = "TestApp",
+                APP_DESCRIPTION = "Desc",
+                APP_CATEGORY = "Cat",
+                APP_ICON = 1,
+                APP_MAGNET_LINK = "magnet:?xt=urn:btih:abcdef",
+                FEATURE_REQUEST_ID = "feature456",
+                SOLUTION_TITLE = "Solution",
+                SOLUTION_DESCRIPTION = "Desc",
+                DEVELOPER_PUBLIC_KEY = "devpk"
+            )
         val tx =
-                ProposeUpdateTransactionData(
-                        data.DAO_ID,
-                        data.FEATURE_REQUEST_ID,
-                        data.SOLUTION_TITLE,
-                        data.SOLUTION_DESCRIPTION,
-                        data.DEVELOPER_PUBLIC_KEY,
-                        data.APP_MAGNET_LINK,
-                        data.SW_PREVIOUS_BLOCK_HASH,
-                        data.SW_SIGNATURES_REQUIRED,
-                        data.SW_TRANSFER_FUNDS_AMOUNT,
-                        data.SW_BITCOIN_PKS,
-                        data.SW_NONCE_PKS,
-                        data.SW_TRANSFER_FUNDS_TARGET_SERIALIZED,
-                        data.SW_RECEIVER_PK,
-                        data.SW_UNIQUE_PROPOSAL_ID,
-                        data.SW_TRANSACTION_SERIALIZED,
-                        data.APP_NAME,
-                        data.APP_DESCRIPTION,
-                        data.APP_CATEGORY,
-                        data.APP_ICON
-                )
+            ProposeUpdateTransactionData(
+                data.DAO_ID,
+                data.FEATURE_REQUEST_ID,
+                data.SOLUTION_TITLE,
+                data.SOLUTION_DESCRIPTION,
+                data.DEVELOPER_PUBLIC_KEY,
+                data.APP_MAGNET_LINK,
+                data.SW_PREVIOUS_BLOCK_HASH,
+                data.SW_SIGNATURES_REQUIRED,
+                data.SW_TRANSFER_FUNDS_AMOUNT,
+                data.SW_BITCOIN_PKS,
+                data.SW_NONCE_PKS,
+                data.SW_TRANSFER_FUNDS_TARGET_SERIALIZED,
+                data.SW_RECEIVER_PK,
+                data.SW_UNIQUE_PROPOSAL_ID,
+                data.SW_TRANSACTION_SERIALIZED,
+                data.APP_NAME,
+                data.APP_DESCRIPTION,
+                data.APP_CATEGORY,
+                data.APP_ICON
+            )
         val parsed = tx.getData()
         assertEquals(data.DAO_ID, parsed.DAO_ID)
         assertEquals(data.FEATURE_REQUEST_ID, parsed.FEATURE_REQUEST_ID)
