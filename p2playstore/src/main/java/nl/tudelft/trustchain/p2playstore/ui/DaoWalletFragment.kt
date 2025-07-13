@@ -26,6 +26,7 @@ import org.bitcoinj.core.Coin
 import org.bitcoinj.params.MainNetParams
 import org.bitcoinj.params.RegTestParams
 import org.bitcoinj.params.TestNet3Params
+import java.util.Locale
 
 class DaoWalletFragment : BaseFragment() {
 
@@ -108,7 +109,7 @@ class DaoWalletFragment : BaseFragment() {
                 var daoMemberCount = 0
 
                 val latestDaoBlock = withContext(Dispatchers.IO) {
-                    val latestApp = P2playApp.findByDoaId(daoUniqueId)
+                    val latestApp = P2playApp.findByDaoId(daoUniqueId)
                     latestApp?.block
                 }
 

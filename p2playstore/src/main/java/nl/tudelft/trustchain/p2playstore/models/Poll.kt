@@ -39,12 +39,12 @@ abstract class Poll(val block: TrustChainBlock) {
     /**
      * Public key of the user/ipv8 peer that created this poll
      */
-    abstract val requestingUser: String;
+    abstract val requestingUser: String
 
     /**
      * Public key of the user which needs to vote yes/no on this specific block.
      */
-    abstract val receivingUser: String;
+    abstract val receivingUser: String
 
     /**
      * Number of votes required for the proposal in this poll to go through.
@@ -111,7 +111,7 @@ abstract class Poll(val block: TrustChainBlock) {
             data.SW_UNIQUE_PROPOSAL_ID == proposalId
         }
 
-        val myKey = trustChain.myPeer.publicKey.keyToBin();
+        val myKey = trustChain.myPeer.publicKey.keyToBin()
         return votes.firstOrNull { b -> b.publicKey.contentEquals(myKey) }
     }
 
@@ -156,7 +156,7 @@ abstract class Poll(val block: TrustChainBlock) {
         }
         // Null safety: such an app must exist otherwise this poll class could never actually be
         // instantiated.
-        return P2playApp.findByDoaId(this.daoId)!!
+        return P2playApp.findByDaoId(this.daoId)!!
     }
 
     fun getAllVotes() = (this.getYesVotes() + this.getNoVotes())

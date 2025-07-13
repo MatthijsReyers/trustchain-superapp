@@ -1,6 +1,6 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
-import UpdateProposalPoll
+import nl.tudelft.trustchain.p2playstore.models.UpdateProposalPoll
 import android.os.Bundle
 import android.view.View
 import androidx.navigation.findNavController

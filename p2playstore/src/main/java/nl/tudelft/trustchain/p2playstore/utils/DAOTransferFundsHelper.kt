@@ -8,7 +8,6 @@ import nl.tudelft.ipv8.Peer
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainCommunity
-import nl.tudelft.ipv8.attestation.trustchain.TrustChainTransaction
 import nl.tudelft.ipv8.util.hexToBytes
 import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.currencyii.sharedWallet.SWResponseSignatureBlockTD
@@ -35,8 +34,7 @@ class DAOTransferFundsHelper {
      */
     fun transferFunds(
         myPeer: Peer,
-        walletData: JoinDoaData, // Data from the latest JOIN block
-        walletBlockData: TrustChainTransaction, // Transaction of the overall latest DAO block (JOIN or UPDATE_ACCEPTED)
+        walletData: JoinDaoData, // Data from the latest JOIN block
         proposalData: ProposeUpdateData, // The proposal data (P2PStore specific)
         voteResponses: List<BaseData>, // All vote responses (including NO)
         receiverAddress: String,
@@ -128,7 +126,7 @@ class DAOTransferFundsHelper {
      */
     private fun broadcastTransferFundSuccessful(
         myPeer: Peer,
-        latestJoinBlockData: JoinDoaData, // Data from the latest JOIN block (P2PStore specific)
+        latestJoinBlockData: JoinDaoData, // Data from the latest JOIN block (P2PStore specific)
         serializedTransaction: String, // The new transaction
         proposalData: ProposeUpdateData // The proposal data (P2PStore specific)
     ) {
@@ -193,7 +191,7 @@ class DAOTransferFundsHelper {
                 return
             }
 
-            if (oldTransactionSerialized.isNullOrEmpty()) {
+            if (oldTransactionSerialized.isEmpty()) {
                 Log.e("P2P.DAOTransfer", "Old transaction serialized data is null or empty. Cannot sign transfer.")
                 return // Cannot sign if we don't have the old transaction data
             }
@@ -210,7 +208,7 @@ class DAOTransferFundsHelper {
             // addNewNonceKey stores this new nonce key locally and returns the key pair.
             val newVoteNonceKeyPair = walletManager.addNewNonceKey(blockData.DAO_ID, context)
             val newVoteNoncePointHex = walletManager.nonceECPointHex(newVoteNonceKeyPair)
-            Log.d("P2P.DAOTransfer", "transferFundsBlockReceived: Generated new nonce for vote block: ${newVoteNoncePointHex}")
+            Log.d("P2P.DAOTransfer", "transferFundsBlockReceived: Generated new nonce for vote block: $newVoteNoncePointHex")
 
 
             // Generate the Bitcoin signature for the proposed transfer transaction.

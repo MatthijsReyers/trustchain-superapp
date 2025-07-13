@@ -190,7 +190,7 @@ class AppDetails : BaseFragment() {
             .setMessage(msg)
             .setPositiveButton("Join DAO") { dialog, _ ->
                 dialog.dismiss()
-                onJoinDoa()
+                onJoinDao()
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
@@ -281,7 +281,7 @@ class AppDetails : BaseFragment() {
     /**
      * Called when the user agrees to spend bitcoins needed to join the app's DAO.
      */
-    private fun onJoinDoa() {
+    private fun onJoinDao() {
         try {
             lifecycleScope.launch {
                 try {
@@ -346,7 +346,7 @@ class AppDetails : BaseFragment() {
     private fun updateAppMetaData() {
         binding.appName.text = this.app.name
         binding.appCategory.text = this.app.category
-        binding.daoMembersCount.text = this.app.getDoaMemberCount().toString()
+        binding.daoMembersCount.text = this.app.getDaoMemberCount().toString()
         binding.appLatestVersion.text = this.app.version.toString()
         binding.appDescription.text = this.app.description
         binding.daoIcon.setImageResource(this.app.icon)
@@ -410,7 +410,7 @@ class AppDetails : BaseFragment() {
     }
 
     /**
-     * Updates the download/open button based on the state of DOA and the app download
+     * Updates the download/open button based on the state of DAO and the app download
      */
     private fun updateDownloadButton() {
         if (this._binding == null) return

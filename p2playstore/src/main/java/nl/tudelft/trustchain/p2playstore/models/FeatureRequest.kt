@@ -1,6 +1,5 @@
 package nl.tudelft.trustchain.p2playstore.models
 
-import UpdateProposalPoll
 import android.util.Log
 import nl.tudelft.ipv8.android.IPv8Android
 import nl.tudelft.ipv8.attestation.trustchain.TrustChainBlock
@@ -26,7 +25,7 @@ class FeatureRequest(val block: TrustChainBlock) {
 
     private val blockData: FeatureRequestData = FeatureRequestTransactionData(block.transaction).getData()
 
-    val doaId = blockData.DAO_ID
+    val daoId = blockData.DAO_ID
     val featureRequestId = blockData.FEATURE_REQUEST_ID
     val description = blockData.FEATURE_DESCRIPTION
     val title = blockData.FEATURE_TITLE
@@ -43,7 +42,7 @@ class FeatureRequest(val block: TrustChainBlock) {
                 try { UpdateProposalPoll(b) }
                 catch (e: Throwable) { null }
             }
-            .filter { p -> p.daoId == this.doaId && p.featureRequestId == this.featureRequestId }
+            .filter { p -> p.daoId == this.daoId && p.featureRequestId == this.featureRequestId }
 
         // Find the actual unique proposals
         val proposals = allProposals.distinctBy { p -> p.proposalId }
@@ -78,7 +77,7 @@ class FeatureRequest(val block: TrustChainBlock) {
         magnetLink: String,
         developerBitcoinAddress: String
     ) {
-        val app = P2playApp.findByDoaId(this.doaId)!!
+        val app = P2playApp.findByDaoId(this.daoId)!!
         val latestDaoBlock = app.getLatestJoin()
         val daoData = JoinDaoTransactionData(latestDaoBlock.transaction).getData()
 
@@ -91,7 +90,7 @@ class FeatureRequest(val block: TrustChainBlock) {
         // Send proposal to all DAO members
         for (memberPk in daoData.SW_TRUSTCHAIN_PKS) {
             val memberSpecificProposal = ProposeUpdateTransactionData(
-                daoId = this.doaId,
+                daoId = this.daoId,
                 featureRequestId = this.featureRequestId,
                 solutionTitle = title,
                 solutionDescription = description,
@@ -141,7 +140,7 @@ class FeatureRequest(val block: TrustChainBlock) {
         fun createFeatureRequest(daoId: String, title: String, description: String, reward: Long) {
 
             // Does this DAO even exist and is the user a member?
-            val app = P2playApp.findByDoaId(daoId)
+            val app = P2playApp.findByDaoId(daoId)
             if (app == null || !app.isDaoMember()) return
 
             val trustChain: TrustChainCommunity = IPv8Android.getInstance().getOverlay()!!

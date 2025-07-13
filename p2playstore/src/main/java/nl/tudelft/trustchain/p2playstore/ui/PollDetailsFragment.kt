@@ -1,6 +1,5 @@
 package nl.tudelft.trustchain.p2playstore.ui
 
-import UpdateProposalPoll
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -16,6 +15,7 @@ import nl.tudelft.ipv8.util.toHex
 import nl.tudelft.trustchain.p2playstore.VOTE_YES_BLOCK
 import nl.tudelft.trustchain.p2playstore.databinding.FragmentPollDetailsBinding
 import nl.tudelft.trustchain.p2playstore.models.DaoJoinPoll
+import nl.tudelft.trustchain.p2playstore.models.UpdateProposalPoll
 import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.models.Poll
 import nl.tudelft.trustchain.p2playstore.utils.AppUtils

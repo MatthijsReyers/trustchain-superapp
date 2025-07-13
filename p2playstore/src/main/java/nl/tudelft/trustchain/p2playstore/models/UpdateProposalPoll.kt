@@ -1,3 +1,5 @@
+package nl.tudelft.trustchain.p2playstore.models
+
 import android.app.Activity
 import android.content.Context
 import android.util.Log
@@ -16,6 +18,7 @@ import nl.tudelft.trustchain.p2playstore.models.P2playApp
 import nl.tudelft.trustchain.p2playstore.models.Poll
 import nl.tudelft.trustchain.p2playstore.transactionData.BaseData
 import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoTransactionData
+import nl.tudelft.trustchain.p2playstore.transactionData.JoinDaoData
 import nl.tudelft.trustchain.p2playstore.transactionData.ProposeUpdateTransactionData
 import nl.tudelft.trustchain.p2playstore.transactionData.SharedWalletData
 import nl.tudelft.trustchain.p2playstore.transactionData.UpdateAcceptedTransactionData

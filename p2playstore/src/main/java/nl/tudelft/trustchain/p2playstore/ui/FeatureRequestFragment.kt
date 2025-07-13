@@ -28,7 +28,7 @@ class FeatureRequestFragment : BaseFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val daoId = arguments?.getString("daoId") as String
-        this.app = P2playApp.findByDoaId(daoId)!!
+        this.app = P2playApp.findByDaoId(daoId)!!
 
         // Don't allow people who are not DAO members to access this page
         if (!this.app.isDaoMember()) {
